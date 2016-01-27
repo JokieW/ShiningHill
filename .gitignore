@@ -3,6 +3,8 @@
 *.sln
 *.userprefs
 *.suo
+*.arc
+*.arc.meta
 obj/
 #Unity
 Library/
