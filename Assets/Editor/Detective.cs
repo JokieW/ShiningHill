@@ -23,8 +23,13 @@ public class Detective : EditorWindow
 
     int _selectedFile;
     string[] _fileNames;
-    Vector2 _scrollPosition, _hexScroll;
-    HexDisplay.DisplayType _hexDisplayStyle = HexDisplay.DisplayType.ANSI;
+    Vector2 _scrollPosition;
+
+    //Hex display
+    Vector2 _hexScroll;
+    HexDisplay.DisplayType _hexDisplayType = HexDisplay.DisplayType.ANSI;
+    int _hexBytesPerRow = 16;
+    int _hexGrouping = 4;
 
     void Init()
     {
@@ -81,12 +86,18 @@ public class Detective : EditorWindow
             Archive.ArcFile file = _currentArchive.AllFiles[_fileNames[_selectedFile]];
             GUILayout.Label("Offset " + file.Offset);
             GUILayout.Label("FileID " + file.FileID);
-            GUILayout.Label("Length " + file.Length);
-            GUILayout.Label("Length2 " + file.Lenght2);
+            GUILayout.Label("Length " + file.Length + " (" + file.Lenght2+")");
             GUILayout.Label("Type UNKNOWN");
-            _hexDisplayStyle = (HexDisplay.DisplayType)EditorGUILayout.EnumPopup("Preview format", _hexDisplayStyle);
 
-            _hexScroll = HexDisplay.Display(_hexScroll, file.data, 16, 4, _hexDisplayStyle, null);
+            GUILayout.BeginHorizontal();
+            _hexBytesPerRow = EditorGUILayout.IntPopup("Bytes Per Row", _hexBytesPerRow, new string[] { "8", "16", "24", "32" }, new int[] { 8, 16, 24, 32 });
+            GUILayout.FlexibleSpace();
+            _hexGrouping = EditorGUILayout.IntPopup("Groupings", _hexGrouping, new string[] { "1", "2", "4", "8" }, new int[] { 1, 2, 4, 8 });
+            GUILayout.FlexibleSpace();
+            _hexDisplayType = (HexDisplay.DisplayType)EditorGUILayout.EnumPopup("Preview format", _hexDisplayType);
+            GUILayout.EndHorizontal();
+
+            _hexScroll = HexDisplay.Display(_hexScroll, file.data, _hexBytesPerRow, _hexGrouping, _hexDisplayType, null);
 
             GUILayout.EndVertical();
 
