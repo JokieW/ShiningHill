@@ -59,6 +59,8 @@ namespace SilentParty
                 {
                     ArcFile file = new ArcFile(reader);
                     string name = String.Format("File {0} ({1})", fileI, file.FileID);
+                    file.ArchiveName = Path.GetFileName(assetPath);
+                    file.FileNumber = fileI;
                     _files.Add(name, file);
                 }
             }
@@ -103,6 +105,10 @@ namespace SilentParty
             public UInt32 Length;
             public UInt32 Lenght2; //Not quite sure why there is two length
             public byte[] data;
+
+            //non-data
+            public string ArchiveName;
+            public int FileNumber;
 
             public ArcFile(BinaryReader reader)
             {

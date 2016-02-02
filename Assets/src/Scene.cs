@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 
 using UnityEngine;
+using UnityEditor;
 
 namespace SilentParty
 {
@@ -42,12 +43,6 @@ namespace SilentParty
             {
                 GameObject go = new GameObject("Scene");
                 Scene scene = go.AddComponent<Scene>();
-                GameObject root = GameObject.Find("World");
-                if (root != null)
-                {
-                    root.transform.localScale = Vector3.one;
-                    scene.transform.SetParent(root.transform);
-                }
 
                 BinaryReader reader = new BinaryReader(new MemoryStream(file.data));
 
@@ -75,20 +70,84 @@ namespace SilentParty
                 scene.Unknown9 = reader.ReadInt32();
                 scene.Unknown10 = reader.ReadInt32();
 
+                if (!Directory.Exists("Assets/Resources/Silent Hill 3/" + file.ArchiveName))
+                {
+                    Directory.CreateDirectory("Assets/Resources/Silent Hill 3/" + file.ArchiveName);
+                }
+                string finalPath = "Assets/Resources/Silent Hill 3/" + file.ArchiveName + "/" + file.FileNumber;
+                if (!Directory.Exists(finalPath))
+                {
+                    Directory.CreateDirectory(finalPath);
+                }
+
                 Skybox sky = null;
                 do
                 {
                     sky = Skybox.Deserialise(reader, go);
                 } while (sky.NextSkyboxOffset != 0);
 
-                MeshGroup group = null;
+                List<MeshGroup> groups = new List<MeshGroup>();
                 do
                 {
-                    group = MeshGroup.Deserialise(reader, go);
-                } while (group.headers[0].NextSceneGeoOffset != 0);
+                    groups.Add(MeshGroup.Deserialise(reader, go, finalPath));
+                } while (groups[groups.Count - 1].headers[0].NextSceneGeoOffset != 0);
 
+                List<Texture2D> textures = new List<Texture2D>();
+
+                reader.BaseStream.Position = scene.TextureGroupOffset;
+                reader.SkipBytes(12);
+                int texGroupLength = reader.ReadInt32();
+                reader.SkipBytes(4);
+                int texCount = reader.ReadInt32();
+                reader.SkipBytes(8);
+
+                for (int i = 0; i != texCount; i++)
+                {
+                    reader.SkipBytes(8);
+                    short width = reader.ReadInt16();
+                    short height = reader.ReadInt16();
+                    reader.SkipByte();
+                    byte buffer = reader.ReadByte();
+                    reader.SkipBytes(2);
+                    int lengthOfTex = reader.ReadInt32();
+                    int nextDataRelativeOffset = reader.ReadInt32();
+                    reader.SkipBytes(24+buffer);
+                    List<Color32> _pixels = new List<Color32>(lengthOfTex / 4);
+                    for(int j = 0; j != lengthOfTex ; j += 4)
+                    {
+                        _pixels.Add(reader.ReadColor32());
+                    }
+                    Texture2D text = new Texture2D(width, height, TextureFormat.RGBA32, false);
+                    text.SetPixels32(_pixels.ToArray());
+                    text.Apply();
+                    textures.Add(text);
+                    _pixels.Clear();
+                }
+
+                Material defaultMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/DefaultMaterial.mat");
+
+                for (int i = 0; i != groups.Count; i++)
+                {
+                    Material mat = new Material(defaultMat);
+                    mat.mainTexture = textures[i];
+
+                    AssetDatabase.CreateAsset(textures[i], finalPath + "/texture_" + i + ".asset");
+                    AssetDatabase.CreateAsset(mat, finalPath + "/material_" + i + ".mat");
+
+                    MeshRenderer[] filters = groups[i].GetComponentsInChildren<MeshRenderer>();
+                    foreach (MeshRenderer mr in filters)
+                    {
+                        mr.sharedMaterial = mat;
+                    }
+                }
+
+                AssetDatabase.SaveAssets();
+
+                GameObject root = GameObject.Find("World");
                 if (root != null)
                 {
+                    root.transform.localScale = Vector3.one;
+                    scene.transform.SetParent(root.transform);
                     root.transform.localScale = new Vector3(0.002f, 0.002f, 0.002f);
                 }
 

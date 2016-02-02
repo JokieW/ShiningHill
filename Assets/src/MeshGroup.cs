@@ -11,7 +11,7 @@ namespace SilentParty
 	{
         public Header[] headers = new Header[3];
 
-        public static MeshGroup Deserialise(BinaryReader reader, GameObject parent)
+        public static MeshGroup Deserialise(BinaryReader reader, GameObject parent, string path)
         {
             GameObject go = new GameObject("Mesh Group");
             MeshGroup group = go.AddComponent<MeshGroup>();
@@ -25,7 +25,7 @@ namespace SilentParty
             MeshPart result = null;
             do
             {
-                result = MeshPart.Deserialise(reader, go);
+                result = MeshPart.Deserialise(reader, go, path);
 
             } while (result.NextSceneGeoOffset != 0);
 
@@ -33,6 +33,7 @@ namespace SilentParty
             return group;
         }
 
+        [Serializable]
         public struct Header
         {
             public int NextSceneGeoOffset;

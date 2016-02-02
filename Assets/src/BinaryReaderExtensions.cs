@@ -36,12 +36,21 @@ namespace SilentParty
 
         public static Color32 ReadColor32(this BinaryReader reader)
         {
-            return new Color32(reader.ReadByte(), reader.ReadByte(), reader.ReadByte(), reader.ReadByte());
+            byte r = reader.ReadByte();
+            byte g = reader.ReadByte();
+            byte b = reader.ReadByte();
+            byte a = reader.ReadByte();
+            return new Color32(b, g, r, a);
         }
 
         public static void SkipByte(this BinaryReader reader)
         {
-            reader.ReadByte();
+            reader.BaseStream.Position++;
+        }
+
+        public static void SkipBytes(this BinaryReader reader, int count)
+        {
+            reader.BaseStream.Position += count;
         }
 
         public static void SkipInt16(this BinaryReader reader)

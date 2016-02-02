@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 
 using UnityEngine;
+using UnityEditor;
 
 namespace SilentParty
 {
@@ -29,20 +30,13 @@ namespace SilentParty
         public int Unknown10;
         public int Unknown11;
 
-        //Non serialisation data
-        private static Color[] _gizmoColors = new Color[] { Color.red, Color.yellow, Color.green, Color.magenta, Color.cyan, Color.grey, Color.blue, Color.black, Color.white };
-        [SerializeField]
-        private Color _gizmoColor;
-        private static int _colorIdentifier;
-
-        public static MeshPart Deserialise(BinaryReader reader, GameObject parent)
+        public static MeshPart Deserialise(BinaryReader reader, GameObject parent, string path)
         {
             GameObject go = new GameObject("Mesh Part");
             MeshPart part = go.AddComponent<MeshPart>();
             part.transform.SetParent(parent.transform);
 
-            part._gizmoColor = _gizmoColors[_colorIdentifier%9];
-            _colorIdentifier++;
+            long offset = reader.BaseStream.Position;
 
             part.NextSceneGeoOffset = reader.ReadInt32();
             part.HeaderLength = reader.ReadInt32();
@@ -85,7 +79,7 @@ namespace SilentParty
             Mesh mesh = new Mesh();
             mesh.SetVertices(_verts);
             mesh.SetNormals(_norms);
-            mesh.SetUVs(1, _uvs);
+            mesh.SetUVs(0, _uvs);
             mesh.SetColors(_colors);
 
             List<int> _tris = new List<int>();
@@ -105,8 +99,10 @@ namespace SilentParty
 
             mesh.SetTriangles(_tris, 0);
 
-            go.AddComponent<MeshFilter>().mesh = mesh;
-            go.AddComponent<MeshRenderer>().sharedMaterial = (Material)Resources.Load("White", typeof(Material));
+            AssetDatabase.CreateAsset(mesh, path + "/" + offset.ToString() + ".asset");
+
+            go.AddComponent<MeshFilter>().sharedMesh = (Mesh)AssetDatabase.LoadAssetAtPath<Mesh>(path + "/" + offset.ToString()+".asset");
+            go.AddComponent<MeshRenderer>().sharedMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/DefaultMaterial.mat"); ;
 
             return part;
         }
