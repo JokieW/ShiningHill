@@ -29,11 +29,6 @@ namespace SilentParty
         public int Unknown10;
         public int Unknown11;
 
-        public Vector3[] Vertices;
-        public Vector3[] Normals;
-        public Vector2[] UVs;
-        public Color32[] Colors;
-
         //Non serialisation data
         private static Color[] _gizmoColors = new Color[] { Color.red, Color.yellow, Color.green, Color.magenta, Color.cyan, Color.grey, Color.blue, Color.black, Color.white };
         [SerializeField]
@@ -75,15 +70,43 @@ namespace SilentParty
             List<Color32> _colors = new List<Color32>();
             for (int i = 0; i != part.VertexCount; i++)
             {
-                _verts.Add(reader.ReadVector3());
-                _norms.Add(reader.ReadVector3());
+                Vector3 temp = reader.ReadVector3();
+                temp.y = -temp.y;
+                _verts.Add(temp);
+
+                temp = reader.ReadVector3();
+                temp.y = -temp.y;
+                _norms.Add(temp);
+
                 _uvs.Add(reader.ReadVector2());
                 _colors.Add(reader.ReadColor32());
             }
-            part.Vertices = _verts.ToArray();
-            part.Normals = _norms.ToArray();
-            part.UVs = _uvs.ToArray();
-            part.Colors = _colors.ToArray();
+
+            Mesh mesh = new Mesh();
+            mesh.SetVertices(_verts);
+            mesh.SetNormals(_norms);
+            mesh.SetUVs(1, _uvs);
+            mesh.SetColors(_colors);
+
+            List<int> _tris = new List<int>();
+            for (int i = 1; i < part.VertexCount-1; i += 2)
+            {
+                _tris.Add(i);
+                _tris.Add(i - 1);
+                _tris.Add(i + 1);
+
+                if (i + 2 < part.VertexCount)
+                {
+                    _tris.Add(i);
+                    _tris.Add(i + 1);
+                    _tris.Add(i + 2);
+                }
+            }
+
+            mesh.SetTriangles(_tris, 0);
+
+            go.AddComponent<MeshFilter>().mesh = mesh;
+            go.AddComponent<MeshRenderer>().sharedMaterial = (Material)Resources.Load("White", typeof(Material));
 
             return part;
         }
@@ -91,11 +114,11 @@ namespace SilentParty
         
         void OnDrawGizmos()
         {
-            Gizmos.color = _gizmoColor;
-            foreach (Vector3 v3 in Vertices)
+            /*Gizmos.color = _gizmoColor;
+            foreach (Vector3 v3 in GetComponent<MeshFilter>().mesh.vertices)
             {
                 Gizmos.DrawSphere(v3, 10.0f);
-            }
+            }*/
 
         }
 

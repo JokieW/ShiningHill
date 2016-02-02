@@ -42,6 +42,12 @@ namespace SilentParty
             {
                 GameObject go = new GameObject("Scene");
                 Scene scene = go.AddComponent<Scene>();
+                GameObject root = GameObject.Find("World");
+                if (root != null)
+                {
+                    root.transform.localScale = Vector3.one;
+                    scene.transform.SetParent(root.transform);
+                }
 
                 BinaryReader reader = new BinaryReader(new MemoryStream(file.data));
 
@@ -80,6 +86,11 @@ namespace SilentParty
                 {
                     group = MeshGroup.Deserialise(reader, go);
                 } while (group.headers[0].NextSceneGeoOffset != 0);
+
+                if (root != null)
+                {
+                    root.transform.localScale = new Vector3(0.002f, 0.002f, 0.002f);
+                }
 
                 return scene;
 
