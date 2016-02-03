@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-namespace SilentParty
+namespace ShiningHill
 {
 	public class MeshPart : MonoBehaviour 
 	{
@@ -102,7 +102,7 @@ namespace SilentParty
             AssetDatabase.CreateAsset(mesh, path + "/" + offset.ToString() + ".asset");
 
             go.AddComponent<MeshFilter>().sharedMesh = (Mesh)AssetDatabase.LoadAssetAtPath<Mesh>(path + "/" + offset.ToString()+".asset");
-            go.AddComponent<MeshRenderer>().sharedMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/DefaultMaterial.mat"); ;
+            go.AddComponent<MeshRenderer>().sharedMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/DefaultMaterial.mat");
 
             return part;
         }

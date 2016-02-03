@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 using UnityEngine;
 
-namespace SilentParty
+namespace ShiningHill
 {
 	public class Skybox : MonoBehaviour 
 	{

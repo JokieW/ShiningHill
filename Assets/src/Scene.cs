@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-namespace SilentParty
+namespace ShiningHill
 {
 
     public class Scene : MonoBehaviour 
@@ -39,9 +39,9 @@ namespace SilentParty
 
         public static Scene AttemptRecovery(Archive.ArcFile file)
         {
+            GameObject go = new GameObject("Scene");
             try
             {
-                GameObject go = new GameObject("Scene");
                 Scene scene = go.AddComponent<Scene>();
 
                 BinaryReader reader = new BinaryReader(new MemoryStream(file.data));
@@ -90,9 +90,9 @@ namespace SilentParty
                 do
                 {
                     groups.Add(MeshGroup.Deserialise(reader, go, finalPath));
-                } while (groups[groups.Count - 1].headers[0].NextSceneGeoOffset != 0);
+                } while (groups[groups.Count - 1].NextSceneGeoOffset != 0);
 
-                List<Texture2D> textures = new List<Texture2D>();
+                
 
                 reader.BaseStream.Position = scene.TextureGroupOffset;
                 reader.SkipBytes(12);
@@ -100,6 +100,9 @@ namespace SilentParty
                 reader.SkipBytes(4);
                 int texCount = reader.ReadInt32();
                 reader.SkipBytes(8);
+
+                List<Texture2D> textures = new List<Texture2D>(texCount);
+                bool[] textureTransparent = new bool[texCount];
 
                 for (int i = 0; i != texCount; i++)
                 {
@@ -111,30 +114,48 @@ namespace SilentParty
                     reader.SkipBytes(2);
                     int lengthOfTex = reader.ReadInt32();
                     int nextDataRelativeOffset = reader.ReadInt32();
-                    reader.SkipBytes(24+buffer);
+                    reader.SkipBytes(24 + buffer);
                     List<Color32> _pixels = new List<Color32>(lengthOfTex / 4);
-                    for(int j = 0; j != lengthOfTex ; j += 4)
+                    bool hadTransparency = false;
+                    for (int j = 0; j != lengthOfTex; j += 4)
                     {
-                        _pixels.Add(reader.ReadColor32());
+                        Color32 c32 = reader.ReadColor32();
+                        _pixels.Add(c32);
+                        if (c32.a != 255)
+                        {
+                            hadTransparency = true;
+                        }
                     }
                     Texture2D text = new Texture2D(width, height, TextureFormat.RGBA32, false);
                     text.SetPixels32(_pixels.ToArray());
                     text.Apply();
                     textures.Add(text);
+                    textureTransparent[i] = hadTransparency;
                     _pixels.Clear();
                 }
 
-                Material defaultMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/DefaultMaterial.mat");
+                Material defaultDiffuseMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/DefaultDiffuseMaterial.mat");
+                Material defaultTransparentMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/DefaultTransparentMaterial.mat");
 
-                for (int i = 0; i != groups.Count; i++)
+                for (int i = 0; i != textures.Count; i++)
                 {
-                    Material mat = new Material(defaultMat);
-                    mat.mainTexture = textures[i];
 
-                    AssetDatabase.CreateAsset(textures[i], finalPath + "/texture_" + i + ".asset");
+                    Material mat;
+                    if (textureTransparent[i])
+                    {
+                        mat = new Material(defaultTransparentMat);
+                    }
+                    else
+                    {
+                        mat = new Material(defaultDiffuseMat);
+                    }
+
+                    File.WriteAllBytes(finalPath + "/texture_" + i + ".png", textures[i].EncodeToPNG());
+                    AssetDatabase.ImportAsset(finalPath + "/texture_" + i + ".png");
+                    mat.mainTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(finalPath + "/texture_" + i + ".png");
                     AssetDatabase.CreateAsset(mat, finalPath + "/material_" + i + ".mat");
 
-                    MeshRenderer[] filters = groups[i].GetComponentsInChildren<MeshRenderer>();
+                    MeshRenderer[] filters = groups[groups.Count - textures.Count + i].GetComponentsInChildren<MeshRenderer>();
                     foreach (MeshRenderer mr in filters)
                     {
                         mr.sharedMaterial = mat;
@@ -147,7 +168,7 @@ namespace SilentParty
                 if (root != null)
                 {
                     root.transform.localScale = Vector3.one;
-                    scene.transform.SetParent(root.transform);
+                    go.transform.SetParent(root.transform);
                     root.transform.localScale = new Vector3(0.002f, 0.002f, 0.002f);
                 }
 
@@ -157,7 +178,15 @@ namespace SilentParty
             catch (Exception e)
             {
                 Debug.LogException(e);
+                GameObject root = GameObject.Find("World");
+                if (root != null)
+                {
+                    root.transform.localScale = Vector3.one;
+                    go.transform.SetParent(root.transform);
+                    root.transform.localScale = new Vector3(0.002f, 0.002f, 0.002f);
+                }
             }
+
             return null;
         }
     }

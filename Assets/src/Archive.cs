@@ -7,7 +7,7 @@ using UnityEngine;
 using UnityEditor;
 using Object = UnityEngine.Object;
 
-namespace SilentParty
+namespace ShiningHill
 {
     public class Archive
     {

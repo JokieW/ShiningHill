@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace ShiningHill
 {
-	public class MeshGroup : MonoBehaviour 
+	public class SubSubMeshGroup : MonoBehaviour 
 	{
         public int NextSceneGeoOffset;
         public int HeaderLength; //48
@@ -24,10 +24,10 @@ namespace ShiningHill
         public float Unknown6;
         public float Unknown7;
 
-        public static MeshGroup Deserialise(BinaryReader reader, GameObject parent, string path)
+        public static SubSubMeshGroup Deserialise(BinaryReader reader, GameObject parent, string path)
         {
-            GameObject go = new GameObject("Mesh Group");
-            MeshGroup group = go.AddComponent<MeshGroup>();
+            GameObject go = new GameObject("SubSubMesh Group");
+            SubSubMeshGroup group = go.AddComponent<SubSubMeshGroup>();
             go.transform.SetParent(parent.transform);
 
             group.NextSceneGeoOffset = reader.ReadInt32();
@@ -45,11 +45,13 @@ namespace ShiningHill
             group.Unknown6 = reader.ReadSingle();
             group.Unknown7 = reader.ReadSingle();
 
-            SubMeshGroup subgroup = null;
+            MeshPart meshpart = null;
             do
             {
-                subgroup = SubMeshGroup.Deserialise(reader, go, path);
-            } while (subgroup.NextSceneGeoOffset != 0);
+                meshpart = MeshPart.Deserialise(reader, go, path);
+
+            } while (meshpart.NextSceneGeoOffset != 0);
+
 
             return group;
         }
