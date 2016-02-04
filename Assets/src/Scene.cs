@@ -40,6 +40,7 @@ namespace ShiningHill
         public static Scene AttemptRecovery(Archive.ArcFile file)
         {
             GameObject go = new GameObject("Scene");
+            go.isStatic = true;
             try
             {
                 Scene scene = go.AddComponent<Scene>();

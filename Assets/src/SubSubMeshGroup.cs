@@ -27,6 +27,7 @@ namespace ShiningHill
         public static SubSubMeshGroup Deserialise(BinaryReader reader, GameObject parent, string path)
         {
             GameObject go = new GameObject("SubSubMesh Group");
+            go.isStatic = true;
             SubSubMeshGroup group = go.AddComponent<SubSubMeshGroup>();
             go.transform.SetParent(parent.transform);
 

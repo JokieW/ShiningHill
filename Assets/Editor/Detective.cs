@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -90,6 +91,83 @@ namespace ShiningHill
                 if (GUILayout.Button("Try to recover as Scene"))
                 {
                     Scene.AttemptRecovery(file);
+                }
+
+                if (GUILayout.Button("Try recover as textures"))
+                {
+                    BinaryReader reader = new BinaryReader(new MemoryStream(file.data));
+                    reader.SkipBytes(12);
+                    int texGroupLength = reader.ReadInt32();
+                    reader.SkipBytes(4);
+                    int texCount = reader.ReadInt32();
+                    reader.SkipBytes(8);
+
+                    List<Texture2D> textures = new List<Texture2D>(texCount);
+                    bool[] textureTransparent = new bool[texCount];
+
+                    for (int i = 0; i != texCount; i++)
+                    {
+                        reader.SkipBytes(8);
+                        short width = reader.ReadInt16();
+                        short height = reader.ReadInt16();
+                        reader.SkipByte();
+                        byte buffer = reader.ReadByte();
+                        reader.SkipBytes(2);
+                        int lengthOfTex = reader.ReadInt32();
+                        int nextDataRelativeOffset = reader.ReadInt32();
+                        reader.SkipBytes(24 + buffer);
+                        List<Color32> _pixels = new List<Color32>(lengthOfTex / 4);
+                        bool hadTransparency = false;
+                        for (int j = 0; j != lengthOfTex; j += 4)
+                        {
+                            Color32 c32 = reader.ReadColor32();
+                            _pixels.Add(c32);
+                            if (c32.a != 255)
+                            {
+                                hadTransparency = true;
+                            }
+                        }
+                        Texture2D text = new Texture2D(width, height, TextureFormat.RGBA32, false);
+                        text.SetPixels32(_pixels.ToArray());
+                        text.Apply();
+                        textures.Add(text);
+                        textureTransparent[i] = hadTransparency;
+                        _pixels.Clear();
+                    }
+
+                    Material defaultDiffuseMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/DefaultDiffuseMaterial.mat");
+                    Material defaultTransparentMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/DefaultTransparentMaterial.mat");
+
+                    for (int i = 0; i != textures.Count; i++)
+                    {
+
+                        Material mat;
+                        if (textureTransparent[i])
+                        {
+                            mat = new Material(defaultTransparentMat);
+                        }
+                        else
+                        {
+                            mat = new Material(defaultDiffuseMat);
+                        }
+
+                        if (!Directory.Exists("Assets/Resources/Silent Hill 3/" + file.ArchiveName))
+                        {
+                            Directory.CreateDirectory("Assets/Resources/Silent Hill 3/" + file.ArchiveName);
+                        }
+                        string finalPath = "Assets/Resources/Silent Hill 3/" + file.ArchiveName + "/" + file.FileNumber;
+                        if (!Directory.Exists(finalPath))
+                        {
+                            Directory.CreateDirectory(finalPath);
+                        }
+
+                        File.WriteAllBytes(finalPath + "/texture_" + i + ".png", textures[i].EncodeToPNG());
+                        AssetDatabase.ImportAsset(finalPath + "/texture_" + i + ".png");
+                        mat.mainTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(finalPath + "/texture_" + i + ".png");
+                        AssetDatabase.CreateAsset(mat, finalPath + "/material_" + i + ".mat");
+                    }
+
+                    AssetDatabase.SaveAssets();
                 }
 
                 _hexScroll = HexDisplay.Display(_hexScroll, file.data, null);

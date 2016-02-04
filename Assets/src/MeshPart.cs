@@ -11,24 +11,14 @@ namespace ShiningHill
 	public class MeshPart : MonoBehaviour 
 	{
         public int NextSceneGeoOffset;
-        public int HeaderLength; //48
+        public int HeaderLength; //64
         public int Length;
         public int Unknown1;
 
-        public int VertexCount; //Also id thing//
-        public int SubId;
-        public int Unknown2;
+        public int VertexCount;
+        public int ObjectType;
+        public string OcclusionGroup;
         public int Unknown3;
-
-        public int Unknown4;
-        public int Unknown5;
-        public int Unknown6;
-        public int Unknown7;
-
-        public int Unknown8;
-        public int Unknown9;
-        public int Unknown10;
-        public int Unknown11;
 
         public static MeshPart Deserialise(BinaryReader reader, GameObject parent, string path)
         {
@@ -44,19 +34,21 @@ namespace ShiningHill
             part.Unknown1 = reader.ReadInt32();
 
             part.VertexCount = reader.ReadInt32();
-            part.SubId = reader.ReadInt32();
-            part.Unknown2 = reader.ReadInt32();
+            part.ObjectType = reader.ReadInt32(); //1 = static, 2 = can be or not there, 3 = can move
+            int val = reader.ReadInt32();
+            part.OcclusionGroup = "0x" + val.ToString("X") + " 0b" + Convert.ToString(val, 2);
             part.Unknown3 = reader.ReadInt32();
 
-            part.Unknown4 = reader.ReadInt32();
-            part.Unknown5 = reader.ReadInt32();
-            part.Unknown6 = reader.ReadInt32();
-            part.Unknown7 = reader.ReadInt32();
+            for (int i = 0; i != 8; i++)
+            {
+                int value = reader.ReadInt32();
+                if(value != 0)
+                {
+                    Debug.LogWarning("Unexpected number in mesh part "+offset.ToString()+" : "+value);
+                }
+            }
 
-            part.Unknown8 = reader.ReadInt32();
-            part.Unknown9 = reader.ReadInt32();
-            part.Unknown10 = reader.ReadInt32();
-            part.Unknown11 = reader.ReadInt32();
+            go.isStatic = part.ObjectType != 3;
 
             List<Vector3> _verts = new List<Vector3>();
             List<Vector3> _norms = new List<Vector3>();
@@ -69,7 +61,8 @@ namespace ShiningHill
                 _verts.Add(temp);
 
                 temp = reader.ReadVector3();
-                temp.y = -temp.y;
+                temp.x = -temp.x;
+                temp.z = -temp.z;
                 _norms.Add(temp);
 
                 _uvs.Add(reader.ReadVector2());
@@ -108,8 +101,22 @@ namespace ShiningHill
         }
 
         
-        void OnDrawGizmos()
+        void OnDrawGizmosSelected()
         {
+            //Normal debug
+            /*Gizmos.color = Color.red;
+            Mesh mesh = GetComponent<MeshFilter>().sharedMesh;
+            Vector3[] norms = mesh.normals;
+            Vector3[] verts = mesh.vertices;
+            for (int i = 0; i != norms.Length; i++)
+            {
+                Vector3 localpos = transform.TransformPoint(verts[i]);
+                
+                Gizmos.DrawLine(localpos, localpos + (norms[i]*0.1f));
+            }*/
+
+            //Color debug
+
             /*Gizmos.color = _gizmoColor;
             foreach (Vector3 v3 in GetComponent<MeshFilter>().mesh.vertices)
             {
