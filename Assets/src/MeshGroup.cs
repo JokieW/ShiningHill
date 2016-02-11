@@ -9,50 +9,36 @@ namespace ShiningHill
 {
 	public class MeshGroup : MonoBehaviour 
 	{
-        public int NextSceneGeoOffset;
-        public int HeaderLength; //48
-        public int Length;
+        public int TextureGroup;
+        public int TextureIndex;
         public int Unknown1;
 
-        public int MainId;
-        public int SubId;
-        public int Unknown2;
-        public int Unknown3;
-
-        public float Unknown4;//48 and 64
-        public float Unknown5;
-        public float Unknown6;
-        public float Unknown7;
-
-        public static MeshGroup Deserialise(BinaryReader reader, GameObject parent, string path)
+        public static int Deserialise(BinaryReader reader, GameObject parent)
         {
             GameObject go = new GameObject("Mesh Group");
             go.isStatic = true;
             MeshGroup group = go.AddComponent<MeshGroup>();
             go.transform.SetParent(parent.transform);
 
-            group.NextSceneGeoOffset = reader.ReadInt32();
-            group.HeaderLength = reader.ReadInt32();
-            group.Length = reader.ReadInt32();
+            int NextOffset = reader.ReadInt32();
+            reader.SkipInt32(48);
+            reader.SkipInt32(); // Length
+            reader.SkipInt32(0);
+
+            group.TextureGroup = reader.ReadInt32();
+            group.TextureIndex = reader.ReadInt32();
             group.Unknown1 = reader.ReadInt32();
+            reader.SkipInt32(0);
 
-            group.MainId = reader.ReadInt32();
-            group.SubId = reader.ReadInt32();
-            group.Unknown2 = reader.ReadInt32();
-            group.Unknown3 = reader.ReadInt32();
+            reader.SkipBytes(16, 0);
 
-            group.Unknown4 = reader.ReadSingle();
-            group.Unknown5 = reader.ReadSingle();
-            group.Unknown6 = reader.ReadSingle();
-            group.Unknown7 = reader.ReadSingle();
-
-            SubMeshGroup subgroup = null;
+            int next;
             do
             {
-                subgroup = SubMeshGroup.Deserialise(reader, go, path);
-            } while (subgroup.NextSceneGeoOffset != 0);
+                next = SubMeshGroup.Deserialise(reader, go);
+            } while (next != 0);
 
-            return group;
+            return NextOffset;
         }
 	}
 }

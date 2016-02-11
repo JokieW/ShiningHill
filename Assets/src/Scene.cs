@@ -11,167 +11,150 @@ namespace ShiningHill
 
     public class Scene : MonoBehaviour 
     {
-#region Header
-        //Header
-        public int MainHeaderSegMarker; //Usually FFFFFFFF
+        //Script assigned
+        private static Material _defaultDiffuse;
+        public static Material defaultDiffuse
+        {
+            get
+            {
+                if (_defaultDiffuse == null)
+                {
+                    _defaultDiffuse = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/DefaultDiffuseMaterial.mat");
+                }
+                return _defaultDiffuse;
+            }
+        }
+
+        private static Material _defaultCutout;
+        public static Material defaultCutout
+        {
+            get
+            {
+                if (_defaultCutout == null)
+                {
+                    _defaultCutout = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/DefaultDiffuseMaterial.mat");
+                }
+                return _defaultCutout;
+            }
+        }
+
+        private static Material _defaultTransparent;
+        public static Material defaultTransparent
+        {
+            get
+            {
+                if (_defaultTransparent == null)
+                {
+                    _defaultTransparent = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/DefaultDiffuseMaterial.mat");
+                }
+                return _defaultTransparent;
+            }
+        }
+
         public int Unknown1;
         public int Unknown2;
-        public int MainHeaderSize;
-        public int TextureGroupOffset; //From start, leads to the marker of the texture group
-        public int Unknown3;
-        public int AltMainHeaderSize; //p?
-        public int TotalMainHeaderSize; //p?
-        public int Unknown4;
-        public int SceneStartHeaderOffset; //p?
-        public int Unknown5;
-        public int Unknown6;
-        public int TextureGroupOffset2; // Same as TextureGroupOffset AFAIK
-        public int TransformOffset;  // From itself, leads to the end of vertices?
-        public int Unknown7; //p? Called "SomeWeirdDataOffset"
-        public int Unknown8;
-        public short TotalTextures; //m?
-        public short LocalTextureBaseIndex; //m?
+        public short TotalTextures;
+        public short LocalTextureBaseIndex;
         public short LocalTextureCount;
-        public short Q1; //p? Called "q1"
-        public int Unknown9;
-        public int Unknown10;
-#endregion
+        public short Unknown3;
 
-        public static Scene AttemptRecovery(Archive.ArcFile file)
+        public static Scene ReadMap(string path)
         {
-            GameObject go = new GameObject("Scene");
+            GameObject go = new GameObject("Map");
             go.isStatic = true;
             try
             {
                 Scene scene = go.AddComponent<Scene>();
 
-                BinaryReader reader = new BinaryReader(new MemoryStream(file.data));
+                BinaryReader reader = new BinaryReader(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read));
 
                 //Header
-                scene.MainHeaderSegMarker = reader.ReadInt32();
+                reader.SkipInt32(-1); //marker
+                reader.SkipInt32(0);
+                reader.SkipInt32(0);
+                reader.SkipInt32(80); //Main header size
+                int TextureGroupOffset = reader.ReadInt32();
+                reader.SkipInt32(0);
+                reader.SkipInt32(80); //Alt main header size
+                reader.SkipInt32(); //Total main header size
                 scene.Unknown1 = reader.ReadInt32();
+                reader.SkipInt32(); //Scene star header offset
+                reader.SkipInt32(0);
+                reader.SkipInt32(0);
+                reader.SkipInt32(); //TextureGroupOffset2
+                reader.SkipInt32(); //TransformOffset
                 scene.Unknown2 = reader.ReadInt32();
-                scene.MainHeaderSize = reader.ReadInt32();
-                scene.TextureGroupOffset = reader.ReadInt32();
-                scene.Unknown3 = reader.ReadInt32();
-                scene.AltMainHeaderSize = reader.ReadInt32();
-                scene.TotalMainHeaderSize = reader.ReadInt32();
-                scene.Unknown4 = reader.ReadInt32();
-                scene.SceneStartHeaderOffset = reader.ReadInt32();
-                scene.Unknown5 = reader.ReadInt32();
-                scene.Unknown6 = reader.ReadInt32();
-                scene.TextureGroupOffset2 = reader.ReadInt32();
-                scene.TransformOffset = reader.ReadInt32();
-                scene.Unknown7 = reader.ReadInt32();
-                scene.Unknown8 = reader.ReadInt32();
+                reader.SkipInt32(0);
                 scene.TotalTextures = reader.ReadInt16();
                 scene.LocalTextureBaseIndex = reader.ReadInt16();
                 scene.LocalTextureCount = reader.ReadInt16();
-                scene.Q1 = reader.ReadInt16();
-                scene.Unknown9 = reader.ReadInt32();
-                scene.Unknown10 = reader.ReadInt32();
+                scene.Unknown3 = reader.ReadInt16();
+                reader.SkipInt32(0);
+                reader.SkipInt32(0);
 
-                if (!Directory.Exists("Assets/Resources/Silent Hill 3/" + file.ArchiveName))
-                {
-                    Directory.CreateDirectory("Assets/Resources/Silent Hill 3/" + file.ArchiveName);
-                }
-                string finalPath = "Assets/Resources/Silent Hill 3/" + file.ArchiveName + "/" + file.FileNumber;
-                if (!Directory.Exists(finalPath))
-                {
-                    Directory.CreateDirectory(finalPath);
-                }
+                //Read textures
+                long goBack = reader.BaseStream.Position;
+                reader.BaseStream.Position = TextureGroupOffset;
+                Texture2D[] textures = TextureReaders.ReadTex32(reader);
 
+                reader.BaseStream.Position = goBack;
+
+                //Read Skyboxes
                 Skybox sky = null;
                 do
                 {
                     sky = Skybox.Deserialise(reader, go);
                 } while (sky.NextSkyboxOffset != 0);
 
-                List<MeshGroup> groups = new List<MeshGroup>();
+                //Read meshgroups
+                int next;
                 do
                 {
-                    groups.Add(MeshGroup.Deserialise(reader, go, finalPath));
-                } while (groups[groups.Count - 1].NextSceneGeoOffset != 0);
+                    next = MeshGroup.Deserialise(reader, go);
+                } while (next != 0);
 
-                
+                MeshGroup[] groups = go.GetComponentsInChildren<MeshGroup>();
 
-                reader.BaseStream.Position = scene.TextureGroupOffset;
-                reader.SkipBytes(12);
-                int texGroupLength = reader.ReadInt32();
-                reader.SkipBytes(4);
-                int texCount = reader.ReadInt32();
-                reader.SkipBytes(8);
+                reader.Close();
 
-                List<Texture2D> textures = new List<Texture2D>(texCount);
-                bool[] textureTransparent = new bool[texCount];
+                //Associate materials
+                path = path.Replace(".map", ".prefab");
+                UnityEngine.Object prefab = PrefabUtility.CreateEmptyPrefab(path);
 
-                for (int i = 0; i != texCount; i++)
+                for (int i = 0; i != textures.Length; i++)
                 {
-                    reader.SkipBytes(8);
-                    short width = reader.ReadInt16();
-                    short height = reader.ReadInt16();
-                    reader.SkipByte();
-                    byte buffer = reader.ReadByte();
-                    reader.SkipBytes(2);
-                    int lengthOfTex = reader.ReadInt32();
-                    int nextDataRelativeOffset = reader.ReadInt32();
-                    reader.SkipBytes(24 + buffer);
-                    List<Color32> _pixels = new List<Color32>(lengthOfTex / 4);
-                    bool hadTransparency = false;
-                    for (int j = 0; j != lengthOfTex; j += 4)
+                    if (i == 0)
                     {
-                        Color32 c32 = reader.ReadColor32();
-                        _pixels.Add(c32);
-                        if (c32.a != 255)
-                        {
-                            hadTransparency = true;
-                        }
-                    }
-                    Texture2D text = new Texture2D(width, height, TextureFormat.RGBA32, false);
-                    text.SetPixels32(_pixels.ToArray());
-                    text.Apply();
-                    textures.Add(text);
-                    textureTransparent[i] = hadTransparency;
-                    _pixels.Clear();
-                }
-
-                Material defaultDiffuseMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/DefaultDiffuseMaterial.mat");
-                Material defaultTransparentMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/DefaultTransparentMaterial.mat");
-
-                for (int i = 0; i != textures.Count; i++)
-                {
-
-                    Material mat;
-                    if (textureTransparent[i])
-                    {
-                        mat = new Material(defaultTransparentMat);
+                        AssetDatabase.AddObjectToAsset(textures[i], path);
                     }
                     else
                     {
-                        mat = new Material(defaultDiffuseMat);
+                        AssetDatabase.AddObjectToAsset(textures[i], path);
                     }
 
-                    File.WriteAllBytes(finalPath + "/texture_" + i + ".png", textures[i].EncodeToPNG());
-                    AssetDatabase.ImportAsset(finalPath + "/texture_" + i + ".png");
-                    mat.mainTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(finalPath + "/texture_" + i + ".png");
-                    AssetDatabase.CreateAsset(mat, finalPath + "/material_" + i + ".mat");
+                    Material mat;
+                    mat = new Material(defaultDiffuse);
+                    mat.mainTexture = textures[i];
 
-                    MeshRenderer[] filters = groups[groups.Count - textures.Count + i].GetComponentsInChildren<MeshRenderer>();
+                    MeshRenderer[] filters = groups[groups.Length - textures.Length + i].GetComponentsInChildren<MeshRenderer>();
                     foreach (MeshRenderer mr in filters)
                     {
                         mr.sharedMaterial = mat;
                     }
+
+                    AssetDatabase.AddObjectToAsset(mat, path);
                 }
 
+                foreach (MeshFilter mf in go.GetComponentsInChildren<MeshFilter>())
+                {
+                    AssetDatabase.AddObjectToAsset(mf.sharedMesh, path);
+                }
+
+                PrefabUtility.ReplacePrefab(go, prefab);
+                
                 AssetDatabase.SaveAssets();
 
-                GameObject root = GameObject.Find("World");
-                if (root != null)
-                {
-                    root.transform.localScale = Vector3.one;
-                    go.transform.SetParent(root.transform);
-                    root.transform.localScale = new Vector3(0.002f, 0.002f, 0.002f);
-                }
+                DestroyImmediate(go);
 
                 return scene;
 
@@ -179,13 +162,6 @@ namespace ShiningHill
             catch (Exception e)
             {
                 Debug.LogException(e);
-                GameObject root = GameObject.Find("World");
-                if (root != null)
-                {
-                    root.transform.localScale = Vector3.one;
-                    go.transform.SetParent(root.transform);
-                    root.transform.localScale = new Vector3(0.002f, 0.002f, 0.002f);
-                }
             }
 
             return null;

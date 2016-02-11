@@ -26,8 +26,8 @@ namespace ShiningHill
         }
 
         ArcHeader _header = null;
-        Dictionary<string, ArcFile> _files = null;
-        public Dictionary<string, ArcFile> AllFiles
+        List<ArcFile> _files = null;
+        public List<ArcFile> AllFiles
         {
             get
             {
@@ -54,14 +54,13 @@ namespace ShiningHill
                 reader = new BinaryReader(new FileStream(assetPath, FileMode.Open, FileAccess.Read, FileShare.Read));
                 _header = new ArcHeader(reader);
 
-                _files = new Dictionary<string, ArcFile>((int)_header.fileCount);
+                _files = new List<ArcFile>((int)_header.fileCount);
                 for (int fileI = 0; fileI != (int)_header.fileCount; fileI++)
                 {
                     ArcFile file = new ArcFile(reader);
-                    string name = String.Format("File {0} ({1})", fileI, file.FileID);
                     file.ArchiveName = Path.GetFileName(assetPath);
                     file.FileNumber = fileI;
-                    _files.Add(name, file);
+                    _files.Add(file);
                 }
             }
             catch (Exception e)

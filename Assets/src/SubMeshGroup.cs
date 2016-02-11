@@ -9,51 +9,38 @@ namespace ShiningHill
 {
 	public class SubMeshGroup : MonoBehaviour 
 	{
-        public int NextSceneGeoOffset;
-        public int HeaderLength; //48
-        public int Length;
-        public int Unknown1;
+        public short Unknown11;
+        public short IsTransparent;
 
-        public int MainId;
-        public int SubId;
-        public int Unknown2;
-        public int Unknown3;
-
-        public float Unknown4;//48 and 64
-        public float Unknown5;
-        public float Unknown6;
-        public float Unknown7;
-
-        public static SubMeshGroup Deserialise(BinaryReader reader, GameObject parent, string path)
+        public static int Deserialise(BinaryReader reader, GameObject parent)
         {
             GameObject go = new GameObject("SubMesh Group");
             go.isStatic = true;
             SubMeshGroup group = go.AddComponent<SubMeshGroup>();
             go.transform.SetParent(parent.transform);
 
-            group.NextSceneGeoOffset = reader.ReadInt32();
-            group.HeaderLength = reader.ReadInt32();
-            group.Length = reader.ReadInt32();
-            group.Unknown1 = reader.ReadInt32();
+            int NextOffset = reader.ReadInt32();
+            reader.SkipInt32(48);
+            reader.SkipInt32(); //Length
+            reader.SkipInt32(0);
 
-            group.MainId = reader.ReadInt32();
-            group.SubId = reader.ReadInt32();
-            group.Unknown2 = reader.ReadInt32();
-            group.Unknown3 = reader.ReadInt32();
+            group.Unknown11 = reader.ReadInt16();
+            reader.SkipInt16(1);
+            reader.SkipInt16(0);
+            group.IsTransparent = reader.ReadInt16();
+            reader.SkipInt32(0);
+            reader.SkipInt32(0);
 
-            group.Unknown4 = reader.ReadSingle();
-            group.Unknown5 = reader.ReadSingle();
-            group.Unknown6 = reader.ReadSingle();
-            group.Unknown7 = reader.ReadSingle();
+            reader.SkipBytes(16, 0);
 
-            SubSubMeshGroup subsubgroup = null;
+            int next;
             do
             {
-                subsubgroup = SubSubMeshGroup.Deserialise(reader, go, path);
-            } while (subsubgroup.NextSceneGeoOffset != 0);
+                next = SubSubMeshGroup.Deserialise(reader, go);
+            } while (next != 0);
 
 
-            return group;
+            return NextOffset;
         }
 	}
 }

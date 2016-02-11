@@ -43,27 +43,76 @@ namespace ShiningHill
             return new Color32(b, g, r, a);
         }
 
-        public static void SkipByte(this BinaryReader reader)
+        public static string ReadNullTerminatedString(this BinaryReader reader)
         {
-            reader.BaseStream.Position++;
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            char c;
+            while ((c = reader.ReadChar()) != 0)
+            {
+                sb.Append(c);
+            }
+            return sb.ToString();
         }
 
-        public static void SkipBytes(this BinaryReader reader, int count)
+        public static void SkipByte(this BinaryReader reader, byte? expected = null)
         {
-            reader.BaseStream.Position += count;
+            if (expected != null)
+            {
+                byte b = reader.ReadByte();
+                if (b != expected.Value)
+                {
+                    Debug.LogWarning(String.Format("SKIP UNEXPECTED: byte at offset {0:X} was {1}, expected {2}. (Stream Length {3:X})", reader.BaseStream.Position - 1, b, expected.Value, reader.BaseStream.Length));
+                }
+            }
+            else
+            {
+                reader.BaseStream.Position++;
+            }
         }
 
-        public static void SkipInt16(this BinaryReader reader)
+        public static void SkipBytes(this BinaryReader reader, int count, byte? expected = null)
         {
-            reader.ReadInt16();
+            if (expected != null)
+            {
+                for (int i = 0; i != count; i++)
+                {
+                    byte b = reader.ReadByte();
+                    if (b != expected.Value)
+                    {
+                        Debug.LogWarning(String.Format("SKIP UNEXPECTED: byte at offset {0:X} was {1}, expected {2}. (Stream Length {3:X})", reader.BaseStream.Position - 1, b, expected.Value, reader.BaseStream.Length));
+                    }
+                }
+            }
+            else
+            {
+                reader.BaseStream.Position += count;
+            }
         }
-        public static void SkipInt32(this BinaryReader reader)
+
+        public static void SkipInt16(this BinaryReader reader, short? expected = null)
         {
-            reader.ReadInt32();
+            short s = reader.ReadInt16();
+            if (expected != null && s != expected.Value)
+            {
+                Debug.LogWarning(String.Format("SKIP UNEXPECTED: int16 at offset {0:X} was {1}, expected {2}. (Stream Length {3:X})", reader.BaseStream.Position - 2, s, expected.Value, reader.BaseStream.Length));
+            }
+            
         }
-        public static void SkipInt64(this BinaryReader reader)
+        public static void SkipInt32(this BinaryReader reader, int? expected = null)
         {
-            reader.ReadInt64();
+            int i = reader.ReadInt32();
+            if (expected != null && i != expected.Value)
+            {
+                Debug.LogWarning(String.Format("SKIP UNEXPECTED: int32 at offset {0:X} was {1}, expected {2}. (Stream Length {3:X})", reader.BaseStream.Position - 4, i, expected.Value, reader.BaseStream.Length));
+            }
+        }
+        public static void SkipInt64(this BinaryReader reader, long? expected = null)
+        {
+            long l = reader.ReadInt64();
+            if (expected != null && l != expected.Value)
+            {
+                Debug.LogWarning(String.Format("SKIP UNEXPECTED: int64 at offset {0:X} was {1}, expected {2}. (Stream Length {3:X})", reader.BaseStream.Position - 8, l, expected.Value, reader.BaseStream.Length));
+            }
         }
 	}
 }
