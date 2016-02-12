@@ -123,18 +123,12 @@ namespace ShiningHill
 
                 for (int i = 0; i != textures.Length; i++)
                 {
-                    if (i == 0)
-                    {
-                        AssetDatabase.AddObjectToAsset(textures[i], path);
-                    }
-                    else
-                    {
-                        AssetDatabase.AddObjectToAsset(textures[i], path);
-                    }
-
                     Material mat;
                     mat = new Material(defaultDiffuse);
                     mat.mainTexture = textures[i];
+
+                    mat.name = Path.GetFileName(path).Replace(".prefab", "_mat_" + i);
+                    textures[i].name = Path.GetFileName(path).Replace(".prefab", "_tex_" + i);
 
                     MeshRenderer[] filters = groups[groups.Length - textures.Length + i].GetComponentsInChildren<MeshRenderer>();
                     foreach (MeshRenderer mr in filters)
@@ -142,6 +136,7 @@ namespace ShiningHill
                         mr.sharedMaterial = mat;
                     }
 
+                    AssetDatabase.AddObjectToAsset(textures[i], path);
                     AssetDatabase.AddObjectToAsset(mat, path);
                 }
 

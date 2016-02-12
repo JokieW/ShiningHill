@@ -79,6 +79,7 @@ namespace ShiningHill
 
             mesh.SetTriangles(_tris, 0);
 
+            mesh.name = "mesh_" + offset;
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
             go.AddComponent<MeshRenderer>();
 

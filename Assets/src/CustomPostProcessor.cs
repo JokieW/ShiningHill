@@ -33,28 +33,37 @@ namespace ShiningHill
 
             Material defaultDiffuseMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/DefaultDiffuseMaterial.mat");
 
-            for (int i = 0; i != textures.Length; i++)
-            {
+            string prefabPath = path.Replace(".tex", ".prefab");
 
+            UnityEngine.Object prefab = PrefabUtility.CreateEmptyPrefab(prefabPath);
+            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+
+            for (int i = textures.Length-1; i != -1; i--)
+            {
                 Material mat = new Material(defaultDiffuseMat);
-                mat.name = Path.GetFileName(path)+".mat_"+i;
-                textures[i].name = Path.GetFileName(path) + ".tex_" + i;
+                mat.name = Path.GetFileName(path).Replace(".tex", "_mat_"+i);
+                textures[i].name = Path.GetFileName(path).Replace(".tex", "_tex_" + i);
 
                 mat.mainTexture = textures[i];
 
                 if (i == 0)
                 {
-                    AssetDatabase.CreateAsset(textures[i], path.Replace(".tex", ".asset"));
+                    go.GetComponent<MeshRenderer>().sharedMaterial = mat;
                 }
-                else
-                {
-                    AssetDatabase.AddObjectToAsset(textures[i], path.Replace(".tex", ".asset"));
-                }
-                AssetDatabase.AddObjectToAsset(mat, path.Replace(".tex", ".asset"));
-                AssetDatabase.SaveAssets();
+
+                AssetDatabase.AddObjectToAsset(textures[i], prefabPath);
+                AssetDatabase.AddObjectToAsset(mat, prefabPath);
             }
 
+            PrefabUtility.ReplacePrefab(go, prefab);
+            GameObject.DestroyImmediate(go);
+
             AssetDatabase.SaveAssets();
+
+            foreach (var obj in AssetDatabase.LoadAllAssetsAtPath(prefabPath))
+            {
+                Debug.Log(obj);
+            }
         }
     }
 }
