@@ -11,21 +11,19 @@ namespace ShiningHill
 {
     public class CustomPostprocessor : AssetPostprocessor
     {
-        /// <summary>
-        /// Handles when ANY asset is imported, deleted, or moved.  Each parameter is the full path of the asset, including filename and extension.
-        /// </summary>
-        /// <param name="importedAssets">The array of assets that were imported.</param>
-        /// <param name="deletedAssets">The array of assets that were deleted.</param>
-        /// <param name="movedAssets">The array of assets that were moved.  These are the new file paths.</param>
-        /// <param name="movedFromPath">The array of assets that were moved.  These are the old file paths.</param>
+        public static bool DoImports = true;
+
         private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromPath)
         {
-            foreach(string asset in importedAssets)
+            if (DoImports)
             {
-                string extension = Path.GetExtension(asset);
+                foreach (string asset in importedAssets)
+                {
+                    string extension = Path.GetExtension(asset);
 
-                if (extension == ".tex") { ProcessTEX(asset); continue; }
-                if (extension == ".map") { Scene.ReadMap(asset); continue; }
+                    if (extension == ".tex") { ProcessTEX(asset); continue; }
+                    if (extension == ".map") { Scene.ReadMap(asset); continue; }
+                }
             }
         }
 

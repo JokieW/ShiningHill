@@ -25,6 +25,17 @@ namespace ShiningHill
             }
         }
 
+        public string name;
+
+        public string NameAsPath()
+        {
+            if (name.Contains("bg"))
+            {
+                return "bg/" + name.Substring(2);
+            }
+            return name;
+        }
+
         ArcHeader _header = null;
         List<ArcFile> _files = null;
         public List<ArcFile> AllFiles
@@ -35,9 +46,10 @@ namespace ShiningHill
             }
         }
 
-        public Archive(Object file)
+        public Archive(string name, Object file)
         {
             _archiveFile = file;
+            this.name = name;
         }
 
         public bool IsLoaded()

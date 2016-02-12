@@ -31,50 +31,60 @@ namespace ShiningHill
 
         public void ReadAll()
         {
-            BinaryReader reader = new BinaryReader(new MemoryStream(data));
-            reader.SkipBytes(16);
-            reader.SkipBytes(12);
-
-            Archive arc = null;
-
-            while (reader.BaseStream.Position <= 90000)
+            CustomPostprocessor.DoImports = false;
+            try
             {
-                short entryType = reader.ReadInt16();
-                short subType = reader.ReadInt16();
-                short entryCount = reader.ReadInt16();
-                short entryIndex = reader.ReadInt16();
-                string name = reader.ReadNullTerminatedString();
+                BinaryReader reader = new BinaryReader(new MemoryStream(data));
+                reader.SkipBytes(16);
+                reader.SkipBytes(12);
 
-                if (reader.PeekChar() == 0)
-                {
-                    reader.SkipByte();
-                }
+                Archive arc = null;
 
-                if (entryType == 2)
+                while (reader.BaseStream.Position <= 90000)
                 {
-                    arc = new Archive(AssetDatabase.LoadAssetAtPath("Assets/Archives/" + name + ".arc", typeof(UnityEngine.Object)));
-                    arc.OpenArchive();
-                }
+                    short entryType = reader.ReadInt16();
+                    short subType = reader.ReadInt16();
+                    short entryCount = reader.ReadInt16();
+                    short entryIndex = reader.ReadInt16();
+                    string name = reader.ReadNullTerminatedString();
 
-                if (entryType == 3)
-                {
-                    try
+                    if (reader.PeekChar() == 0)
                     {
-                        string path = "Assets/SilentHill3/Resources/" + name;
-                        path = Path.GetDirectoryName(path);
-                        if (!Directory.Exists(path))
+                        reader.SkipByte();
+                    }
+
+                    if (entryType == 2)
+                    {
+                        arc = new Archive(name, AssetDatabase.LoadAssetAtPath("Assets/Archives/" + name + ".arc", typeof(UnityEngine.Object)));
+                        arc.OpenArchive();
+                    }
+
+                    if (entryType == 3)
+                    {
+                        try
                         {
-                            Directory.CreateDirectory(path);
+                            name = name.Replace("tmp", arc.NameAsPath());
+                            string path = "Assets/SilentHill3/Resources/" + name;
+                            path = Path.GetDirectoryName(path);
+                            if (!Directory.Exists(path))
+                            {
+                                Directory.CreateDirectory(path);
+                            }
+                            File.WriteAllBytes("Assets/SilentHill3/Resources/" + name, arc.AllFiles[entryCount].data);
                         }
-                        File.WriteAllBytes("Assets/SilentHill3/Resources/" + name, arc.AllFiles[entryCount].data);
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.LogError("Problem at " + name + " [" + entryIndex + "](" + arc.AllFiles.Count+") sub "+subType.ToString("X"));
+                        catch (Exception e)
+                        {
+                            Debug.LogError("Problem at " + name + " [" + entryIndex + "](" + arc.AllFiles.Count + ") sub " + subType.ToString("X"));
+                        }
                     }
                 }
+                AssetDatabase.Refresh();
             }
-            AssetDatabase.Refresh();
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+            CustomPostprocessor.DoImports = true;
         }
 	}
 }
