@@ -11,46 +11,6 @@ namespace ShiningHill
 
     public class Scene : MonoBehaviour 
     {
-        //Script assigned
-        private static Material _defaultDiffuse;
-        public static Material defaultDiffuse
-        {
-            get
-            {
-                if (_defaultDiffuse == null)
-                {
-                    _defaultDiffuse = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/DefaultDiffuseMaterial.mat");
-                }
-                return _defaultDiffuse;
-            }
-        }
-
-        private static Material _defaultCutout;
-        public static Material defaultCutout
-        {
-            get
-            {
-                if (_defaultCutout == null)
-                {
-                    _defaultCutout = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/DefaultDiffuseMaterial.mat");
-                }
-                return _defaultCutout;
-            }
-        }
-
-        private static Material _defaultTransparent;
-        public static Material defaultTransparent
-        {
-            get
-            {
-                if (_defaultTransparent == null)
-                {
-                    _defaultTransparent = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/DefaultDiffuseMaterial.mat");
-                }
-                return _defaultTransparent;
-            }
-        }
-
         public int Unknown1;
         public int Unknown2;
         public short TotalTextures;
@@ -95,7 +55,7 @@ namespace ShiningHill
                 //Read textures
                 long goBack = reader.BaseStream.Position;
                 reader.BaseStream.Position = TextureGroupOffset;
-                Texture2D[] textures = TextureReaders.ReadTex32(reader);
+                Texture2D[] textures = TextureUtils.ReadTex32("", reader);
 
                 reader.BaseStream.Position = goBack;
 
@@ -124,7 +84,7 @@ namespace ShiningHill
                 for (int i = 0; i != textures.Length; i++)
                 {
                     Material mat;
-                    mat = new Material(defaultDiffuse);
+                    mat = new Material(MaterialRolodex.defaultDiffuse);
                     mat.mainTexture = textures[i];
 
                     mat.name = Path.GetFileName(path).Replace(".prefab", "_mat_" + i);

@@ -7,9 +7,9 @@ using UnityEngine;
 
 namespace ShiningHill
 {
-	public static class TextureReaders 
+	public static class TextureUtils 
 	{
-        public static Texture2D[] ReadTex32(BinaryReader reader)
+        public static Texture2D[] ReadTex32(string baseName, BinaryReader reader)
         {
             reader.SkipBytes(12); //Skips -1 0 32
             int texGroupLength = reader.ReadInt32();
@@ -38,8 +38,10 @@ namespace ShiningHill
                 Texture2D text = new Texture2D(width, height, TextureFormat.RGBA32, false);
                 text.SetPixels32(_pixels.ToArray());
                 text.Apply();
+                text.name = baseName + i;
                 textures.Add(text);
                 _pixels.Clear();
+
             }
 
             return textures.ToArray();

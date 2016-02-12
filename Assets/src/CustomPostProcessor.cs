@@ -24,46 +24,17 @@ namespace ShiningHill
                     if (extension == ".tex") { ProcessTEX(asset); continue; }
                     if (extension == ".map") { Scene.ReadMap(asset); continue; }
                 }
+                AssetDatabase.SaveAssets();
             }
         }
 
         static void ProcessTEX(string path)
         {
-            Texture2D[] textures = TextureReaders.ReadTex32(new BinaryReader(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read)));
+            Texture2D[] textures = TextureUtils.ReadTex32(Path.GetFileName(path).Replace(".tex", "_tex"), new BinaryReader(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read)));
 
-            Material defaultDiffuseMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/DefaultDiffuseMaterial.mat");
-
-            string prefabPath = path.Replace(".tex", ".prefab");
-
-            UnityEngine.Object prefab = PrefabUtility.CreateEmptyPrefab(prefabPath);
-            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-
-            for (int i = textures.Length-1; i != -1; i--)
-            {
-                Material mat = new Material(defaultDiffuseMat);
-                mat.name = Path.GetFileName(path).Replace(".tex", "_mat_"+i);
-                textures[i].name = Path.GetFileName(path).Replace(".tex", "_tex_" + i);
-
-                mat.mainTexture = textures[i];
-
-                if (i == 0)
-                {
-                    go.GetComponent<MeshRenderer>().sharedMaterial = mat;
-                }
-
-                AssetDatabase.AddObjectToAsset(textures[i], prefabPath);
-                AssetDatabase.AddObjectToAsset(mat, prefabPath);
-            }
-
-            PrefabUtility.ReplacePrefab(go, prefab);
-            GameObject.DestroyImmediate(go);
-
-            AssetDatabase.SaveAssets();
-
-            foreach (var obj in AssetDatabase.LoadAllAssetsAtPath(prefabPath))
-            {
-                Debug.Log(obj);
-            }
+            MaterialRolodex rolodex = MaterialRolodex.GetOrCreateAt(path);
+            rolodex.AddTextures(textures);
+            rolodex.SaveFile(path.Replace(".tex", ".asset"));
         }
     }
 }
