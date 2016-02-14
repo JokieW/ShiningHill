@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 using UnityEngine;
 using UnityEditor;
@@ -50,73 +51,309 @@ namespace ShiningHill
             }
         }
 
+        private static Material _defaultCutout;
+        public static Material defaultCutout
+        {
+            get
+            {
+                if (_defaultCutout == null)
+                {
+                    _defaultCutout = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/DefaultCutoutMaterial.mat");
+                }
+                return _defaultCutout;
+            }
+        }
+
         public List<TexMatsPair> texMatPairs = new List<TexMatsPair>();
 
         private MaterialRolodex(){}
         public static MaterialRolodex GetOrCreateAt(string path)
         {
-            MaterialRolodex mr = AssetDatabase.LoadAssetAtPath<MaterialRolodex>(path);
-            if (mr == null)
+            if (path.Contains(".tex"))
             {
-                mr = MaterialRolodex.CreateInstance<MaterialRolodex>();
+                return CustomPostprocessor.ProcessTEX(path);
             }
             else
             {
-                mr.texMatPairs.Clear();
+                MaterialRolodex mr = AssetDatabase.LoadAssetAtPath<MaterialRolodex>(path);
+                if (mr == null)
+                {
+                    mr = MaterialRolodex.CreateInstance<MaterialRolodex>();
+                    AssetDatabase.CreateAsset(mr, path);
+                }
+                return mr;
             }
-            return mr;
         }
 
         public void AddTexture(Texture tex)
         {
-            texMatPairs.Add(new TexMatsPair(tex));
+            TexMatsPair tmp = texMatPairs.FirstOrDefault(x => x.textureName == tex.name);
+            if (tmp != null)
+            {
+                EditorUtility.CopySerialized(tex, tmp.texture);
+                tmp.texture.name = tmp.textureName;
+            }
+            else
+            {
+                texMatPairs.Add(new TexMatsPair(tex));
+                AssetDatabase.AddObjectToAsset(tex, AssetDatabase.GetAssetPath(this));
+            }
+            AssetDatabase.SaveAssets();
+
         }
         public void AddTextures(Texture[] texs)
         {
+            string path = AssetDatabase.GetAssetPath(this);
             foreach (Texture tex in texs)
             {
-                texMatPairs.Add(new TexMatsPair(tex));
+                TexMatsPair tmp = texMatPairs.FirstOrDefault(x => x.textureName == tex.name);
+                if (tmp != null)
+                {
+                    EditorUtility.CopySerialized(tex, tmp.texture);
+                    tmp.texture.name = tmp.textureName;
+                }
+                else
+                {
+                    texMatPairs.Add(new TexMatsPair(tex));
+                    AssetDatabase.AddObjectToAsset(tex, path);
+                }
             }
+            AssetDatabase.SaveAssets();
         }
 
-        public void SaveFile(string path)
+        public TexMatsPair GetWithSH3Index(int index, int baseIndex)
         {
-            AssetDatabase.StartAssetEditing();
-            AssetDatabase.CreateAsset(this, path);
-            foreach (TexMatsPair tmp in texMatPairs)
+            if (index < 0)
             {
-                AssetDatabase.AddObjectToAsset(tmp.texture, path);
-                AssetDatabase.AddObjectToAsset(tmp.diffuse, path);
-                AssetDatabase.AddObjectToAsset(tmp.transparent, path);
-                AssetDatabase.AddObjectToAsset(tmp.selfIllum, path);
+                return texMatPairs[texMatPairs.Count + index];
             }
-            AssetDatabase.StopAssetEditing();
+            return texMatPairs[index - baseIndex];
+        }
+
+        public void Cleanup()
+        {
+            texMatPairs.RemoveAll(x => x.texture == null);
         }
 
         [Serializable]
         public class TexMatsPair
         {
+            public string textureName;
             [SerializeField]
-            public Texture texture;
+            private Texture _texture;
+            public Texture texture
+            {
+                get
+                {
+                    return _texture;
+                }
+                set
+                {
+                    if (value != null)
+                    {
+                        if (_texture != null)
+                        {
+                            EditorUtility.CopySerialized(value, _texture);
+                        }
+                        _texture = value;
+                    }
+                    else
+                    {
+                        diffuse = null;
+                        transparent = null;
+                        cutout = null;
+                        selfIllum = null;
+                        DestroyImmediate(_texture, true);
+                    }
+
+                    AssetDatabase.SaveAssets();
+                }
+            }
+
             [SerializeField]
-            public Material diffuse;
+            private Material _diffuse;
+            public Material diffuse
+            {
+                get
+                {
+                    return _diffuse;
+                }
+                set
+                {
+                    if (value != null)
+                    {
+                        if (_diffuse != null)
+                        {
+                            EditorUtility.CopySerialized(value, _diffuse);
+                        }
+                        else
+                        {
+                            _diffuse = value;
+                            AssetDatabase.AddObjectToAsset(_diffuse, AssetDatabase.GetAssetPath(texture));
+                        }
+                    }
+                    else
+                    {
+                        if (_diffuse != null)
+                        {
+                            DestroyImmediate(_diffuse, true);
+                        }
+                    }
+                    AssetDatabase.SaveAssets();
+                }
+            }
+
+            public Material GetOrCreateDiffuse()
+            {
+                if (diffuse == null)
+                {
+                    Material mat = new Material(defaultDiffuse);
+                    mat.mainTexture = texture;
+                    mat.name = texture.name + "_diffuse";
+                    diffuse = mat;
+                }
+                return diffuse;
+            }
+
             [SerializeField]
-            public Material transparent;
+            private Material _transparent;
+            public Material transparent
+            {
+                get
+                {
+                    return _transparent;
+                }
+                set
+                {
+                    if (value != null)
+                    {
+                        if (_transparent != null)
+                        {
+                            EditorUtility.CopySerialized(value, _transparent);
+                        }
+                        else
+                        {
+                            _transparent = value;
+                            AssetDatabase.AddObjectToAsset(_transparent, AssetDatabase.GetAssetPath(texture));
+                        }
+                    }
+                    else
+                    {
+                        if (_transparent != null)
+                        {
+                            DestroyImmediate(_transparent, true);
+                        }
+                    }
+                    AssetDatabase.SaveAssets();
+                }
+            }
+
+            public Material GetOrCreateTransparent()
+            {
+                if (transparent == null)
+                {
+                    Material mat = new Material(defaultTransparent);
+                    mat.mainTexture = texture;
+                    mat.name = texture.name + "_transparent";
+                    transparent = mat;
+                }
+                return transparent;
+            }
+
             [SerializeField]
-            public Material selfIllum;
+            private Material _cutout;
+            public Material cutout
+            {
+                get
+                {
+                    return _cutout;
+                }
+                set
+                {
+                    if (value != null)
+                    {
+                        if (_cutout != null)
+                        {
+                            EditorUtility.CopySerialized(value, _cutout);
+                        }
+                        else
+                        {
+                            _cutout = value;
+                            AssetDatabase.AddObjectToAsset(_cutout, AssetDatabase.GetAssetPath(texture));
+                        }
+                    }
+                    else
+                    {
+                        if (_cutout != null)
+                        {
+                            DestroyImmediate(_cutout, true);
+                        }
+                    }
+                    AssetDatabase.SaveAssets();
+                }
+            }
+
+            public Material GetOrCreateCutout()
+            {
+                if (_cutout == null)
+                {
+                    Material mat = new Material(defaultCutout);
+                    mat.mainTexture = texture;
+                    mat.name = texture.name + "_cutout";
+                    cutout = mat;
+                }
+                return cutout;
+            }
+
+            [SerializeField]
+            private Material _selfIllum;
+            public Material selfIllum
+            {
+                get
+                {
+                    return _selfIllum;
+                }
+                set
+                {
+                    if (value != null)
+                    {
+                        if (_selfIllum != null)
+                        {
+                            EditorUtility.CopySerialized(value, _selfIllum);
+                        }
+                        else
+                        {
+                            _selfIllum = value;
+                            AssetDatabase.AddObjectToAsset(_selfIllum, AssetDatabase.GetAssetPath(texture));
+                        }
+                    }
+                    else
+                    {
+                        if (_selfIllum != null)
+                        {
+                            DestroyImmediate(_selfIllum, true);
+                        }
+                    }
+                    AssetDatabase.SaveAssets();
+                }
+            }
+
+            public Material GetOrCreateSelfIllum()
+            {
+                if (selfIllum == null)
+                {
+                    Material mat = new Material(defaultSelfIllum);
+                    mat.mainTexture = texture;
+                    mat.name = texture.name + "_selfIllum";
+                    selfIllum = mat;
+                }
+                return selfIllum;
+            }
 
             public TexMatsPair(Texture tex)
             {
                 texture = tex;
-                diffuse = new Material(defaultDiffuse);
-                diffuse.mainTexture = tex;
-                diffuse.name = tex.name + "_diffuse";
-                transparent = new Material(defaultTransparent);
-                transparent.mainTexture = tex;
-                transparent.name = tex.name + "_transparent";
-                selfIllum = new Material(defaultSelfIllum);
-                selfIllum.mainTexture = tex;
-                selfIllum.name = tex.name + "_selfIllum";
+                textureName = tex.name;
             }
         }
 	}

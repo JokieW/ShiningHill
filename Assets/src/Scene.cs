@@ -16,7 +16,7 @@ namespace ShiningHill
         public short TotalTextures;
         public short LocalTextureBaseIndex;
         public short LocalTextureCount;
-        public short Unknown3;
+        public short LocalTextureBaseIndexModifier;
 
         public static Scene ReadMap(string path)
         {
@@ -48,14 +48,14 @@ namespace ShiningHill
                 scene.TotalTextures = reader.ReadInt16();
                 scene.LocalTextureBaseIndex = reader.ReadInt16();
                 scene.LocalTextureCount = reader.ReadInt16();
-                scene.Unknown3 = reader.ReadInt16();
+                scene.LocalTextureBaseIndexModifier = reader.ReadInt16();
                 reader.SkipInt32(0);
                 reader.SkipInt32(0);
 
                 //Read textures
                 long goBack = reader.BaseStream.Position;
                 reader.BaseStream.Position = TextureGroupOffset;
-                Texture2D[] textures = TextureUtils.ReadTex32("", reader);
+                Texture2D[] textures = TextureUtils.ReadTex32(Path.GetFileName(path).Replace(".map", "_tex"), reader);
 
                 reader.BaseStream.Position = goBack;
 
@@ -78,34 +78,71 @@ namespace ShiningHill
                 reader.Close();
 
                 //Associate materials
-                path = path.Replace(".map", ".prefab");
-                UnityEngine.Object prefab = PrefabUtility.CreateEmptyPrefab(path);
+                string prefabPath = path.Replace(".map", ".prefab");
+                string assetPath = path.Replace(".map", ".asset");
 
-                for (int i = 0; i != textures.Length; i++)
+                MaterialRolodex rolodex = MaterialRolodex.GetOrCreateAt(assetPath);
+                rolodex.AddTextures(textures);
+
+                int baseIndex = 0;
+
+                foreach (MeshGroup group in groups)
                 {
-                    Material mat;
-                    mat = new Material(MaterialRolodex.defaultDiffuse);
-                    mat.mainTexture = textures[i];
-
-                    mat.name = Path.GetFileName(path).Replace(".prefab", "_mat_" + i);
-                    textures[i].name = Path.GetFileName(path).Replace(".prefab", "_tex_" + i);
-
-                    MeshRenderer[] filters = groups[groups.Length - textures.Length + i].GetComponentsInChildren<MeshRenderer>();
-                    foreach (MeshRenderer mr in filters)
+                    MaterialRolodex goodRolodex = null;
+                    if (group.TextureGroup == 3)
                     {
-                        mr.sharedMaterial = mat;
+                        goodRolodex = rolodex;
+                        baseIndex = scene.LocalTextureBaseIndex + scene.LocalTextureBaseIndexModifier;
+                    }
+                    else if (group.TextureGroup == 2)
+                    {
+                        goodRolodex = MaterialRolodex.GetOrCreateAt(path.Replace(".map", "TR.tex"));
+                    }
+                    else if (group.TextureGroup == 1)
+                    {
+                        string name = Path.GetFileName(path);
+                        goodRolodex = MaterialRolodex.GetOrCreateAt(path.Replace(name, name.Substring(0, 2)+"GB.tex"));
+                    }
+                    else
+                    {
+                        Debug.LogWarning("Unknown texture group " + group.TextureGroup + " on " + group.gameObject);
+                        continue;
                     }
 
-                    AssetDatabase.AddObjectToAsset(textures[i], path);
-                    AssetDatabase.AddObjectToAsset(mat, path);
+                    MaterialRolodex.TexMatsPair tmp = goodRolodex.GetWithSH3Index(group.TextureIndex, baseIndex);
+                    foreach (SubMeshGroup subMeshGroup in group.GetComponentsInChildren<SubMeshGroup>())
+                    {
+                        foreach (SubSubMeshGroup subSubMeshGroup in subMeshGroup.GetComponentsInChildren<SubSubMeshGroup>())
+                        {
+                            foreach (MeshRenderer renderer in subSubMeshGroup.GetComponentsInChildren<MeshRenderer>())
+                            {
+                                if (subMeshGroup.IsTransparent == 1)
+                                {
+                                    renderer.sharedMaterial = tmp.GetOrCreateTransparent();
+                                }
+                                else if (subMeshGroup.IsTransparent == 3)
+                                {
+                                    renderer.sharedMaterial = tmp.GetOrCreateCutout();
+                                }
+                                else if (subSubMeshGroup.Illumination == 8)
+                                {
+                                    renderer.sharedMaterial = tmp.GetOrCreateSelfIllum();
+                                }
+                                else
+                                {
+                                    renderer.sharedMaterial = tmp.GetOrCreateDiffuse();
+                                }
+                            }
+                        }
+                    }
                 }
 
                 foreach (MeshFilter mf in go.GetComponentsInChildren<MeshFilter>())
                 {
-                    AssetDatabase.AddObjectToAsset(mf.sharedMesh, path);
+                    AssetDatabase.AddObjectToAsset(mf.sharedMesh, assetPath);
                 }
 
-                PrefabUtility.ReplacePrefab(go, prefab);
+                PrefabUtility.CreatePrefab(prefabPath, go);
                 
                 AssetDatabase.SaveAssets();
 

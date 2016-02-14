@@ -24,23 +24,39 @@ namespace ShiningHill
                 reader.SkipBytes(8); //Skips -1 0
                 short width = reader.ReadInt16();
                 short height = reader.ReadInt16();
-                reader.SkipByte(); //skips 0x20
+                byte bits = reader.ReadByte();
                 byte buffer = reader.ReadByte();
                 reader.SkipBytes(2); //skips 0x0000
                 int lengthOfTex = reader.ReadInt32();
                 int nextDataRelativeOffset = reader.ReadInt32();
                 reader.SkipBytes(24 + buffer); //skips -1 0 0 0 0 0 + buffer
-                List<Color32> _pixels = new List<Color32>(lengthOfTex / 4);
-                for (int j = 0; j != lengthOfTex; j += 4)
+
+                Color32[] _pixels = null;
+                if (bits == 32)
                 {
-                    _pixels.Add(reader.ReadColor32());
+                    _pixels = new Color32[lengthOfTex / 4];
+                    for (int j = 0; j != lengthOfTex / 4; j++)
+                    {
+                        _pixels[j] = reader.ReadColor32();
+                    }
                 }
-                Texture2D text = new Texture2D(width, height, TextureFormat.RGBA32, false);
-                text.SetPixels32(_pixels.ToArray());
+                else if (bits == 16)
+                {
+                    _pixels = new Color32[lengthOfTex / 2];
+                    for (int j = 0; j != lengthOfTex / 2; j ++)
+                    {
+                        _pixels[j] = reader.ReadColor32();
+                    }
+                }
+
+                Texture2D text = new Texture2D(width, height, bits == 32 ? TextureFormat.RGBA32 : bits == 16 ? TextureFormat.RGBA4444 : TextureFormat.RGBA32, false);
+                text.SetPixels32(_pixels);
                 text.Apply();
+
+                text.alphaIsTransparency = true;
                 text.name = baseName + i;
+
                 textures.Add(text);
-                _pixels.Clear();
 
             }
 

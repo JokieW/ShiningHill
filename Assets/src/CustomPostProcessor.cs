@@ -28,13 +28,13 @@ namespace ShiningHill
             }
         }
 
-        static void ProcessTEX(string path)
+        public static MaterialRolodex ProcessTEX(string path)
         {
             Texture2D[] textures = TextureUtils.ReadTex32(Path.GetFileName(path).Replace(".tex", "_tex"), new BinaryReader(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read)));
 
-            MaterialRolodex rolodex = MaterialRolodex.GetOrCreateAt(path);
+            MaterialRolodex rolodex = MaterialRolodex.GetOrCreateAt(path.Replace(".tex", ".asset"));
             rolodex.AddTextures(textures);
-            rolodex.SaveFile(path.Replace(".tex", ".asset"));
+            return rolodex;
         }
     }
 }
