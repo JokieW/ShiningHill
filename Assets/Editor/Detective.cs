@@ -177,7 +177,7 @@ namespace ShiningHill
                 bool hadTransparency = false;
                 for (int j = 0; j != lengthOfTex; j += 4)
                 {
-                    Color32 c32 = reader.ReadColor32();
+                    Color32 c32 = reader.ReadBGRA();
                     _pixels.Add(c32);
                     if (c32.a != 255)
                     {

@@ -53,7 +53,7 @@ namespace ShiningHill
                 _norms.Add(temp);
 
                 _uvs.Add(reader.ReadVector2());
-                _colors.Add(reader.ReadColor32());
+                _colors.Add(reader.ReadBGRA());
             }
 
             Mesh mesh = new Mesh();

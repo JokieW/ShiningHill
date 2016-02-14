@@ -37,7 +37,7 @@ namespace ShiningHill
                     _pixels = new Color32[lengthOfTex / 4];
                     for (int j = 0; j != lengthOfTex / 4; j++)
                     {
-                        _pixels[j] = reader.ReadColor32();
+                        _pixels[j] = reader.ReadBGRA();
                     }
                 }
                 else if (bits == 16)
@@ -45,11 +45,11 @@ namespace ShiningHill
                     _pixels = new Color32[lengthOfTex / 2];
                     for (int j = 0; j != lengthOfTex / 2; j ++)
                     {
-                        _pixels[j] = reader.ReadColor32();
+                        _pixels[j] = reader.ReadRGBA4444();
                     }
                 }
 
-                Texture2D text = new Texture2D(width, height, bits == 32 ? TextureFormat.RGBA32 : bits == 16 ? TextureFormat.RGBA4444 : TextureFormat.RGBA32, false);
+                Texture2D text = new Texture2D(width, height, bits == 32 ? TextureFormat.RGBA32 : /*bits == 16 ? */TextureFormat.RGBA32 /*: TextureFormat.RGBA32*/, false);
                 text.SetPixels32(_pixels);
                 text.Apply();
 

@@ -96,7 +96,16 @@ namespace ShiningHill
                     }
                     else if (group.TextureGroup == 2)
                     {
-                        goodRolodex = MaterialRolodex.GetOrCreateAt(path.Replace(".map", "TR.tex"));
+                        string trpath; 
+                        if (path.Contains("cc/cc"))
+                        {
+                            trpath = path.Substring(0, path.IndexOf(".map") - 2) + "01TR.tex";
+                        }
+                        else
+                        {
+                            trpath = path.Replace(".map", "TR.tex");
+                        }
+                        goodRolodex = MaterialRolodex.GetOrCreateAt(trpath);
                     }
                     else if (group.TextureGroup == 1)
                     {
@@ -106,6 +115,11 @@ namespace ShiningHill
                     else
                     {
                         Debug.LogWarning("Unknown texture group " + group.TextureGroup + " on " + group.gameObject);
+                    }
+
+                    if (goodRolodex == null)
+                    {
+                        Debug.LogWarning("Couldn't find rolodex for group " + group.TextureGroup + " on " + path);
                         continue;
                     }
 

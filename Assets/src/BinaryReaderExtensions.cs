@@ -34,13 +34,37 @@ namespace ShiningHill
             return new Vector4(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
         }
 
-        public static Color32 ReadColor32(this BinaryReader reader)
+        public static Color32 ReadRGBA(this BinaryReader reader)
         {
             byte r = reader.ReadByte();
             byte g = reader.ReadByte();
             byte b = reader.ReadByte();
             byte a = reader.ReadByte();
-            return new Color32(b, g, r, a);
+            return new Color32(r, b, g, a);
+        }
+
+        public static Color32 ReadBGRA(this BinaryReader reader)
+        {
+            byte b = reader.ReadByte();
+            byte g = reader.ReadByte();
+            byte r = reader.ReadByte();
+            byte a = reader.ReadByte();
+            return new Color32(r, g, b, a);
+        }
+
+        public static Color32 ReadRGBA4444(this BinaryReader reader)
+        {
+            //Thanks de_lof
+            byte one = reader.ReadByte();
+            byte two = reader.ReadByte();
+            int r = (two & 0x7c) << 1;
+            int g = ((two & 0x03) << 6) | ((one & 0xe0) >> 2);
+            int b = (one & 0x1f) << 3;
+            int a = (two & 0x80) != 0 ? 255 : 0;
+            r |= r >> 5;
+            g |= g >> 5;
+            b |= b >> 5;
+            return new Color32((byte)r, (byte)g, (byte)b, (byte)a);
         }
 
         public static string ReadNullTerminatedString(this BinaryReader reader)
