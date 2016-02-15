@@ -188,7 +188,7 @@ namespace ShiningHill
                 else
                 {
                     c = Color.white;
-                    Debug.LogWarning("Unknown pane kind " + pane.Kind);
+                    //Debug.LogWarning("Unknown pane kind " + pane.Kind);
                 }
                 Gizmos.color = c;
 
@@ -198,8 +198,16 @@ namespace ShiningHill
                 Vector3 p4 = transform.parent.TransformPoint(pane.vectors[3]);
                 Gizmos.DrawLine(p1, p2);
                 Gizmos.DrawLine(p3, p2);
-                Gizmos.DrawLine(p3, p4);
-                Gizmos.DrawLine(p1, p4);
+
+                if (pane.Unknown1 == 1)
+                {
+                    Gizmos.DrawLine(p3, p1);
+                }
+                else
+                {
+                    Gizmos.DrawLine(p3, p4);
+                    Gizmos.DrawLine(p1, p4);
+                }
             }
 
         }

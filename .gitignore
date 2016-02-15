@@ -7,6 +7,8 @@
 *.arc.meta
 Assets/SilentHill3/Resources/data
 Assets/SilentHill3/Resources/data.meta
+Assets/SilentHill2/Resources/data
+Assets/SilentHill2/Resources/data.meta
 obj/
 #Unity
 Library/
