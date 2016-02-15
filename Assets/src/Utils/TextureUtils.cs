@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 
 using UnityEngine;
+using UnityEditor;
 
 namespace ShiningHill
 {
@@ -45,11 +46,11 @@ namespace ShiningHill
                     _pixels = new Color32[lengthOfTex / 2];
                     for (int j = 0; j != lengthOfTex / 2; j ++)
                     {
-                        _pixels[j] = reader.ReadRGBA4444();
+                        _pixels[j] = reader.ReadRGBA5551();
                     }
                 }
 
-                Texture2D text = new Texture2D(width, height, bits == 32 ? TextureFormat.RGBA32 : /*bits == 16 ? */TextureFormat.RGBA32 /*: TextureFormat.RGBA32*/, false);
+                Texture2D text = new Texture2D(width, height, TextureFormat.RGBA32, false);
                 text.SetPixels32(_pixels);
                 text.Apply();
 

@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
+using Object = UnityEngine.Object;
+
 namespace ShiningHill
 {
 
@@ -20,11 +22,37 @@ namespace ShiningHill
 
         public static Scene ReadMap(string path)
         {
-            GameObject go = new GameObject("Map");
-            go.isStatic = true;
+            string prefabPath = path.Replace(".map", ".prefab");
+            string assetPath = path.Replace(".map", ".asset");
+
+            Object prefab = AssetDatabase.LoadAssetAtPath<Object>(prefabPath);
+            GameObject prefabGo = null;
+            GameObject map = null;
+
+            if(prefab == null)
+            {
+                prefabGo = new GameObject("Scene");
+                prefabGo.isStatic = true;
+            }
+            else
+            {
+                prefabGo = (GameObject)GameObject.Instantiate(prefab);
+                PrefabUtility.DisconnectPrefabInstance(prefabGo);
+                Transform existingMap = prefabGo.transform.FindChild("Map");
+                if(existingMap != null)
+                {
+                    DestroyImmediate(existingMap.gameObject);
+                }
+            }
+
+            prefabGo.transform.localScale = Vector3.one;
+            map = new GameObject("Map");
+            map.transform.SetParent(prefabGo.transform);
+            map.isStatic = true;
+
             try
             {
-                Scene scene = go.AddComponent<Scene>();
+                Scene scene = map.AddComponent<Scene>();
 
                 BinaryReader reader = new BinaryReader(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read));
 
@@ -33,18 +61,22 @@ namespace ShiningHill
                 reader.SkipInt32(0);
                 reader.SkipInt32(0);
                 reader.SkipInt32(80); //Main header size
+
                 int TextureGroupOffset = reader.ReadInt32();
                 reader.SkipInt32(0);
                 reader.SkipInt32(80); //Alt main header size
                 reader.SkipInt32(); //Total main header size
+
                 scene.Unknown1 = reader.ReadInt32();
                 reader.SkipInt32(); //Scene star header offset
                 reader.SkipInt32(0);
                 reader.SkipInt32(0);
+
                 reader.SkipInt32(); //TextureGroupOffset2
-                reader.SkipInt32(); //TransformOffset
+                int transformOffset = reader.ReadInt32();
                 scene.Unknown2 = reader.ReadInt32();
                 reader.SkipInt32(0);
+
                 scene.TotalTextures = reader.ReadInt16();
                 scene.LocalTextureBaseIndex = reader.ReadInt16();
                 scene.LocalTextureCount = reader.ReadInt16();
@@ -63,29 +95,29 @@ namespace ShiningHill
                 Skybox sky = null;
                 do
                 {
-                    sky = Skybox.Deserialise(reader, go);
+                    sky = Skybox.Deserialise(reader, map);
                 } while (sky.NextSkyboxOffset != 0);
 
                 //Read meshgroups
                 int next;
                 do
                 {
-                    next = MeshGroup.Deserialise(reader, go);
+                    next = MeshGroup.Deserialise(reader, map);
                 } while (next != 0);
 
-                MeshGroup[] groups = go.GetComponentsInChildren<MeshGroup>();
+                //reader.BaseStream.Position = transformOffset;
+                //Matrix4x4 mat4x4 = reader.ReadMatrix4x4();
+                Matrix4x4Utils.SetTransformFromMatrix(map.transform, ref map.GetComponentInChildren<Skybox>().Matrix);
 
                 reader.Close();
 
-                //Associate materials
-                string prefabPath = path.Replace(".map", ".prefab");
-                string assetPath = path.Replace(".map", ".asset");
-
+                //Asset bookkeeping
                 MaterialRolodex rolodex = MaterialRolodex.GetOrCreateAt(assetPath);
                 rolodex.AddTextures(textures);
 
                 int baseIndex = 0;
 
+                MeshGroup[] groups = map.GetComponentsInChildren<MeshGroup>();
                 foreach (MeshGroup group in groups)
                 {
                     MaterialRolodex goodRolodex = null;
@@ -151,16 +183,25 @@ namespace ShiningHill
                     }
                 }
 
-                foreach (MeshFilter mf in go.GetComponentsInChildren<MeshFilter>())
+                foreach (MeshFilter mf in map.GetComponentsInChildren<MeshFilter>())
                 {
                     AssetDatabase.AddObjectToAsset(mf.sharedMesh, assetPath);
                 }
 
-                PrefabUtility.CreatePrefab(prefabPath, go);
+                prefabGo.transform.localScale = new Vector3(0.002f, 0.002f, 0.002f);
+
+                if (prefab != null)
+                {
+                    PrefabUtility.ReplacePrefab(prefabGo, prefab);
+                }
+                else
+                {
+                    PrefabUtility.CreatePrefab(prefabPath, prefabGo);
+                }
                 
                 AssetDatabase.SaveAssets();
 
-                DestroyImmediate(go);
+                DestroyImmediate(prefabGo, false);
 
                 return scene;
 

@@ -29,6 +29,11 @@ namespace ShiningHill
             return new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
         }
 
+        public static Vector3 ReadVector3YInverted(this BinaryReader reader)
+        {
+            return new Vector3(reader.ReadSingle(), -reader.ReadSingle(), reader.ReadSingle());
+        }
+
         public static Vector4 ReadVector4(this BinaryReader reader)
         {
             return new Vector4(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
@@ -52,7 +57,7 @@ namespace ShiningHill
             return new Color32(r, g, b, a);
         }
 
-        public static Color32 ReadRGBA4444(this BinaryReader reader)
+        public static Color32 ReadRGBA5551(this BinaryReader reader)
         {
             //Thanks de_lof
             byte one = reader.ReadByte();
@@ -64,7 +69,7 @@ namespace ShiningHill
             r |= r >> 5;
             g |= g >> 5;
             b |= b >> 5;
-            return new Color32((byte)r, (byte)g, (byte)b, (byte)a);
+            return new Color32((byte)r, (byte)g, (byte)b, (byte)a );
         }
 
         public static string ReadNullTerminatedString(this BinaryReader reader)
@@ -76,6 +81,48 @@ namespace ShiningHill
                 sb.Append(c);
             }
             return sb.ToString();
+        }
+
+        public static byte PeekByte(this BinaryReader reader)
+        {
+            byte val = reader.PeekByte();
+            reader.BaseStream.Position --;
+            return val;
+        }
+
+        public static short PeekInt16(this BinaryReader reader)
+        {
+            short val = reader.ReadInt16();
+            reader.BaseStream.Position -= 2;
+            return val;
+        }
+
+        public static int PeekInt32(this BinaryReader reader)
+        {
+            int val = reader.ReadInt32();
+            reader.BaseStream.Position -= 4;
+            return val;
+        }
+
+        public static long PeekInt64(this BinaryReader reader)
+        {
+            long val = reader.ReadInt64();
+            reader.BaseStream.Position -= 8;
+            return val;
+        }
+
+        public static float PeekSingle(this BinaryReader reader)
+        {
+            float val = reader.ReadSingle();
+            reader.BaseStream.Position -= 4;
+            return val;
+        }
+
+        public static double PeekDouble(this BinaryReader reader)
+        {
+            double val = reader.ReadDouble();
+            reader.BaseStream.Position -= 8;
+            return val;
         }
 
         public static void SkipByte(this BinaryReader reader, byte? expected = null)
@@ -136,6 +183,14 @@ namespace ShiningHill
             if (expected != null && l != expected.Value)
             {
                 Debug.LogWarning(String.Format("SKIP UNEXPECTED: int64 at offset {0:X} was {1}, expected {2}. (Stream Length {3:X})", reader.BaseStream.Position - 8, l, expected.Value, reader.BaseStream.Length));
+            }
+        }
+        public static void SkipSingle(this BinaryReader reader, float? expected = null)
+        {
+            float f = reader.ReadSingle();
+            if (expected != null && f != expected.Value)
+            {
+                Debug.LogWarning(String.Format("SKIP UNEXPECTED: single at offset {0:X} was {1}, expected {2}. (Stream Length {3:X})", reader.BaseStream.Position - 4, f, expected.Value, reader.BaseStream.Length));
             }
         }
 	}
