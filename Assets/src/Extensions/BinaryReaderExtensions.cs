@@ -7,8 +7,14 @@ using UnityEngine;
 
 namespace ShiningHill
 {
-	public static class BinaryReaderExtensions 
-	{
+	public static class BinaryReaderExtensions
+    {
+        #region Matrices
+        /// <summary>
+        /// Reads 16 singles and returns a Matrix4x4
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
         public static Matrix4x4 ReadMatrix4x4(this BinaryReader reader)
         {
             Matrix4x4 mat = new Matrix4x4();
@@ -18,27 +24,66 @@ namespace ShiningHill
             }
             return mat;
         }
+        #endregion
 
+        #region Vectors
+        /// <summary>
+        /// Reads 2 singles and returns a Vector2
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
         public static Vector2 ReadVector2(this BinaryReader reader)
         {
             return new Vector2(reader.ReadSingle(), reader.ReadSingle());
         }
 
+        /// <summary>
+        /// Reads 3 singles and returns a Vector3
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
         public static Vector3 ReadVector3(this BinaryReader reader)
         {
             return new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
         }
 
+        /// <summary>
+        /// Reads 3 singles and return a Vector3 with a negated y
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
         public static Vector3 ReadVector3YInverted(this BinaryReader reader)
         {
             return new Vector3(reader.ReadSingle(), -reader.ReadSingle(), reader.ReadSingle());
         }
 
+        /// <summary>
+        /// Reads 3 shorts and returns a Vector3 with a negated y
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
+        public static Vector3 ReadShortVector3(this BinaryReader reader)
+        {
+            return new Vector3(reader.ReadInt16(), -reader.ReadInt16(), reader.ReadInt16());
+        }
+
+        /// <summary>
+        /// Reads 4 singles and returns a Vector4
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
         public static Vector4 ReadVector4(this BinaryReader reader)
         {
             return new Vector4(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
         }
+        #endregion
 
+        #region Colors
+        /// <summary>
+        /// Reads 4 bytes expecting R G B A
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
         public static Color32 ReadRGBA(this BinaryReader reader)
         {
             byte r = reader.ReadByte();
@@ -48,6 +93,11 @@ namespace ShiningHill
             return new Color32(r, b, g, a);
         }
 
+        /// <summary>
+        /// Reads 4 bytes expecting B G R A
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
         public static Color32 ReadBGRA(this BinaryReader reader)
         {
             byte b = reader.ReadByte();
@@ -57,6 +107,11 @@ namespace ShiningHill
             return new Color32(r, g, b, a);
         }
 
+        /// <summary>
+        /// Reads 2 bytes expected to be RB GA
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
         public static Color32 ReadRGBA5551(this BinaryReader reader)
         {
             //Thanks de_lof
@@ -71,7 +126,14 @@ namespace ShiningHill
             b |= b >> 5;
             return new Color32((byte)r, (byte)g, (byte)b, (byte)a );
         }
+        #endregion
 
+        #region Strings
+        /// <summary>
+        /// Reads bytes until a \0 is reached, returns the string 
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
         public static string ReadNullTerminatedString(this BinaryReader reader)
         {
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
@@ -82,7 +144,14 @@ namespace ShiningHill
             }
             return sb.ToString();
         }
+        #endregion
 
+        #region Peeks
+        /// <summary>
+        /// Reads a byte with consuming the read
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
         public static byte PeekByte(this BinaryReader reader)
         {
             byte val = reader.PeekByte();
@@ -90,6 +159,11 @@ namespace ShiningHill
             return val;
         }
 
+        /// <summary>
+        /// Reads a short with consuming the read
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
         public static short PeekInt16(this BinaryReader reader)
         {
             short val = reader.ReadInt16();
@@ -97,6 +171,11 @@ namespace ShiningHill
             return val;
         }
 
+        /// <summary>
+        /// Reads an int with consuming the read
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
         public static int PeekInt32(this BinaryReader reader)
         {
             int val = reader.ReadInt32();
@@ -104,6 +183,11 @@ namespace ShiningHill
             return val;
         }
 
+        /// <summary>
+        /// Reads a long with consuming the read
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
         public static long PeekInt64(this BinaryReader reader)
         {
             long val = reader.ReadInt64();
@@ -111,6 +195,11 @@ namespace ShiningHill
             return val;
         }
 
+        /// <summary>
+        /// Reads a float with consuming the read
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
         public static float PeekSingle(this BinaryReader reader)
         {
             float val = reader.ReadSingle();
@@ -118,13 +207,25 @@ namespace ShiningHill
             return val;
         }
 
+        /// <summary>
+        /// Reads a double with consuming the read
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
         public static double PeekDouble(this BinaryReader reader)
         {
             double val = reader.ReadDouble();
             reader.BaseStream.Position -= 8;
             return val;
         }
+        #endregion
 
+        #region Skips
+        /// <summary>
+        /// Skips a byte, will log a warning if expected is given and the byte doesn't match it
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="expected"></param>
         public static void SkipByte(this BinaryReader reader, byte? expected = null)
         {
             if (expected != null)
@@ -141,6 +242,11 @@ namespace ShiningHill
             }
         }
 
+        /// <summary>
+        /// Skips bytes, will log a warning if expected is given and one of the bytes doesn't match it
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="expected"></param>
         public static void SkipBytes(this BinaryReader reader, int count, byte? expected = null)
         {
             if (expected != null)
@@ -160,6 +266,11 @@ namespace ShiningHill
             }
         }
 
+        /// <summary>
+        /// Skips a short, will log a warning if excpected is given and the short doesn't match it
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="expected"></param>
         public static void SkipInt16(this BinaryReader reader, short? expected = null)
         {
             short s = reader.ReadInt16();
@@ -169,6 +280,12 @@ namespace ShiningHill
             }
             
         }
+
+        /// <summary>
+        /// Skips an int, will log a warning if excpected is given and the int doesn't match it
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="expected"></param>
         public static void SkipInt32(this BinaryReader reader, int? expected = null)
         {
             int i = reader.ReadInt32();
@@ -177,6 +294,12 @@ namespace ShiningHill
                 Debug.LogWarning(String.Format("SKIP UNEXPECTED: int32 at offset {0:X} was {1}, expected {2}. (Stream Length {3:X})", reader.BaseStream.Position - 4, i, expected.Value, reader.BaseStream.Length));
             }
         }
+
+        /// <summary>
+        /// Skips a long, will log a warning if excpected is given and the long doesn't match it
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="expected"></param>
         public static void SkipInt64(this BinaryReader reader, long? expected = null)
         {
             long l = reader.ReadInt64();
@@ -185,6 +308,12 @@ namespace ShiningHill
                 Debug.LogWarning(String.Format("SKIP UNEXPECTED: int64 at offset {0:X} was {1}, expected {2}. (Stream Length {3:X})", reader.BaseStream.Position - 8, l, expected.Value, reader.BaseStream.Length));
             }
         }
+
+        /// <summary>
+        /// Skips a float, will log a warning if excpected is given and the float doesn't match it
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="expected"></param>
         public static void SkipSingle(this BinaryReader reader, float? expected = null)
         {
             float f = reader.ReadSingle();
@@ -193,5 +322,6 @@ namespace ShiningHill
                 Debug.LogWarning(String.Format("SKIP UNEXPECTED: single at offset {0:X} was {1}, expected {2}. (Stream Length {3:X})", reader.BaseStream.Position - 4, f, expected.Value, reader.BaseStream.Length));
             }
         }
-	}
+        #endregion
+    }
 }

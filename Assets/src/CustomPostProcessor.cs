@@ -24,6 +24,7 @@ namespace ShiningHill
                     if (extension == ".tex") { ProcessTEX(asset); continue; }
                     if (extension == ".map") { Scene.ReadMap(asset); continue; }
                     if (extension == ".cld") { CollisionGroup.ReadCollisions(asset); continue; }
+                    if (extension == ".kg2") { ShadowCasters.ReadShadowCasters(asset); continue; }
                 }
                 AssetDatabase.SaveAssets();
             }

@@ -56,32 +56,11 @@ namespace ShiningHill
                 _colors.Add(reader.ReadBGRA());
             }
 
-            Mesh mesh = new Mesh();
-            mesh.SetVertices(_verts);
-            mesh.SetNormals(_norms);
-            mesh.SetUVs(0, _uvs);
-            mesh.SetColors(_colors);
-
-            List<int> _tris = new List<int>();
-            for (int i = 1; i < VertexCount-1; i += 2)
-            {
-                _tris.Add(i);
-                _tris.Add(i - 1);
-                _tris.Add(i + 1);
-
-                if (i + 2 < VertexCount)
-                {
-                    _tris.Add(i);
-                    _tris.Add(i + 1);
-                    _tris.Add(i + 2);
-                }
-            }
-
-            mesh.SetTriangles(_tris, 0);
+            Mesh mesh = MeshUtils.MakeStripped(_verts, _norms, _uvs, _colors);
 
             mesh.name = "mesh_" + offset;
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
-            go.AddComponent<MeshRenderer>();
+            go.AddComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
             return NextOffset;
         }

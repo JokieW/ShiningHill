@@ -94,6 +94,15 @@ namespace ShiningHill
             transform.localRotation = ExtractRotationFromMatrix(ref matrix);
             transform.localScale = ExtractScaleFromMatrix(ref matrix);
         }
+
+        public static void SetTransformFromSH3Matrix(Transform transform, ref Matrix4x4 matrix)
+        {
+            Vector3 pos = ExtractTranslationFromMatrix(ref matrix);
+            pos = new Vector3(pos.x, -pos.y, pos.z);
+            transform.localPosition = pos;
+            transform.localRotation = ExtractRotationFromMatrix(ref matrix);
+            transform.localScale = ExtractScaleFromMatrix(ref matrix);
+        }
      
      
         // EXTRAS!

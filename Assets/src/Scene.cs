@@ -107,7 +107,7 @@ namespace ShiningHill
 
                 //reader.BaseStream.Position = transformOffset;
                 //Matrix4x4 mat4x4 = reader.ReadMatrix4x4();
-                Matrix4x4Utils.SetTransformFromMatrix(map.transform, ref map.GetComponentInChildren<Skybox>().Matrix);
+                Matrix4x4Utils.SetTransformFromSH3Matrix(map.transform, ref map.GetComponentInChildren<Skybox>().Matrix);
 
                 reader.Close();
 
