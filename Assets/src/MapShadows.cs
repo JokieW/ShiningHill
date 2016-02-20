@@ -16,37 +16,12 @@ namespace ShiningHill
 
         public static MapShadows ReadShadowCasters(string path)
         {
-            string prefabPath = path.Replace(".kg2", ".prefab");
             string assetPath = path.Replace(".kg2", ".asset");
-
-            Object prefab = AssetDatabase.LoadAssetAtPath<Object>(prefabPath);
-            GameObject prefabGo = null;
-            GameObject shadows = null;
-
-            if(prefab == null)
-            {
-                prefabGo = new GameObject("Area");
-                prefabGo.isStatic = true;
-            }
-            else
-            {
-                prefabGo = (GameObject)GameObject.Instantiate(prefab);
-                PrefabUtility.DisconnectPrefabInstance(prefabGo);
-                Transform existingShadows = prefabGo.transform.FindChild("Shadows");
-                if (existingShadows != null)
-                {
-                    DestroyImmediate(existingShadows.gameObject);
-                }
-            }
-
-            prefabGo.transform.localScale = Vector3.one;
-            shadows = new GameObject("Shadows");
-            shadows.transform.SetParent(prefabGo.transform);
-            shadows.isStatic = true;
+            GameObject subGO = Map.BeginEditingPrefab(path, "Shadows");
 
             try
             {
-                MapShadows casters = shadows.AddComponent<MapShadows>();
+                MapShadows casters = subGO.AddComponent<MapShadows>();
 
                 BinaryReader reader = new BinaryReader(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read));
 
@@ -119,7 +94,7 @@ namespace ShiningHill
 
                             mesh.name = "shadowMesh_" + shapeGroup;
                             GameObject go = new GameObject("Shadow mesh");
-                            go.transform.SetParent(shadows.transform);
+                            go.transform.SetParent(subGO.transform);
                             go.AddComponent<MeshFilter>().sharedMesh = mesh;
                             MeshRenderer mr = go.AddComponent<MeshRenderer>();
                             mr.sharedMaterial = MaterialRolodex.defaultDiffuse;
@@ -136,25 +111,12 @@ namespace ShiningHill
 
                 reader.Close();
 
-                foreach (MeshFilter mf in shadows.GetComponentsInChildren<MeshFilter>())
+                foreach (MeshFilter mf in subGO.GetComponentsInChildren<MeshFilter>())
                 {
                     AssetDatabase.AddObjectToAsset(mf.sharedMesh, assetPath);
                 }
 
-                prefabGo.transform.localScale = new Vector3(0.002f, 0.002f, 0.002f);
-
-                if (prefab != null)
-                {
-                    PrefabUtility.ReplacePrefab(prefabGo, prefab);
-                }
-                else
-                {
-                    PrefabUtility.CreatePrefab(prefabPath, prefabGo);
-                }
-
-                AssetDatabase.SaveAssets();
-
-                DestroyImmediate(prefabGo, false);
+                Map.FinishEditingPrefab(path, subGO);
 
                 return casters;
 

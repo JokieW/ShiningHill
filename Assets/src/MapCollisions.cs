@@ -19,37 +19,12 @@ namespace ShiningHill
 
 		public static MapCollisions ReadCollisions(string path)
         {
-            string prefabPath = path.Replace(".cld", ".prefab");
             string assetPath = path.Replace(".cld", ".asset");
-
-            Object prefab = AssetDatabase.LoadAssetAtPath<Object>(prefabPath);
-            GameObject prefabGo = null;
-            GameObject collisions = null;
-
-            if(prefab == null)
-            {
-                prefabGo = new GameObject("Area");
-                prefabGo.isStatic = true;
-            }
-            else
-            {
-                prefabGo = (GameObject)GameObject.Instantiate(prefab);
-                PrefabUtility.DisconnectPrefabInstance(prefabGo);
-                Transform existingCollisions = prefabGo.transform.FindChild("Collisions");
-                if (existingCollisions != null)
-                {
-                    DestroyImmediate(existingCollisions.gameObject);
-                }
-            }
-
-            prefabGo.transform.localScale = Vector3.one;
-            collisions = new GameObject("Collisions");
-            collisions.transform.SetParent(prefabGo.transform);
-            collisions.isStatic = true;
+            GameObject subGO = Map.BeginEditingPrefab(path, "Collisions");
 
             try
             {
-                MapCollisions cols = collisions.AddComponent<MapCollisions>();
+                MapCollisions cols = subGO.AddComponent<MapCollisions>();
 
                 BinaryReader reader = new BinaryReader(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read));
 
@@ -87,20 +62,7 @@ namespace ShiningHill
 
                 reader.Close();
 
-                prefabGo.transform.localScale = new Vector3(0.002f, 0.002f, 0.002f);
-
-                if (prefab != null)
-                {
-                    PrefabUtility.ReplacePrefab(prefabGo, prefab);
-                }
-                else
-                {
-                    PrefabUtility.CreatePrefab(prefabPath, prefabGo);
-                }
-
-                AssetDatabase.SaveAssets();
-
-                DestroyImmediate(prefabGo, false);
+                Map.FinishEditingPrefab(path, subGO);
 
                 return cols;
 

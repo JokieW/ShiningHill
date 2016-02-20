@@ -10,7 +10,6 @@ using Object = UnityEngine.Object;
 
 namespace ShiningHill
 {
-
     public class Map : MonoBehaviour 
     {
         public int Unknown1;
@@ -22,37 +21,12 @@ namespace ShiningHill
 
         public static Map ReadMap(string path)
         {
-            string prefabPath = path.Replace(".map", ".prefab");
             string assetPath = path.Replace(".map", ".asset");
-
-            Object prefab = AssetDatabase.LoadAssetAtPath<Object>(prefabPath);
-            GameObject prefabGo = null;
-            GameObject map = null;
-
-            if(prefab == null)
-            {
-                prefabGo = new GameObject("Area");
-                prefabGo.isStatic = true;
-            }
-            else
-            {
-                prefabGo = (GameObject)GameObject.Instantiate(prefab);
-                PrefabUtility.DisconnectPrefabInstance(prefabGo);
-                Transform existingMap = prefabGo.transform.FindChild("Map");
-                if(existingMap != null)
-                {
-                    DestroyImmediate(existingMap.gameObject);
-                }
-            }
-
-            prefabGo.transform.localScale = Vector3.one;
-            map = new GameObject("Map");
-            map.transform.SetParent(prefabGo.transform);
-            map.isStatic = true;
+            GameObject subGO = Map.BeginEditingPrefab(path, "Map");
 
             try
             {
-                Map scene = map.AddComponent<Map>();
+                Map scene = subGO.AddComponent<Map>();
 
                 BinaryReader reader = new BinaryReader(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read));
 
@@ -95,19 +69,19 @@ namespace ShiningHill
                 Skybox sky = null;
                 do
                 {
-                    sky = Skybox.Deserialise(reader, map);
+                    sky = Skybox.Deserialise(reader, subGO);
                 } while (sky.NextSkyboxOffset != 0);
 
                 //Read meshgroups
                 int next;
                 do
                 {
-                    next = MeshGroup.Deserialise(reader, map);
+                    next = MeshGroup.Deserialise(reader, subGO);
                 } while (next != 0);
 
                 //reader.BaseStream.Position = transformOffset;
                 //Matrix4x4 mat4x4 = reader.ReadMatrix4x4();
-                Matrix4x4Utils.SetTransformFromSH3Matrix(map.transform, ref map.GetComponentInChildren<Skybox>().Matrix);
+                Matrix4x4Utils.SetTransformFromSH3Matrix(subGO.transform, ref subGO.GetComponentInChildren<Skybox>().Matrix);
 
                 reader.Close();
 
@@ -117,7 +91,7 @@ namespace ShiningHill
 
                 int baseIndex = 0;
 
-                MeshGroup[] groups = map.GetComponentsInChildren<MeshGroup>();
+                MeshGroup[] groups = subGO.GetComponentsInChildren<MeshGroup>();
                 foreach (MeshGroup group in groups)
                 {
                     MaterialRolodex goodRolodex = null;
@@ -183,25 +157,12 @@ namespace ShiningHill
                     }
                 }
 
-                foreach (MeshFilter mf in map.GetComponentsInChildren<MeshFilter>())
+                foreach (MeshFilter mf in subGO.GetComponentsInChildren<MeshFilter>())
                 {
                     AssetDatabase.AddObjectToAsset(mf.sharedMesh, assetPath);
                 }
 
-                prefabGo.transform.localScale = new Vector3(0.002f, 0.002f, 0.002f);
-
-                if (prefab != null)
-                {
-                    PrefabUtility.ReplacePrefab(prefabGo, prefab);
-                }
-                else
-                {
-                    PrefabUtility.CreatePrefab(prefabPath, prefabGo);
-                }
-                
-                AssetDatabase.SaveAssets();
-
-                DestroyImmediate(prefabGo, false);
+                Map.FinishEditingPrefab(path, subGO);
 
                 return scene;
 
@@ -212,6 +173,59 @@ namespace ShiningHill
             }
 
             return null;
+        }
+
+        public static GameObject BeginEditingPrefab(string path, string childName)
+        {
+            string prefabPath = path.Replace(Path.GetExtension(path), ".prefab");
+
+            Object prefab = AssetDatabase.LoadAssetAtPath<Object>(prefabPath);
+            GameObject prefabGo = null;
+            GameObject subGO = null;
+
+            if (prefab == null)
+            {
+                prefabGo = new GameObject("Area");
+                prefabGo.isStatic = true;
+            }
+            else
+            {
+                prefabGo = (GameObject)GameObject.Instantiate(prefab);
+                PrefabUtility.DisconnectPrefabInstance(prefabGo);
+                Transform existingMap = prefabGo.transform.FindChild(childName);
+                if (existingMap != null)
+                {
+                    DestroyImmediate(existingMap.gameObject);
+                }
+            }
+
+            prefabGo.transform.localScale = Vector3.one;
+            subGO = new GameObject(childName);
+            subGO.transform.SetParent(prefabGo.transform);
+            subGO.isStatic = true;
+
+            return subGO;
+        }
+
+        public static void FinishEditingPrefab(string path, GameObject subGO)
+        {
+            string prefabPath = path.Replace(Path.GetExtension(path), ".prefab");
+            Object prefab = AssetDatabase.LoadAssetAtPath<Object>(prefabPath);
+            GameObject prefabGO = subGO.transform.parent.gameObject;
+            prefabGO.transform.localScale = new Vector3(0.002f, 0.002f, 0.002f);
+
+            if (prefab != null)
+            {
+                PrefabUtility.ReplacePrefab(prefabGO, prefab);
+            }
+            else
+            {
+                PrefabUtility.CreatePrefab(prefabPath, prefabGO);
+            }
+
+            AssetDatabase.SaveAssets();
+
+            DestroyImmediate(prefabGO, false);
         }
     }
 }
