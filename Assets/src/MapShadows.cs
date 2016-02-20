@@ -11,10 +11,10 @@ using Object = UnityEngine.Object;
 namespace ShiningHill
 {
     [Serializable]
-	public class ShadowCasters : MonoBehaviour 
+	public class MapShadows : MonoBehaviour 
 	{
 
-        public static ShadowCasters ReadShadowCasters(string path)
+        public static MapShadows ReadShadowCasters(string path)
         {
             string prefabPath = path.Replace(".kg2", ".prefab");
             string assetPath = path.Replace(".kg2", ".asset");
@@ -25,7 +25,7 @@ namespace ShiningHill
 
             if(prefab == null)
             {
-                prefabGo = new GameObject("Scene");
+                prefabGo = new GameObject("Area");
                 prefabGo.isStatic = true;
             }
             else
@@ -46,7 +46,7 @@ namespace ShiningHill
 
             try
             {
-                ShadowCasters casters = shadows.AddComponent<ShadowCasters>();
+                MapShadows casters = shadows.AddComponent<MapShadows>();
 
                 BinaryReader reader = new BinaryReader(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read));
 

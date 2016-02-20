@@ -22,9 +22,9 @@ namespace ShiningHill
                     string extension = Path.GetExtension(asset);
 
                     if (extension == ".tex") { ProcessTEX(asset); continue; }
-                    if (extension == ".map") { Scene.ReadMap(asset); continue; }
-                    if (extension == ".cld") { CollisionGroup.ReadCollisions(asset); continue; }
-                    if (extension == ".kg2") { ShadowCasters.ReadShadowCasters(asset); continue; }
+                    if (extension == ".map") { Map.ReadMap(asset); continue; }
+                    if (extension == ".cld") { MapCollisions.ReadCollisions(asset); continue; }
+                    if (extension == ".kg2") { MapShadows.ReadShadowCasters(asset); continue; }
                 }
                 AssetDatabase.SaveAssets();
             }

@@ -11,13 +11,13 @@ using Object = UnityEngine.Object;
 namespace ShiningHill
 {
     [Serializable]
-	public class CollisionGroup : MonoBehaviour 
+	public class MapCollisions : MonoBehaviour 
 	{
         [SerializeField]
         public List<CollisionPane> panes = new List<CollisionPane>();
         public int DispalyKind = -1;
 
-		public static CollisionGroup ReadCollisions(string path)
+		public static MapCollisions ReadCollisions(string path)
         {
             string prefabPath = path.Replace(".cld", ".prefab");
             string assetPath = path.Replace(".cld", ".asset");
@@ -28,7 +28,7 @@ namespace ShiningHill
 
             if(prefab == null)
             {
-                prefabGo = new GameObject("Scene");
+                prefabGo = new GameObject("Area");
                 prefabGo.isStatic = true;
             }
             else
@@ -49,7 +49,7 @@ namespace ShiningHill
 
             try
             {
-                CollisionGroup cols = collisions.AddComponent<CollisionGroup>();
+                MapCollisions cols = collisions.AddComponent<MapCollisions>();
 
                 BinaryReader reader = new BinaryReader(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read));
 

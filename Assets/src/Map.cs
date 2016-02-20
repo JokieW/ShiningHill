@@ -11,7 +11,7 @@ using Object = UnityEngine.Object;
 namespace ShiningHill
 {
 
-    public class Scene : MonoBehaviour 
+    public class Map : MonoBehaviour 
     {
         public int Unknown1;
         public int Unknown2;
@@ -20,7 +20,7 @@ namespace ShiningHill
         public short LocalTextureCount;
         public short LocalTextureBaseIndexModifier;
 
-        public static Scene ReadMap(string path)
+        public static Map ReadMap(string path)
         {
             string prefabPath = path.Replace(".map", ".prefab");
             string assetPath = path.Replace(".map", ".asset");
@@ -31,7 +31,7 @@ namespace ShiningHill
 
             if(prefab == null)
             {
-                prefabGo = new GameObject("Scene");
+                prefabGo = new GameObject("Area");
                 prefabGo.isStatic = true;
             }
             else
@@ -52,7 +52,7 @@ namespace ShiningHill
 
             try
             {
-                Scene scene = map.AddComponent<Scene>();
+                Map scene = map.AddComponent<Map>();
 
                 BinaryReader reader = new BinaryReader(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read));
 
