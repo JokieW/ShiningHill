@@ -13,7 +13,7 @@ namespace ShiningHill
         public static Texture2D[] ReadTex32(string baseName, BinaryReader reader)
         {
             reader.SkipBytes(12); //Skips -1 0 32
-            int texGroupLength = reader.ReadInt32();
+            /*int texGroupLength = */reader.ReadInt32();
             reader.SkipBytes(4); //Skips 0
             int texCount = reader.ReadInt32();
             reader.SkipBytes(8); //Skips 0 0
@@ -29,7 +29,7 @@ namespace ShiningHill
                 byte buffer = reader.ReadByte();
                 reader.SkipBytes(2); //skips 0x0000
                 int lengthOfTex = reader.ReadInt32();
-                int nextDataRelativeOffset = reader.ReadInt32();
+                /*int nextDataRelativeOffset = */reader.ReadInt32();
                 reader.SkipBytes(24 + buffer); //skips -1 0 0 0 0 0 + buffer
 
                 Color32[] _pixels = null;

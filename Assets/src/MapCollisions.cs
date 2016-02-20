@@ -19,7 +19,7 @@ namespace ShiningHill
 
 		public static MapCollisions ReadCollisions(string path)
         {
-            string assetPath = path.Replace(".cld", ".asset");
+            /*string assetPath = path.Replace(".cld", ".asset");*/
             GameObject subGO = Map.BeginEditingPrefab(path, "Collisions");
 
             try
@@ -34,7 +34,7 @@ namespace ShiningHill
                 reader.SkipInt32(880);
                 reader.SkipInt32(160);
                 reader.SkipInt32(80);
-                int vertexCount = reader.ReadInt32();
+                /*int vertexCount = */reader.ReadInt32();
                 reader.SkipInt32(0);
 
                 List<int> offsets = new List<int>();

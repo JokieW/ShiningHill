@@ -47,7 +47,7 @@ namespace ShiningHill
                 reader.SkipInt32(0);
 
                 reader.SkipInt32(); //TextureGroupOffset2
-                int transformOffset = reader.ReadInt32();
+                /*int transformOffset = */reader.ReadInt32();
                 scene.Unknown2 = reader.ReadInt32();
                 reader.SkipInt32(0);
 

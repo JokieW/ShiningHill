@@ -12,12 +12,12 @@ namespace ShiningHill
 {
     public class ArcExporter : EditorWindow
     {
-        static EditorWindow _currentWindow;
+        //static EditorWindow _currentWindow;
 
         [MenuItem("SilentParty/ArcExporter")]
         public static void ShowWindow()
         {
-            _currentWindow = EditorWindow.GetWindow(typeof(ArcExporter));
+            /*_currentWindow = */EditorWindow.GetWindow(typeof(ArcExporter));
         }
 
         void OnGUI()

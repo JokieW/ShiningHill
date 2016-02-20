@@ -31,7 +31,7 @@ namespace ShiningHill
                 GUILayout.Label("Pairs of "+tmp.textureName);
                 EditorGUILayout.BeginHorizontal();
                 EditorGUI.BeginChangeCheck();
-                Texture2D newTex = (Texture2D)EditorGUILayout.ObjectField(tmp.texture, typeof(Texture2D), GUILayout.Height(64.0f), GUILayout.Width(64.0f));
+                Texture2D newTex = (Texture2D)EditorGUILayout.ObjectField(tmp.texture, typeof(Texture2D), false, GUILayout.Height(64.0f), GUILayout.Width(64.0f));
                 if (EditorGUI.EndChangeCheck())
                 {
                     if (newTex == null)
@@ -56,7 +56,7 @@ namespace ShiningHill
                 }
                 else
                 {
-                    EditorGUILayout.ObjectField("Diffuse", tmp.diffuse, typeof(Material));
+                    EditorGUILayout.ObjectField("Diffuse", tmp.diffuse, typeof(Material), false);
                 }
 
                 if (tmp.transparent == null)
@@ -68,7 +68,7 @@ namespace ShiningHill
                 }
                 else
                 {
-                    EditorGUILayout.ObjectField("Transparent", tmp.transparent, typeof(Material));
+                    EditorGUILayout.ObjectField("Transparent", tmp.transparent, typeof(Material), false);
                 }
 
                 if (tmp.cutout == null)
@@ -80,7 +80,7 @@ namespace ShiningHill
                 }
                 else
                 {
-                    EditorGUILayout.ObjectField("Cutout", tmp.cutout, typeof(Material));
+                    EditorGUILayout.ObjectField("Cutout", tmp.cutout, typeof(Material), false);
                 }
 
                 if (tmp.selfIllum == null)
@@ -92,7 +92,7 @@ namespace ShiningHill
                 }
                 else
                 {
-                    EditorGUILayout.ObjectField("Self Illuminated", tmp.selfIllum, typeof(Material));
+                    EditorGUILayout.ObjectField("Self Illuminated", tmp.selfIllum, typeof(Material), false);
                 }
                 EditorGUILayout.EndVertical();
                 EditorGUILayout.EndHorizontal();
@@ -105,7 +105,7 @@ namespace ShiningHill
             }
 
             EditorGUI.BeginChangeCheck();
-            Texture2D newnewTex = (Texture2D)EditorGUILayout.ObjectField("Add Texture", null, typeof(Texture2D));
+            Texture2D newnewTex = (Texture2D)EditorGUILayout.ObjectField("Add Texture", null, typeof(Texture2D), false);
             if (EditorGUI.EndChangeCheck())
             {
                 if (!String.IsNullOrEmpty(AssetDatabase.GetAssetPath(newnewTex)))

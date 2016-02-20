@@ -38,11 +38,11 @@ namespace ShiningHill
                     {
                         //Caster header
                         reader.SkipInt32(0);
-                        short index = reader.ReadInt16();
+                        /*short index = */reader.ReadInt16();
                         short shapeCounts = reader.ReadInt16();
                         reader.SkipBytes(16, 0);
-                        Vector3 mainPivot = reader.ReadShortVector3();
-                        short casterGroup = reader.ReadInt16();
+                        /*Vector3 mainPivot = */reader.ReadShortVector3();
+                        /*short casterGroup = */reader.ReadInt16();
                         Matrix4x4 mainMatrix = reader.ReadMatrix4x4();
                         Vector3 debugPosition = Matrix4x4Utils.ExtractTranslationFromMatrix(ref mainMatrix);
                         debugPosition.y = -debugPosition.y;
@@ -53,9 +53,9 @@ namespace ShiningHill
                         {
                             short countOfPoints = reader.ReadInt16();
                             short UnknownS1 = reader.ReadInt16();
-                            short UnknownS2 = reader.ReadInt16();
+                            /*short UnknownS2 = */reader.ReadInt16();
                             reader.SkipInt16(countOfPoints);
-                            Vector3 pivot = reader.ReadShortVector3();
+                            /*Vector3 pivot = */reader.ReadShortVector3();
                             short shapeGroup = reader.ReadInt16();
 
                             List<Vector3> _verts = new List<Vector3>();

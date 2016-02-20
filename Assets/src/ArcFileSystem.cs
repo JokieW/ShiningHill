@@ -72,7 +72,7 @@ namespace ShiningHill
                             }
                             File.WriteAllBytes("Assets/SilentHill3/Resources/" + name, arc.AllFiles[entryCount].data);
                         }
-                        catch (Exception e)
+                        catch (Exception)
                         {
                             Debug.LogError("Problem at " + name + " [" + entryIndex + "](" + arc.AllFiles.Count + ") sub " + subType.ToString("X"));
                         }
