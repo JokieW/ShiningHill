@@ -20,7 +20,7 @@ namespace ShiningHill
 		public static MapCollisions ReadCollisions(string path)
         {
             /*string assetPath = path.Replace(".cld", ".asset");*/
-            GameObject subGO = Map.BeginEditingPrefab(path, "Collisions");
+            GameObject subGO = Scene.BeginEditingPrefab(path, "Collisions");
 
             try
             {
@@ -44,6 +44,7 @@ namespace ShiningHill
                     offsets.Add(offset);
                 }
 
+                Matrix4x4 transMat = cols.GetComponentInParent<Scene>().GetSH3ToUnityMatrix();
                 foreach (int off in offsets)
                 {
                     reader.BaseStream.Position = off;
@@ -55,14 +56,14 @@ namespace ShiningHill
                             break;
                         }
 
-                        cols.panes.Add(new CollisionPane(reader));
+                        cols.panes.Add(new CollisionPane(reader, transMat));
                     }
                 }
 
 
                 reader.Close();
 
-                Map.FinishEditingPrefab(path, subGO);
+                Scene.FinishEditingPrefab(path, subGO);
 
                 return cols;
 
@@ -184,7 +185,7 @@ namespace ShiningHill
             [SerializeField]
             public Vector3[] vectors;
 
-            public CollisionPane(BinaryReader reader)
+            public CollisionPane(BinaryReader reader, Matrix4x4 transMat)
             {
                 Unknown1 = reader.ReadInt32();
                 int vectorsToRead = reader.ReadInt32();
@@ -194,7 +195,8 @@ namespace ShiningHill
                 List<Vector3> v3s = new List<Vector3>();
                 for (int i = 0; i != vectorsToRead; i++)
                 {
-                    v3s.Add(reader.ReadVector3YInverted());
+                    Vector3 vertex = reader.ReadVector3YInverted();
+                    v3s.Add(transMat.MultiplyPoint(vertex));
                     reader.SkipSingle(1.0f);
                 }
                 vectors = v3s.ToArray();

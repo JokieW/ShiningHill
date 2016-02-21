@@ -17,7 +17,7 @@ namespace ShiningHill
         public static MapShadows ReadShadowCasters(string path)
         {
             string assetPath = path.Replace(".kg2", ".asset");
-            GameObject subGO = Map.BeginEditingPrefab(path, "Shadows");
+            GameObject subGO = Scene.BeginEditingPrefab(path, "Shadows");
 
             try
             {
@@ -32,6 +32,8 @@ namespace ShiningHill
                     reader.SkipInt32();
                     short casterCount = reader.ReadInt16();
                     reader.SkipBytes(10, 0);
+
+                    Matrix4x4 transMat = casters.GetComponentInParent<Scene>().GetSH3ToUnityMatrix();
 
                     //Reading casters
                     for (int i = 0; i != casterCount; i++)
@@ -72,7 +74,7 @@ namespace ShiningHill
                                 }
                                 else
                                 {
-                                    _verts.Add(v + debugPosition);
+                                    _verts.Add(transMat.MultiplyPoint(v + debugPosition));
                                     _norms.Add(currentNormal);
                                     k++;
                                 }
@@ -116,7 +118,7 @@ namespace ShiningHill
                     AssetDatabase.AddObjectToAsset(mf.sharedMesh, assetPath);
                 }
 
-                Map.FinishEditingPrefab(path, subGO);
+                Scene.FinishEditingPrefab(path, subGO);
 
                 return casters;
 

@@ -13,6 +13,7 @@ namespace ShiningHill
 	public class MapLights : MonoBehaviour 
 	{
         public List<GlobalLight> globalLights = new List<GlobalLight>();
+        public List<LocalLight> weirdLights = new List<LocalLight>();
         public List<LocalLight> localLights = new List<LocalLight>();
 
         public Vector4 Unknown1;
@@ -24,7 +25,7 @@ namespace ShiningHill
         public static MapLights ReadLights(string path)
         {
             /*string assetPath = path.Replace(".ded", ".asset");*/
-            GameObject subGO = Map.BeginEditingPrefab(path, "Lights");
+            GameObject subGO = Scene.BeginEditingPrefab(path, "Lights");
 
             try
             {
@@ -37,8 +38,14 @@ namespace ShiningHill
                 short globalLightsCount = reader.ReadInt16();
                 reader.SkipInt16(0);
                 short globalLightsOffset = reader.ReadInt16();
-                
-                reader.SkipBytes(26, 0);
+                reader.SkipInt16(0);
+                reader.SkipBytes(8, 0);
+
+                short weirdLightsCount = reader.ReadInt16();
+                reader.SkipInt16(0);
+                short weirdLightsOffset = reader.ReadInt16();
+                reader.SkipInt16(0);
+                reader.SkipBytes(8, 0);
                 
                 short lightsCount = reader.ReadInt16();
                 reader.SkipInt16(0);
@@ -46,8 +53,10 @@ namespace ShiningHill
                 reader.SkipInt16(0);
 
                 reader.SkipBytes(40, 0);
-                reader.SkipInt32(0xC0);
+                short ambientOffset = reader.ReadInt16();
                 reader.SkipBytes(24, 0);
+
+                Matrix4x4 transMat = lights.GetComponentInParent<Scene>().GetSH3ToUnityMatrix();
 
                 reader.BaseStream.Position = globalLightsOffset;
                 for (int i = 0; i != globalLightsCount; i++)
@@ -60,6 +69,20 @@ namespace ShiningHill
                     lights.globalLights.Add(gl);
                 }
 
+                reader.BaseStream.Position = weirdLightsOffset;
+                for (int i = 0; i != weirdLightsCount; i++)
+                {
+                    LocalLight ll = new LocalLight();
+                    ll.color = reader.ReadColor();
+                    ll.Unknown1 = reader.ReadSingle();
+                    ll.Range = reader.ReadSingle();
+                    reader.SkipBytes(8, 0);
+                    ll.position = reader.ReadVector3YInverted();
+                    reader.SkipInt16(0x0);
+                    ll.Unknown2 = reader.ReadInt16();
+                    lights.weirdLights.Add(ll);
+                }
+
                 reader.BaseStream.Position = lightsOffset;
                 for (int i = 0; i != lightsCount; i++)
                 {
@@ -70,21 +93,22 @@ namespace ShiningHill
                     reader.SkipBytes(8, 0);
                     ll.position = reader.ReadVector3YInverted();
                     reader.SkipInt16(0x0);
-                    reader.SkipInt16(0xA);
+                    ll.Unknown2 = reader.ReadInt16();
                     lights.localLights.Add(ll);
 
                     GameObject lightGO = new GameObject("Light " + i);
                     lightGO.transform.SetParent(subGO.transform);
-                    lightGO.transform.localPosition = ll.position;
+                    lightGO.transform.localPosition = transMat.MultiplyPoint(ll.position);
 
                     Light light = lightGO.AddComponent<Light>();
                     light.type = LightType.Point;
-                    light.range = ll.Range * Map.GLOBAL_SCALE;
+                    light.range = ll.Range * Scene.GLOBAL_SCALE;
                     light.color = ll.color;
                     light.intensity = 8.0f;
                     light.bounceIntensity = 1.0f;
                 }
 
+                reader.BaseStream.Position = ambientOffset;
                 lights.Unknown1 = reader.ReadVector4();
                 lights.Unknown2 = reader.ReadVector4();
                 lights.ambientColor = reader.ReadColor();
@@ -92,7 +116,7 @@ namespace ShiningHill
 
                 reader.Close();
 
-                Map.FinishEditingPrefab(path, subGO);
+                Scene.FinishEditingPrefab(path, subGO);
 
                 return lights;
 
@@ -120,6 +144,7 @@ namespace ShiningHill
             public float Unknown1;
             public float Range;
             public Vector3 position;
+            public short Unknown2;
         }
 	}
 }

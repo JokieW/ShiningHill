@@ -22,7 +22,7 @@ namespace ShiningHill
         public static Map ReadMap(string path)
         {
             string assetPath = path.Replace(".map", ".asset");
-            GameObject subGO = Map.BeginEditingPrefab(path, "Map");
+            GameObject subGO = Scene.BeginEditingPrefab(path, "Map");
 
             try
             {
@@ -162,7 +162,7 @@ namespace ShiningHill
                     AssetDatabase.AddObjectToAsset(mf.sharedMesh, assetPath);
                 }
 
-                Map.FinishEditingPrefab(path, subGO);
+                Scene.FinishEditingPrefab(path, subGO);
 
                 return scene;
 
@@ -173,59 +173,6 @@ namespace ShiningHill
             }
 
             return null;
-        }
-
-        public static GameObject BeginEditingPrefab(string path, string childName)
-        {
-            string prefabPath = path.Replace(Path.GetExtension(path), ".prefab");
-
-            Object prefab = AssetDatabase.LoadAssetAtPath<Object>(prefabPath);
-            GameObject prefabGo = null;
-            GameObject subGO = null;
-
-            if (prefab == null)
-            {
-                prefabGo = new GameObject("Area");
-                prefabGo.isStatic = true;
-            }
-            else
-            {
-                prefabGo = (GameObject)GameObject.Instantiate(prefab);
-                PrefabUtility.DisconnectPrefabInstance(prefabGo);
-                Transform existingMap = prefabGo.transform.FindChild(childName);
-                if (existingMap != null)
-                {
-                    DestroyImmediate(existingMap.gameObject);
-                }
-            }
-
-            prefabGo.transform.localScale = Vector3.one;
-            subGO = new GameObject(childName);
-            subGO.transform.SetParent(prefabGo.transform);
-            subGO.isStatic = true;
-
-            return subGO;
-        }
-
-        public static void FinishEditingPrefab(string path, GameObject subGO)
-        {
-            string prefabPath = path.Replace(Path.GetExtension(path), ".prefab");
-            Object prefab = AssetDatabase.LoadAssetAtPath<Object>(prefabPath);
-            GameObject prefabGO = subGO.transform.parent.gameObject;
-            prefabGO.transform.localScale = new Vector3(0.002f, 0.002f, 0.002f);
-
-            if (prefab != null)
-            {
-                PrefabUtility.ReplacePrefab(prefabGO, prefab);
-            }
-            else
-            {
-                PrefabUtility.CreatePrefab(prefabPath, prefabGO);
-            }
-
-            AssetDatabase.SaveAssets();
-
-            DestroyImmediate(prefabGO, false);
         }
     }
 }

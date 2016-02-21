@@ -37,6 +37,8 @@ namespace ShiningHill
 
             go.isStatic = part.ObjectType != 3;
 
+            Matrix4x4 matrix = part.GetComponentInParent<Scene>().GetSH3ToUnityMatrix();
+
             List<Vector3> _verts = new List<Vector3>();
             List<Vector3> _norms = new List<Vector3>();
             List<Vector2> _uvs = new List<Vector2>();
@@ -45,7 +47,7 @@ namespace ShiningHill
             {
                 Vector3 temp = reader.ReadVector3();
                 temp.y = -temp.y;
-                _verts.Add(temp);
+                _verts.Add(matrix.MultiplyPoint(temp));
 
                 temp = reader.ReadVector3();
                 temp.x = -temp.x;
