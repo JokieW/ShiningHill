@@ -78,7 +78,30 @@ namespace ShiningHill
         }
         #endregion
 
+        #region Quaternions
+        /// <summary>
+        /// Reads 4 singles and returns a Quaternion
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
+        public static Quaternion ReadQuaternion(this BinaryReader reader)
+        {
+            return new Quaternion(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
+        }
+        #endregion
+
         #region Colors
+        /// <summary>
+        /// Reads 4 singles expecting R G B A
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
+        public static Color ReadColor(this BinaryReader reader)
+        {
+            Vector4 color = reader.ReadVector4();
+            return new Color(color.x, color.y, color.z, color.w);
+        }
+
         /// <summary>
         /// Reads 4 bytes expecting R G B A
         /// </summary>
@@ -148,7 +171,7 @@ namespace ShiningHill
 
         #region Peeks
         /// <summary>
-        /// Reads a byte with consuming the read
+        /// Reads a byte without consuming the read
         /// </summary>
         /// <param name="reader"></param>
         /// <returns></returns>
@@ -160,7 +183,7 @@ namespace ShiningHill
         }
 
         /// <summary>
-        /// Reads a short with consuming the read
+        /// Reads a short without consuming the read
         /// </summary>
         /// <param name="reader"></param>
         /// <returns></returns>
@@ -172,7 +195,7 @@ namespace ShiningHill
         }
 
         /// <summary>
-        /// Reads an int with consuming the read
+        /// Reads an int without consuming the read
         /// </summary>
         /// <param name="reader"></param>
         /// <returns></returns>
@@ -184,7 +207,7 @@ namespace ShiningHill
         }
 
         /// <summary>
-        /// Reads a long with consuming the read
+        /// Reads a long without consuming the read
         /// </summary>
         /// <param name="reader"></param>
         /// <returns></returns>
@@ -196,7 +219,7 @@ namespace ShiningHill
         }
 
         /// <summary>
-        /// Reads a float with consuming the read
+        /// Reads a float without consuming the read
         /// </summary>
         /// <param name="reader"></param>
         /// <returns></returns>
@@ -208,7 +231,7 @@ namespace ShiningHill
         }
 
         /// <summary>
-        /// Reads a double with consuming the read
+        /// Reads a double without consuming the read
         /// </summary>
         /// <param name="reader"></param>
         /// <returns></returns>
@@ -233,7 +256,7 @@ namespace ShiningHill
                 byte b = reader.ReadByte();
                 if (b != expected.Value)
                 {
-                    Debug.LogWarning(String.Format("SKIP UNEXPECTED: byte at offset {0:X} was {1}, expected {2}. (Stream Length {3:X})", reader.BaseStream.Position - 1, b, expected.Value, reader.BaseStream.Length));
+                    Debug.LogWarning(String.Format("SKIP UNEXPECTED: byte at offset {0:X} was {1:X} ({1}), expected {2:X} ({2}). (Stream Length {3:X})", reader.BaseStream.Position - 1, b, expected.Value, reader.BaseStream.Length));
                 }
             }
             else
@@ -256,7 +279,7 @@ namespace ShiningHill
                     byte b = reader.ReadByte();
                     if (b != expected.Value)
                     {
-                        Debug.LogWarning(String.Format("SKIP UNEXPECTED: byte at offset {0:X} was {1}, expected {2}. (Stream Length {3:X})", reader.BaseStream.Position - 1, b, expected.Value, reader.BaseStream.Length));
+                        Debug.LogWarning(String.Format("SKIP UNEXPECTED: byte at offset {0:X} was {1:X} ({1}), expected {2:X} ({2}). (Stream Length {3:X})", reader.BaseStream.Position - 1, b, expected.Value, reader.BaseStream.Length));
                     }
                 }
             }
@@ -276,7 +299,7 @@ namespace ShiningHill
             short s = reader.ReadInt16();
             if (expected != null && s != expected.Value)
             {
-                Debug.LogWarning(String.Format("SKIP UNEXPECTED: int16 at offset {0:X} was {1}, expected {2}. (Stream Length {3:X})", reader.BaseStream.Position - 2, s, expected.Value, reader.BaseStream.Length));
+                Debug.LogWarning(String.Format("SKIP UNEXPECTED: int16 at offset {0:X} was {1:X} ({1}), expected {2:X} ({2}). (Stream Length {3:X})", reader.BaseStream.Position - 2, s, expected.Value, reader.BaseStream.Length));
             }
             
         }
@@ -291,7 +314,7 @@ namespace ShiningHill
             int i = reader.ReadInt32();
             if (expected != null && i != expected.Value)
             {
-                Debug.LogWarning(String.Format("SKIP UNEXPECTED: int32 at offset {0:X} was {1}, expected {2}. (Stream Length {3:X})", reader.BaseStream.Position - 4, i, expected.Value, reader.BaseStream.Length));
+                Debug.LogWarning(String.Format("SKIP UNEXPECTED: int32 at offset {0:X} was {1:X} ({1}), expected {2:X} ({2}). (Stream Length {3:X})", reader.BaseStream.Position - 4, i, expected.Value, reader.BaseStream.Length));
             }
         }
 
@@ -305,7 +328,7 @@ namespace ShiningHill
             long l = reader.ReadInt64();
             if (expected != null && l != expected.Value)
             {
-                Debug.LogWarning(String.Format("SKIP UNEXPECTED: int64 at offset {0:X} was {1}, expected {2}. (Stream Length {3:X})", reader.BaseStream.Position - 8, l, expected.Value, reader.BaseStream.Length));
+                Debug.LogWarning(String.Format("SKIP UNEXPECTED: int64 at offset {0:X} was {1:X} ({1}), expected {2:X} ({2}). (Stream Length {3:X})", reader.BaseStream.Position - 8, l, expected.Value, reader.BaseStream.Length));
             }
         }
 
@@ -319,7 +342,7 @@ namespace ShiningHill
             float f = reader.ReadSingle();
             if (expected != null && f != expected.Value)
             {
-                Debug.LogWarning(String.Format("SKIP UNEXPECTED: single at offset {0:X} was {1}, expected {2}. (Stream Length {3:X})", reader.BaseStream.Position - 4, f, expected.Value, reader.BaseStream.Length));
+                Debug.LogWarning(String.Format("SKIP UNEXPECTED: single at offset {0:X} was {1} ({1}), expected {2} ({2}). (Stream Length {3:X})", reader.BaseStream.Position - 4, f, expected.Value, reader.BaseStream.Length));
             }
         }
         #endregion

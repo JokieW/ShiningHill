@@ -344,6 +344,7 @@ namespace ShiningHill
                 {
                     Material mat = new Material(defaultSelfIllum);
                     mat.mainTexture = texture;
+                    mat.SetTexture("_EmissionMap", texture);
                     mat.name = texture.name + "_selfIllum";
                     selfIllum = mat;
                 }
