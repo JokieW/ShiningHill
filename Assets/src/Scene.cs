@@ -37,6 +37,10 @@ namespace ShiningHill
                 prefabGo = new GameObject("Area");
                 prefabGo.AddComponent<Scene>();
                 prefabGo.isStatic = true;
+
+                GameObject testGO = new GameObject("Tests");
+                testGO.transform.SetParent(prefabGo.transform);
+                testGO.transform.localScale = new Vector3(Scene.GLOBAL_SCALE, Scene.GLOBAL_SCALE, Scene.GLOBAL_SCALE);
             }
             else
             {
