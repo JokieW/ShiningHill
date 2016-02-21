@@ -26,6 +26,7 @@ namespace ShiningHill
                     if (extension == ".cld") { MapCollisions.ReadCollisions(asset); continue; }
                     if (extension == ".kg2") { MapShadows.ReadShadowCasters(asset); continue; }
                     if (extension == ".ded") { MapLights.ReadLights(asset); continue; }
+                    if (extension == ".cam") { MapCameras.ReadCameras(asset); continue; }
                 }
                 AssetDatabase.SaveAssets();
             }
