@@ -22,7 +22,7 @@ namespace ShiningHill
         {
             data = new byte[90016];
 
-            GZipInputStream gzipStream = new GZipInputStream(new FileStream("Assets/Archives/arc.arc", FileMode.Open, FileAccess.Read));
+            GZipInputStream gzipStream = new GZipInputStream(new FileStream("Assets/SilentHill3/Archives/arc.arc", FileMode.Open, FileAccess.Read));
 
             gzipStream.Read(data, 0, 90016);
 
@@ -55,7 +55,7 @@ namespace ShiningHill
 
                     if (entryType == 2)
                     {
-                        arc = new Archive(name, AssetDatabase.LoadAssetAtPath("Assets/Archives/" + name + ".arc", typeof(UnityEngine.Object)));
+                        arc = new Archive(name, AssetDatabase.LoadAssetAtPath("Assets/SilentHill3/Archives/" + name + ".arc", typeof(UnityEngine.Object)));
                         arc.OpenArchive();
                     }
 

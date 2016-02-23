@@ -5,6 +5,10 @@
 *.suo
 *.arc
 *.arc.meta
+Assets/SilentHill/Archives/SILENT
+Assets/SilentHill/Archives/SILENT.meta
+Assets/SilentHill/Archives/HILL
+Assets/SilentHill/Archives/HILL.meta
 Assets/SilentHill3/Resources/data
 Assets/SilentHill3/Resources/data.meta
 Assets/SilentHill2/Resources/data
