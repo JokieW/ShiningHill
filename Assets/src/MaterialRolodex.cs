@@ -121,6 +121,11 @@ namespace ShiningHill
             AssetDatabase.SaveAssets();
         }
 
+        public TexMatsPair GetWithSH2ID(int id)
+        {
+            return texMatPairs.Where(x => x.textureName.Contains(id.ToString("0000"))).FirstOrDefault();
+        }
+
         public TexMatsPair GetWithSH3Index(int index, int baseIndex)
         {
             if (index < 0)

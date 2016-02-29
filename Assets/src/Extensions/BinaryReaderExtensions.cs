@@ -305,6 +305,21 @@ namespace ShiningHill
         }
 
         /// <summary>
+        /// Skips an unsigned short, will log a warning if excpected is given and the short doesn't match it
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="expected"></param>
+        public static void SkipUInt16(this BinaryReader reader, ushort? expected = null)
+        {
+            ushort s = reader.ReadUInt16();
+            if (expected != null && s != expected.Value)
+            {
+                Debug.LogWarning(String.Format("SKIP UNEXPECTED: int16 at offset {0:X} was {1:X} ({1}), expected {2:X} ({2}). (Stream Length {3:X})", reader.BaseStream.Position - 2, s, expected.Value, reader.BaseStream.Length));
+            }
+
+        }
+
+        /// <summary>
         /// Skips an int, will log a warning if excpected is given and the int doesn't match it
         /// </summary>
         /// <param name="reader"></param>
@@ -312,6 +327,20 @@ namespace ShiningHill
         public static void SkipInt32(this BinaryReader reader, int? expected = null)
         {
             int i = reader.ReadInt32();
+            if (expected != null && i != expected.Value)
+            {
+                Debug.LogWarning(String.Format("SKIP UNEXPECTED: int32 at offset {0:X} was {1:X} ({1}), expected {2:X} ({2}). (Stream Length {3:X})", reader.BaseStream.Position - 4, i, expected.Value, reader.BaseStream.Length));
+            }
+        }
+
+        /// <summary>
+        /// Skips an unsigned int, will log a warning if excpected is given and the int doesn't match it
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="expected"></param>
+        public static void SkipUInt32(this BinaryReader reader, uint? expected = null)
+        {
+            uint i = reader.ReadUInt32();
             if (expected != null && i != expected.Value)
             {
                 Debug.LogWarning(String.Format("SKIP UNEXPECTED: int32 at offset {0:X} was {1:X} ({1}), expected {2:X} ({2}). (Stream Length {3:X})", reader.BaseStream.Position - 4, i, expected.Value, reader.BaseStream.Length));
@@ -333,6 +362,20 @@ namespace ShiningHill
         }
 
         /// <summary>
+        /// Skips an unsigned long, will log a warning if excpected is given and the long doesn't match it
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="expected"></param>
+        public static void SkipUInt64(this BinaryReader reader, ulong? expected = null)
+        {
+            ulong l = reader.ReadUInt64();
+            if (expected != null && l != expected.Value)
+            {
+                Debug.LogWarning(String.Format("SKIP UNEXPECTED: int64 at offset {0:X} was {1:X} ({1}), expected {2:X} ({2}). (Stream Length {3:X})", reader.BaseStream.Position - 8, l, expected.Value, reader.BaseStream.Length));
+            }
+        }
+
+        /// <summary>
         /// Skips a float, will log a warning if excpected is given and the float doesn't match it
         /// </summary>
         /// <param name="reader"></param>
@@ -343,6 +386,20 @@ namespace ShiningHill
             if (expected != null && f != expected.Value)
             {
                 Debug.LogWarning(String.Format("SKIP UNEXPECTED: single at offset {0:X} was {1} ({1}), expected {2} ({2}). (Stream Length {3:X})", reader.BaseStream.Position - 4, f, expected.Value, reader.BaseStream.Length));
+            }
+        }
+
+        /// <summary>
+        /// Skips a double, will log a warning if excpected is given and the float doesn't match it
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="expected"></param>
+        public static void SkipDouble(this BinaryReader reader, double? expected = null)
+        {
+            double d = reader.ReadDouble();
+            if (expected != null && d != expected.Value)
+            {
+                Debug.LogWarning(String.Format("SKIP UNEXPECTED: single at offset {0:X} was {1} ({1}), expected {2} ({2}). (Stream Length {3:X})", reader.BaseStream.Position - 4, d, expected.Value, reader.BaseStream.Length));
             }
         }
         #endregion
