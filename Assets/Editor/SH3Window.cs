@@ -40,6 +40,18 @@ public class SH3Window : EditorWindow
 
     private Rect _displayRect;
 
+    public enum RatioSizes
+    {
+        none = 0x00,
+        r4x3 = 0x01,
+        r1x1 = 0x02,
+        r5x4 = 0x03,
+        r3x2 = 0x04,
+        r16x9 = 0x05,
+        r16x10 = 0x06,
+        r21x9 = 0x07,
+    }
+
     [MenuItem("ShiningHill/Silent Hill 3")]
     public static void ShowWindow()
     {
@@ -176,7 +188,7 @@ public class SH3Window : EditorWindow
         {
             Rect final = position;
             Process cproc = Process.GetCurrentProcess();
-            IntPtr unityWindow = User32.util.GetMainWindow(cproc);
+            unityWindow = User32.util.GetMainWindow(cproc);
             User32.Rect windowSize = new User32.Rect();
             User32.GetWindowRect(unityWindow, ref windowSize);
             final.x -= windowSize.left;
@@ -188,8 +200,14 @@ public class SH3Window : EditorWindow
 
             final.x += controlRect.x;
             final.y += controlRect.y;
-            final.width = controlRect.width;
-            final.height = controlRect.height;
+
+            int rdx, rdy;
+            GetRatiod(RatioSizes.r4x3, (int)controlRect.width, (int)controlRect.height, out rdx, out rdy);
+            final.width = (float)rdx;
+            final.height = (float)rdy;
+
+            final.x += (controlRect.width / 2) - (final.width / 2);
+            final.y += (controlRect.height / 2) - (final.height / 2);
 
             User32.SetWindowPos(sh3Window, User32.HWND_TOP, (int)final.x, (int)final.y, (int)final.width, (int)final.height, User32.SWP_NOACTIVATE);
         }
@@ -198,5 +216,46 @@ public class SH3Window : EditorWindow
     void OnDestroy()
     {
         ReleaseWindow();
+    }
+
+    private void GetRatiod(RatioSizes ratio, int maxX, int maxY, out int adjustedX, out int adjustedY)
+    {
+        int rx, ry;
+        if (ratio == RatioSizes.r4x3) { rx = 4; ry = 3; }
+        else if(ratio == RatioSizes.r1x1) { rx = 1; ry = 1; }
+        else if(ratio == RatioSizes.r5x4) { rx = 5; ry = 4; }
+        else if(ratio == RatioSizes.r3x2) { rx = 3; ry = 2; }
+        else if(ratio == RatioSizes.r16x9) { rx = 16; ry = 6; }
+        else if(ratio == RatioSizes.r16x10) { rx = 16; ry = 10; }
+        else if(ratio == RatioSizes.r21x9) { rx = 21; ry = 9; }
+        else { adjustedX = maxX; adjustedY = maxY; return; }
+
+        if (maxX > maxY)
+        {
+            adjustedX = (rx * maxY) / ry;
+            adjustedY = maxY;
+
+            if (adjustedX > maxX)
+            {
+                adjustedX = maxX;
+                adjustedY = (ry * maxX) / rx;
+            }
+            return;
+        }
+        else if (maxY > maxX)
+        {
+            adjustedX = maxX;
+            adjustedY = (ry * maxX) / rx;
+
+            if (adjustedY > maxY)
+            {
+                adjustedX = (rx * maxY) / ry;
+                adjustedY = maxY;
+            }
+            return;
+        }
+
+        adjustedX = maxX;
+        adjustedY = maxY;
     }
 }
