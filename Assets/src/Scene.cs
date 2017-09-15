@@ -46,7 +46,7 @@ namespace ShiningHill
             {
                 prefabGo = (GameObject)GameObject.Instantiate(prefab);
                 PrefabUtility.DisconnectPrefabInstance(prefabGo);
-                Transform existingMap = prefabGo.transform.FindChild(childName);
+                Transform existingMap = prefabGo.transform.Find(childName);
                 if (existingMap != null)
                 {
                     DestroyImmediate(existingMap.gameObject);

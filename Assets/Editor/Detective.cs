@@ -14,7 +14,7 @@ namespace ShiningHill
     {
         //static EditorWindow _currentWindow;
 
-        [MenuItem("SilentParty/Detective")]
+        [MenuItem("ShiningHill/Detective")]
         public static void ShowWindow()
         {
             /*_currentWindow = */EditorWindow.GetWindow(typeof(Detective));

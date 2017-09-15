@@ -14,7 +14,7 @@ namespace ShiningHill
     {
         //static EditorWindow _currentWindow;
 
-        [MenuItem("SilentParty/ArcExporter")]
+        [MenuItem("ShiningHill/ArcExporter")]
         public static void ShowWindow()
         {
             /*_currentWindow = */EditorWindow.GetWindow(typeof(ArcExporter));
