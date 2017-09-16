@@ -107,6 +107,18 @@ public static class User32
     public static extern bool GetWindowRect(IntPtr hWnd, ref Rect lpRect);
 
     [DllImport(DLLNAME)]
+    public static extern IntPtr GetForegroundWindow();
+
+    [DllImport(DLLNAME)]
+    public static extern bool GetClipCursor(ref Rect lpRect);
+
+    [DllImport(DLLNAME)]
+    public static extern bool ClipCursor(Rect lpRect);
+
+    [DllImport(DLLNAME)]
+    public static extern bool ClipCursor(IntPtr lpRect);
+
+    [DllImport(DLLNAME)]
     public static extern bool GetClientRect(IntPtr hWnd, ref Rect lpRect);
 
     [DllImport(DLLNAME)]
@@ -122,6 +134,11 @@ public static class User32
         public int top;
         public int right;
         public int bottom;
+
+        public override string ToString()
+        {
+            return "U32Rect(" + left + ", " + top + ", " + right + ", " + bottom + ")";
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
