@@ -62,9 +62,9 @@ namespace ShiningHill
             GameObject subGO = scene.gameObject;
             string assetPath = path.Replace(".map", ".asset");
 
-            int fileID = reader.ReadInt32();
-            int fileSize = reader.ReadInt32();
-            int Unknown1 = reader.ReadInt32();
+            /*int fileID = */reader.ReadInt32();
+            /*int fileSize = */reader.ReadInt32();
+            /*int Unknown1 = */reader.ReadInt32();
             reader.SkipInt32(0);
 
             //Textures
@@ -97,11 +97,11 @@ namespace ShiningHill
             reader.SkipInt32(0);
             reader.ReadVector3YInverted(); //V2
             reader.SkipInt32(0);
-            int headerLength = reader.ReadInt32(); //From v1 to vertexLength
+            /*int headerLength = */reader.ReadInt32(); //From v1 to vertexLength
 
             int indicesOffset = reader.ReadInt32() + (int)v1offset;
-            int indicesLength = reader.ReadInt32();
-            int Unknown = reader.ReadInt32();
+            /*int indicesLength = */reader.ReadInt32();
+            /*int Unknown = */reader.ReadInt32();
             reader.SkipInt32(meshCount);
 
             List<MeshGroupSH2> groups = new List<MeshGroupSH2>();

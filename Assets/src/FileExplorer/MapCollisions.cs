@@ -29,7 +29,7 @@ namespace ShiningHill
 
                 BinaryReader reader = new BinaryReader(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read));
 
-                Vector2 origin = reader.ReadVector2();
+                /*Vector2 origin = */reader.ReadVector2();
                 reader.SkipInt32(160);
                 reader.SkipInt32(880);
                 reader.SkipInt32(160);

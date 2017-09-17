@@ -1,29 +1,35 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Security;
 
+[SuppressUnmanagedCodeSecurity]
 public static class Kernel32
 {
+    private const string DLLNAME = "kernel32.dll";
+
     public const int PROCESS_VM_OPERATION = 0x0008;
     public const int PROCESS_WM_READ = 0x0010;
     public const int PROCESS_VM_WRITE = 0x0020;
 
-
-    [DllImport("kernel32.dll")]
+    [DllImport(DLLNAME)]
     public static extern IntPtr OpenProcess(int dwDesiredAccess, bool bInheritHandle, int dwProcessId);
 
-    [DllImport("kernel32.dll")]
+    [DllImport(DLLNAME)]
+    public static extern bool CloseHandle(IntPtr handle);
+
+    [DllImport(DLLNAME)]
     public static extern int GetLastError();
 
-    [DllImport("kernel32.dll")]
-    public static extern bool ReadProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer, int dwSize, ref int lpNumberOfBytesRead);
+    [DllImport(DLLNAME)]
+    public static unsafe extern bool ReadProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, void* lpBuffer, long dwSize, out IntPtr lpNumberOfBytesRead);
 
-    [DllImport("kernel32.dll", SetLastError = true)]
-    public static extern bool WriteProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer, int dwSize, ref int lpNumberOfBytesWritten);
+    [DllImport(DLLNAME, SetLastError = true)]
+    public static unsafe extern bool WriteProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, void* lpBuffer, long dwSize, out IntPtr lpNumberOfBytesWritten);
 
-    [DllImport("kernel32.dll", SetLastError = false)]
-    public static extern bool VirtualProtectEx(IntPtr hProcess, IntPtr lpAddress, uint dSize, int flNewProtect, out int lpflOldProtect);
+    [DllImport(DLLNAME, SetLastError = false)]
+    public static extern bool VirtualProtectEx(IntPtr hProcess, IntPtr lpAddress, long dSize, int flNewProtect, out int lpflOldProtect);
 
-    [DllImport("kernel32.dll", SetLastError = false)]
+    [DllImport(DLLNAME, SetLastError = false)]
     public static extern void GetSystemInfo(out SYSTEM_INFO Info);
 
     [StructLayout(LayoutKind.Explicit)]

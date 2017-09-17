@@ -1,11 +1,10 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Text;
-using UnityEngine;
 
+[SuppressUnmanagedCodeSecurity]
 public static class User32
 {
     private const string DLLNAME = "User32.dll";

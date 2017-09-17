@@ -6,16 +6,17 @@ using UnityEditor;
 
 using Process = System.Diagnostics.Process;
 
-[CustomEditor(typeof(WinTest))]
 public class SH3Window : EditorWindow
 {
     static SH3Window()
     {
         MethodInfo isDockedMethod = typeof(EditorWindow).GetProperty("docked", BindingFlags.NonPublic | BindingFlags.Instance).GetGetMethod(true);
         _IsDocked = (Func<EditorWindow, bool>)Delegate.CreateDelegate(typeof(Func<EditorWindow, bool>), isDockedMethod);
+
+        SH3RunEntity.GetMemHandle = () => { return ((SH3Window)EditorWindow.GetWindow(typeof(SH3Window), false, "Silent Hill 3", false)).memHandle; };
     }
 
-    //EXE Settings
+    //EXE Settings 
     [SerializeField]
     private string _exePath = "";
 
@@ -30,6 +31,10 @@ public class SH3Window : EditorWindow
     [SerializeField]
     private long _sh3Window;
     public IntPtr sh3Window { get { return new IntPtr(_sh3Window); } set { _sh3Window = value.ToInt64(); } }
+
+    [SerializeField]
+    private long _memHandle;
+    public IntPtr memHandle { get { return new IntPtr(_memHandle); } set { _memHandle = value.ToInt64(); } }
 
     [SerializeField]
     private long _unityWindow;
@@ -115,7 +120,11 @@ public class SH3Window : EditorWindow
         }
         _autoRestart = GUILayout.Toggle(_autoRestart, "Auto Restart", EditorStyles.toolbarButton, GUILayout.Width(75));
 
+        EditorGUI.BeginDisabledGroup(_memHandle == 0L);
+
         _trapMouse = GUILayout.Toggle(_trapMouse, _trapMouse ? "M. Trapped" : "M. Free", EditorStyles.toolbarButton, GUILayout.Width(75));
+
+        EditorGUI.EndDisabledGroup();
 
         EditorGUILayout.Space();
         
@@ -203,17 +212,16 @@ public class SH3Window : EditorWindow
         _windowSizeAtCapture = new Rect(windowSize.left, windowSize.top, windowSize.right - windowSize.left, windowSize.bottom - windowSize.top);
 
         uint style = User32.GetWindowLong(sh3Window, User32.GWL_STYLE);
-        User32.SetWindowLong(sh3Window, User32.GWL_STYLE, (style & ~User32.WS_CAPTION & ~User32.WS_SIZEBOX));
+        User32.SetWindowLong(sh3Window, User32.GWL_STYLE, (style & ~User32.WS_CAPTION & ~User32.WS_SIZEBOX & ~User32.WS_CLIPSIBLINGS));
+
+        uint styleUnity = User32.GetWindowLong(unityWindow, User32.GWL_STYLE);
+        User32.SetWindowLong(unityWindow, User32.GWL_STYLE, (styleUnity & ~User32.WS_CLIPCHILDREN));
 
         MoveWindowTo(_displayRect);
-
-        Process cproc = Process.GetCurrentProcess();
+        
         User32.SetParent(sh3Window, unityWindow);
 
-
-        //_target.Size = new System.Drawing.Size(windowSize.right - windowSize.left, windowSize.bottom - windowSize.top);
-        //ShowWindowAsync(_window, SW_SHOWMAXIMIZED);
-        //Scribe.InitTo(_proc);
+        memHandle = Scribe.OpenProcess(sh3Process);
     }
 
     private void ReleaseWindow()
@@ -223,10 +231,13 @@ public class SH3Window : EditorWindow
             User32.SetParent(sh3Window, IntPtr.Zero);
 
             uint style = User32.GetWindowLong(sh3Window, User32.GWL_STYLE);
-            User32.SetWindowLong(sh3Window, User32.GWL_STYLE, (style | User32.WS_CAPTION));
+            User32.SetWindowLong(sh3Window, User32.GWL_STYLE, (style | User32.WS_CAPTION | User32.WS_CLIPSIBLINGS));
 
             User32.SetWindowPos(sh3Window, 0, (int)_windowSizeAtCapture.x, (int)_windowSizeAtCapture.y, (int)_windowSizeAtCapture.width, (int)_windowSizeAtCapture.height, User32.SWP_NOZORDER | User32.SWP_NOACTIVATE);
+            Kernel32.CloseHandle(memHandle);
         }
+
+        memHandle = IntPtr.Zero;
         sh3Window = IntPtr.Zero;
         sh3Process = null;
     }
@@ -276,7 +287,7 @@ public class SH3Window : EditorWindow
             User32.ClipCursor(IntPtr.Zero);
         }
     }
-
+    
     void OnDestroy()
     {
         ReleaseWindow();
