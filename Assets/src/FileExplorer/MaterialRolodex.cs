@@ -69,20 +69,13 @@ namespace ShiningHill
         private MaterialRolodex(){}
         public static MaterialRolodex GetOrCreateAt(string path)
         {
-            if (path.Contains(".tex"))
+            MaterialRolodex mr = AssetDatabase.LoadAssetAtPath<MaterialRolodex>(path);
+            if (mr == null)
             {
-                return CustomPostprocessor.ProcessTEX(path);
+                mr = MaterialRolodex.CreateInstance<MaterialRolodex>();
+                AssetDatabase.CreateAsset(mr, path);
             }
-            else
-            {
-                MaterialRolodex mr = AssetDatabase.LoadAssetAtPath<MaterialRolodex>(path);
-                if (mr == null)
-                {
-                    mr = MaterialRolodex.CreateInstance<MaterialRolodex>();
-                    AssetDatabase.CreateAsset(mr, path);
-                }
-                return mr;
-            }
+            return mr;
         }
 
         public void AddTexture(Texture tex)

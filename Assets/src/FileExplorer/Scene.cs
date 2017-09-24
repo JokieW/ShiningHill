@@ -12,39 +12,21 @@ namespace ShiningHill
 {
 	public class Scene : MonoBehaviour 
 	{
-        public static readonly float GLOBAL_SCALE = 0.002f;
-
-        public Matrix4x4 GetSH3ToUnityMatrix()
-        {
-            Map map = GetComponent<Map>();
-            if (map != null)
-            {
-                return Matrix4x4.TRS(map.transform.localPosition, map.transform.localRotation, new Vector3(GLOBAL_SCALE, GLOBAL_SCALE, GLOBAL_SCALE));
-            }
-            return Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(GLOBAL_SCALE, GLOBAL_SCALE, GLOBAL_SCALE));
-        }
-
         public static GameObject BeginEditingPrefab(string path, string childName)
         {
-            string prefabPath = path.Replace(Path.GetExtension(path), ".prefab");
+            string directoryPath = Path.GetDirectoryName(path);
+            if (!Directory.Exists(directoryPath)) Directory.CreateDirectory(directoryPath);
 
-            Object prefab = AssetDatabase.LoadAssetAtPath<Object>(prefabPath);
+            GameObject prefab = (GameObject)AssetDatabase.LoadMainAssetAtPath(path);
             GameObject prefabGo = null;
-            GameObject subGO = null;
-
             if (prefab == null)
             {
-                prefabGo = new GameObject("Area");
-                prefabGo.AddComponent<Scene>();
+                prefabGo = new GameObject("Sector");
                 prefabGo.isStatic = true;
-
-                GameObject testGO = new GameObject("Tests");
-                testGO.transform.SetParent(prefabGo.transform);
-                testGO.transform.localScale = new Vector3(Scene.GLOBAL_SCALE, Scene.GLOBAL_SCALE, Scene.GLOBAL_SCALE);
             }
             else
             {
-                prefabGo = (GameObject)GameObject.Instantiate(prefab);
+                prefabGo = Instantiate((GameObject)prefab);
                 PrefabUtility.DisconnectPrefabInstance(prefabGo);
                 Transform existingMap = prefabGo.transform.Find(childName);
                 if (existingMap != null)
@@ -53,33 +35,34 @@ namespace ShiningHill
                 }
             }
 
-            prefabGo.transform.localScale = Vector3.one;
-            subGO = new GameObject(childName);
+            GameObject subGO = new GameObject(childName);
             subGO.transform.SetParent(prefabGo.transform);
             subGO.isStatic = true;
+            AssetDatabase.StartAssetEditing();
 
             return subGO;
         }
 
         public static void FinishEditingPrefab(string path, GameObject subGO)
         {
-            string prefabPath = path.Replace(Path.GetExtension(path), ".prefab");
-            Object prefab = AssetDatabase.LoadAssetAtPath<Object>(prefabPath);
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
             GameObject prefabGO = subGO.transform.parent.gameObject;
-            prefabGO.transform.localScale = Vector3.one;//new Vector3(GLOBAL_SCALE, GLOBAL_SCALE, GLOBAL_SCALE);
-
             if (prefab != null)
             {
                 PrefabUtility.ReplacePrefab(prefabGO, prefab);
             }
             else
             {
-                PrefabUtility.CreatePrefab(prefabPath, prefabGO);
+                PrefabUtility.CreatePrefab(path, prefabGO);
             }
+            AssetDatabase.StopAssetEditing();
+            EditorUtility.SetDirty(prefabGO);
 
             AssetDatabase.SaveAssets();
+            Debug.Log("Does it contain " + path + " " + AssetDatabase.Contains(subGO));
 
             DestroyImmediate(prefabGO, false);
+            Debug.Log("Does it still contain " + path + " " + AssetDatabase.Contains(subGO));
         }
 	}
 }

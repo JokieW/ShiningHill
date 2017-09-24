@@ -18,17 +18,19 @@ public class HexDisplay
         _style.wordWrap = false;
     }
 
-    //private static Dictionary<byte[], string>
+    //private static Dictionary<byte[], string> 
 
     private static int _MAXROWS = 40;
 
     private static string _goToAddressText = "";
 
     static HexDisplay.DisplayType _dispType = HexDisplay.DisplayType.ANSI;
+    static bool _equalizePreview = true;
     static int _bytesPerRow = 16;
     static int _grouping = 4;
+    static EndianDisplay _endian = EndianDisplay.Little;
 
-    public static Vector2 Display(Vector2 scroll, byte[] data, GUILayoutOption[] layoutOptions)
+    public unsafe static Vector2 Display(Vector2 scroll, byte[] data, GUILayoutOption[] layoutOptions)
     {
         try
         {
@@ -38,6 +40,7 @@ public class HexDisplay
             StringBuilder centerSB = new StringBuilder();
             StringBuilder previewSB = new StringBuilder();
 
+            
             long pointer = (long)scroll.y;
             int currentRow = 0;
             while (pointer < data.LongLength && currentRow <= _MAXROWS)
@@ -45,54 +48,85 @@ public class HexDisplay
                 indexSB.AppendFormat("{0:X8}", pointer);
                 long chunkSize = Min(_bytesPerRow, data.LongLength - pointer);
                 int curGrouping = 0;
+                int endianGroup = _endian == EndianDisplay.Big ? _grouping - 1 : 0;
                 for (long i = 0L; i != chunkSize; i++)
                 {
-                    centerSB.AppendFormat("{0:X2}", data[pointer + i]);
+                    centerSB.AppendFormat("{0:X2}", data[pointer + i + endianGroup]);
                     curGrouping++;
+                    if (_endian == EndianDisplay.Big) endianGroup -= 2;
                     if (curGrouping == _grouping && i != chunkSize - 1)
                     {
                         curGrouping = 0;
+                        endianGroup = _endian == EndianDisplay.Big ? _grouping - 1 : 0;
                         centerSB.Append(" ");
                     }
                 }
 
-
-                for (long i = 0L; i != chunkSize; i++)
+                fixed (byte* ptr = data)
                 {
-                    
-                    if (_dispType == DisplayType.Byte)
+                    for (long i = 0L; i != chunkSize; i++)
                     {
-                        previewSB.AppendFormat("{0} ", (int)data[pointer + i]);
-                    }
-                    else if (_dispType == DisplayType.Byte2)
-                    {
-                        previewSB.AppendFormat("{0} ", BitConverter.ToInt16(new byte[] { data[pointer + i], data[pointer + i + 1 ] }, 0));
-                        i += 1;
-                    }
-                    else if (_dispType == DisplayType.Byte4)
-                    {
-                        previewSB.AppendFormat("{0} ", BitConverter.ToInt32(new byte[] { data[pointer + i], data[pointer + i + 1], data[pointer + i + 2], data[pointer + i + 3] }, 0));
-                        i += 3;
-                    }
-                    else if (_dispType == DisplayType.Byte8)
-                    {
-                        previewSB.AppendFormat("{0} ", BitConverter.ToInt32(new byte[] { data[pointer + i], data[pointer + i + 1], data[pointer + i + 2], data[pointer + i + 3], data[pointer + i + 4], data[pointer + i + 5], data[pointer + i + 6], data[pointer + i + 7] }, 0));
-                        i += 7;
-                    }
-                    else if (_dispType == DisplayType.Float)
-                    {
-                        previewSB.AppendFormat("{0} ", BitConverter.ToSingle(new byte[] { data[pointer + i], data[pointer + i + 1], data[pointer + i + 2], data[pointer + i + 3] }, 0));
-                        i += 3;
-                    }
-                    else if (_dispType == DisplayType.Double)
-                    {
-                        previewSB.AppendFormat("{0} ", BitConverter.ToDouble(new byte[] { data[pointer + i], data[pointer + i + 1], data[pointer + i + 2], data[pointer + i + 3], data[pointer + i + 4], data[pointer + i + 5], data[pointer + i + 6], data[pointer + i + 7] }, 0));
-                        i += 7;
-                    }
-                    else //ANSI
-                    {
-                        byte b = data[pointer + i];
-                        previewSB.AppendFormat("{0:X}", BadChar(b) ? '.' : System.Convert.ToChar(b));
+                        int length = 0;
+                        string value;
+                        if (_dispType == DisplayType.Byte)
+                        {
+                            length = 4;
+                            value = (*(ptr + pointer + i)).ToString();
+                        }
+                        else if (_dispType == DisplayType.Byte2)
+                        {
+                            length = 7;
+                            value = (*(short*)(ptr + pointer + i)).ToString();
+                            i += 1;
+                        }
+                        else if (_dispType == DisplayType.Byte4)
+                        {
+                            length = 12;
+                            value = (*(int*)(ptr + pointer + i)).ToString();
+                            i += 3;
+                        }
+                        else if (_dispType == DisplayType.Byte8)
+                        {
+                            length = 21;
+                            value = (*(long*)(ptr + pointer + i)).ToString();
+                            i += 7;
+                        }
+                        else if (_dispType == DisplayType.Float)
+                        {
+                            length = 14;
+                            value = (*(float*)(ptr + pointer + i)).ToString();
+                            i += 3;
+                        }
+                        else if (_dispType == DisplayType.Double)
+                        {
+                            length = 23;
+                            value = (*(double*)(ptr + pointer + i)).ToString();
+                            i += 7;
+                        }
+                        else //ANSI
+                        {
+                            length = 1;
+                            byte b = *(ptr + pointer + i);
+                            value = new string(BadChar(b) ? '.' : System.Convert.ToChar(b), 1);
+                        }
+
+                        if (length != 1)
+                        {
+                            if (_equalizePreview)
+                            {
+                                char* str = stackalloc char[length];
+                                for (int j = length - 1, k = value.Length - 1; j != -1; j--, k--)
+                                {
+                                    if (k >= 0) { str[j] = value[k]; } else { str[j] = ' '; }
+                                }
+                                value = new string(str, 0, length);
+                            }
+                            else
+                            {
+                                value += " ";
+                            }
+                        }
+                        previewSB.Append(value);
                     }
                 }
 
@@ -143,8 +177,10 @@ public class HexDisplay
             GUILayout.Space(30.0f);
             _bytesPerRow = EditorGUILayout.IntPopup(_bytesPerRow, new string[] { "8 bytes per row", "16 bytes per row", "24 bytes per row", "32 bytes per row" }, new int[] { 8, 16, 24, 32 }, GUILayout.Width(120.0f));
             _grouping = EditorGUILayout.IntPopup(_grouping, new string[] { "1 byte per group", "2 bytes per group", "4 bytes per group", "8 bytes per group" }, new int[] { 1, 2, 4, 8 }, GUILayout.Width(120.0f));
+            _endian = (EndianDisplay)EditorGUILayout.IntPopup((int)_endian, new string[] { "Little Endian", "Big Endian" }, new int[] { 0, 1 }, GUILayout.Width(100.0f));
             GUILayout.Space(60.0f);
             _dispType = (HexDisplay.DisplayType)EditorGUILayout.EnumPopup("Preview format", _dispType, GUILayout.Width(240.0f));
+            _equalizePreview = EditorGUILayout.Toggle("Equalize Preview", _equalizePreview);
 
             GUILayout.EndHorizontal();
             GUILayout.EndVertical();
@@ -201,5 +237,11 @@ public class HexDisplay
         Byte8,
         Float,
         Double
+    }
+
+    public enum EndianDisplay
+    {
+        Little = 0,
+        Big = 1
     }
 }

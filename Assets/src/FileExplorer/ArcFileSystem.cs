@@ -12,7 +12,7 @@ using ICSharpCode.SharpZipLib.GZip;
 
 namespace ShiningHill
 {
-	public class ArcFileSystem 
+    public class ArcFileSystem 
 	{
 
         public byte[] data;
@@ -22,7 +22,7 @@ namespace ShiningHill
         {
             data = new byte[90016];
 
-            GZipInputStream gzipStream = new GZipInputStream(new FileStream("Assets/SilentHill3/Archives/arc.arc", FileMode.Open, FileAccess.Read));
+            GZipInputStream gzipStream = new GZipInputStream(new FileStream(CustomPostprocessor.GetHardDataPathFor(SHGame.SH3PC) + "arc.arc", FileMode.Open, FileAccess.Read));
 
             gzipStream.Read(data, 0, 90016);
 
@@ -32,6 +32,7 @@ namespace ShiningHill
         public void ReadAll()
         {
             CustomPostprocessor.DoImports = false;
+            string hardAssetPath = CustomPostprocessor.GetHardDataPathFor(SHGame.SH3PC);
             try
             {
                 BinaryReader reader = new BinaryReader(new MemoryStream(data));
@@ -55,7 +56,7 @@ namespace ShiningHill
 
                     if (entryType == 2)
                     {
-                        arc = new Archive(name, AssetDatabase.LoadAssetAtPath("Assets/SilentHill3/Archives/" + name + ".arc", typeof(UnityEngine.Object)));
+                        arc = new Archive(name, AssetDatabase.LoadAssetAtPath(hardAssetPath + name + ".arc", typeof(UnityEngine.Object)));
                         arc.OpenArchive();
                     }
 
@@ -64,13 +65,13 @@ namespace ShiningHill
                         try
                         {
                             name = name.Replace("tmp", arc.NameAsPath());
-                            string path = "Assets/SilentHill3/Resources/" + name;
+                            string path = hardAssetPath + name;
                             path = Path.GetDirectoryName(path);
                             if (!Directory.Exists(path))
                             {
                                 Directory.CreateDirectory(path);
                             }
-                            File.WriteAllBytes("Assets/SilentHill3/Resources/" + name, arc.AllFiles[entryCount].data);
+                            File.WriteAllBytes(hardAssetPath + name, arc.AllFiles[entryCount].data);
                         }
                         catch (Exception)
                         {

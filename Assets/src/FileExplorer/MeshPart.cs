@@ -36,29 +36,20 @@ namespace ShiningHill
             reader.SkipBytes(32, 0);
 
             go.isStatic = part.ObjectType != 3;
-
-            Matrix4x4 matrix = part.GetComponentInParent<Scene>().GetSH3ToUnityMatrix();
-
+            
             List<Vector3> _verts = new List<Vector3>();
             List<Vector3> _norms = new List<Vector3>();
             List<Vector2> _uvs = new List<Vector2>();
             List<Color32> _colors = new List<Color32>();
             for (int i = 0; i != VertexCount; i++)
             {
-                Vector3 temp = reader.ReadVector3();
-                temp.y = -temp.y;
-                _verts.Add(matrix.MultiplyPoint(temp));
-
-                temp = reader.ReadVector3();
-                temp.x = -temp.x;
-                temp.z = -temp.z;
-                _norms.Add(temp);
-
+                _verts.Add(reader.ReadVector3());
+                _norms.Add(-reader.ReadVector3());
                 _uvs.Add(reader.ReadVector2());
                 _colors.Add(reader.ReadBGRA());
             }
 
-            Mesh mesh = MeshUtils.MakeStripped(_verts, _norms, _uvs, _colors);
+            Mesh mesh = MeshUtils.MakeStrippedInverted(_verts, _norms, _uvs, _colors);
 
             mesh.name = "mesh_" + offset;
             go.AddComponent<MeshFilter>().sharedMesh = mesh;

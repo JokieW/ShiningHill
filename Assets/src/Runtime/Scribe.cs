@@ -234,4 +234,23 @@ public static unsafe class Scribe
             Console.WriteLine("WriteVector3 error: " + Kernel32.GetLastError().ToString("X"));
         }
     }
+
+    //Quaternion
+    public static Quaternion ReadQuaternion(IntPtr handle, IntPtr address)
+    {
+        IntPtr bytesRead;
+        Quaternion data = new Quaternion();
+        Kernel32.ReadProcessMemory(handle, address, &data, 16, out bytesRead);
+        return data;
+    }
+
+    public static void WriteQuaternion(IntPtr handle, IntPtr address, Quaternion data)
+    {
+        IntPtr bytesWrite;
+
+        if (!Kernel32.WriteProcessMemory(handle, address, &data, 16, out bytesWrite))
+        {
+            Console.WriteLine("WriteVector3 error: " + Kernel32.GetLastError().ToString("X"));
+        }
+    }
 }

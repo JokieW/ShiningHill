@@ -10,7 +10,39 @@ using Object = UnityEngine.Object;
 
 namespace ShiningHill
 {
-	public class MapLights : MonoBehaviour 
+    public struct MapLightsAssetPaths
+    {
+        string dedName;
+        string genericPath;
+        SHGame game;
+
+        public MapLightsAssetPaths(string hardAssetPath, SHGame forgame)
+        {
+            dedName = Path.GetFileNameWithoutExtension(hardAssetPath);
+            genericPath = Path.GetDirectoryName(hardAssetPath).Substring(hardAssetPath.LastIndexOf("/data/") + 1).Replace("\\", "/") + "/";
+            game = forgame;
+        }
+
+        public string GetHardAssetPath()
+        {
+            string path = CustomPostprocessor.GetHardDataPathFor(game);
+            return path + genericPath + dedName + ".ded";
+        }
+
+        public string GetExtractAssetPath()
+        {
+            string path = CustomPostprocessor.GetExtractDataPathFor(game);
+            return path + genericPath + dedName + ".asset";
+        }
+
+        public string GetPrefabPath()
+        {
+            string path = CustomPostprocessor.GetExtractDataPathFor(game);
+            return path + genericPath + "Prefabs/" + dedName + ".prefab";
+        }
+    }
+
+    public class MapLights : MonoBehaviour 
 	{
         public List<GlobalLight> globalLights = new List<GlobalLight>();
         public List<LocalLight> weirdLights = new List<LocalLight>();
@@ -22,16 +54,15 @@ namespace ShiningHill
         public Vector4 Unknown3;
 
 
-        public static MapLights ReadLights(string path)
+        public static MapLights ReadLights(MapLightsAssetPaths paths)
         {
-            /*string assetPath = path.Replace(".ded", ".asset");*/
-            GameObject subGO = Scene.BeginEditingPrefab(path, "Lights");
+            GameObject subGO = Scene.BeginEditingPrefab(paths.GetPrefabPath(), "Lights");
 
             try
             {
                 MapLights lights = subGO.AddComponent<MapLights>();
 
-                BinaryReader reader = new BinaryReader(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read));
+                BinaryReader reader = new BinaryReader(new FileStream(paths.GetHardAssetPath(), FileMode.Open, FileAccess.Read, FileShare.Read));
 
                 reader.SkipInt16(); //Usually the area's code
                 reader.SkipInt16(); //Usually 1, saw a 20
@@ -55,9 +86,7 @@ namespace ShiningHill
                 reader.SkipBytes(40, 0);
                 short ambientOffset = reader.ReadInt16();
                 reader.SkipBytes(24, 0);
-
-                Matrix4x4 transMat = lights.GetComponentInParent<Scene>().GetSH3ToUnityMatrix();
-
+                
                 reader.BaseStream.Position = globalLightsOffset;
                 for (int i = 0; i != globalLightsCount; i++)
                 {
@@ -77,7 +106,7 @@ namespace ShiningHill
                     ll.Unknown1 = reader.ReadSingle();
                     ll.Range = reader.ReadSingle();
                     reader.SkipBytes(8, 0);
-                    ll.position = reader.ReadVector3YInverted();
+                    ll.position = reader.ReadVector3();
                     reader.SkipInt16(0x0);
                     ll.Unknown2 = reader.ReadInt16();
                     lights.weirdLights.Add(ll);
@@ -91,18 +120,18 @@ namespace ShiningHill
                     ll.Unknown1 = reader.ReadSingle();
                     ll.Range = reader.ReadSingle();
                     reader.SkipBytes(8, 0);
-                    ll.position = reader.ReadVector3YInverted();
+                    ll.position = reader.ReadVector3();
                     reader.SkipInt16(0x0);
                     ll.Unknown2 = reader.ReadInt16();
                     lights.localLights.Add(ll);
 
                     GameObject lightGO = new GameObject("Light " + i);
                     lightGO.transform.SetParent(subGO.transform);
-                    lightGO.transform.localPosition = transMat.MultiplyPoint(ll.position);
+                    lightGO.transform.localPosition = ll.position;
 
                     Light light = lightGO.AddComponent<Light>();
                     light.type = LightType.Point;
-                    light.range = ll.Range * Scene.GLOBAL_SCALE;
+                    light.range = ll.Range;
                     light.color = ll.color;
                     light.intensity = 8.0f;
                     light.bounceIntensity = 1.0f;
@@ -116,7 +145,7 @@ namespace ShiningHill
 
                 reader.Close();
 
-                Scene.FinishEditingPrefab(path, subGO);
+                Scene.FinishEditingPrefab(paths.GetPrefabPath(), subGO);
 
                 return lights;
 

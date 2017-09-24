@@ -10,31 +10,58 @@ using Object = UnityEngine.Object;
 
 namespace ShiningHill
 {
+    public struct MapShadowsAssetPaths
+    {
+        string kg2Name;
+        string genericPath;
+        SHGame game;
+
+        public MapShadowsAssetPaths(string hardAssetPath, SHGame forgame)
+        {
+            kg2Name = Path.GetFileNameWithoutExtension(hardAssetPath);
+            genericPath = Path.GetDirectoryName(hardAssetPath).Substring(hardAssetPath.LastIndexOf("/data/") + 1).Replace("\\", "/") + "/";
+            game = forgame;
+        }
+
+        public string GetHardAssetPath()
+        {
+            string path = CustomPostprocessor.GetHardDataPathFor(game);
+            return path + genericPath + kg2Name + ".kg2";
+        }
+
+        public string GetExtractAssetPath()
+        {
+            string path = CustomPostprocessor.GetExtractDataPathFor(game);
+            return path + genericPath + kg2Name + ".asset";
+        }
+
+        public string GetPrefabPath()
+        {
+            string path = CustomPostprocessor.GetExtractDataPathFor(game);
+            return path + genericPath + "Prefabs/" + kg2Name + ".prefab";
+        }
+    }
     [Serializable]
 	public class MapShadows : MonoBehaviour 
 	{
 
-        public static MapShadows ReadShadowCasters(string path)
+        public static MapShadows ReadShadowCasters(MapShadowsAssetPaths paths)
         {
-            string assetPath = path.Replace(".kg2", ".asset");
-            GameObject subGO = Scene.BeginEditingPrefab(path, "Shadows");
+            GameObject subGO = Scene.BeginEditingPrefab(paths.GetPrefabPath(), "Shadows");
 
             try
             {
                 MapShadows casters = subGO.AddComponent<MapShadows>();
 
-                BinaryReader reader = new BinaryReader(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read));
+                BinaryReader reader = new BinaryReader(new FileStream(paths.GetHardAssetPath(), FileMode.Open, FileAccess.Read, FileShare.Read));
 
                 if (reader.BaseStream.Length != 0)
                 {
-
                     //Master header
                     reader.SkipInt32();
                     short casterCount = reader.ReadInt16();
                     reader.SkipBytes(10, 0);
-
-                    Matrix4x4 transMat = casters.GetComponentInParent<Scene>().GetSH3ToUnityMatrix();
-
+                    
                     //Reading casters
                     for (int i = 0; i != casterCount; i++)
                     {
@@ -74,7 +101,7 @@ namespace ShiningHill
                                 }
                                 else
                                 {
-                                    _verts.Add(transMat.MultiplyPoint(v + debugPosition));
+                                    _verts.Add(v + debugPosition);
                                     _norms.Add(currentNormal);
                                     k++;
                                 }
@@ -115,10 +142,10 @@ namespace ShiningHill
 
                 foreach (MeshFilter mf in subGO.GetComponentsInChildren<MeshFilter>())
                 {
-                    AssetDatabase.AddObjectToAsset(mf.sharedMesh, assetPath);
+                    AssetDatabase.AddObjectToAsset(mf.sharedMesh, paths.GetExtractAssetPath());
                 }
 
-                Scene.FinishEditingPrefab(path, subGO);
+                Scene.FinishEditingPrefab(paths.GetPrefabPath(), subGO);
 
                 return casters;
 

@@ -11,6 +11,60 @@ using Object = UnityEngine.Object;
 
 namespace ShiningHill
 {
+    public struct MapAssetPaths
+    {
+        string mapName;
+        string genericPath;
+        SHGame game;
+
+        public MapAssetPaths(string hardAssetPath, SHGame forgame)
+        {
+            mapName = Path.GetFileNameWithoutExtension(hardAssetPath);
+            genericPath = Path.GetDirectoryName(hardAssetPath).Substring(hardAssetPath.LastIndexOf("/data/")+1).Replace("\\", "/") + "/";
+            game = forgame;
+        }
+
+        public string GetTextureName()
+        {
+            return mapName + "_tex";
+        }
+
+        public string GetHardAssetPath()
+        {
+            string path = CustomPostprocessor.GetHardDataPathFor(game);
+            return path + genericPath + mapName + ".map";
+        }
+
+        public string GetExtractAssetPath()
+        {
+            string path = CustomPostprocessor.GetExtractDataPathFor(game);
+            return path + genericPath + mapName + ".asset";
+        }
+
+        public string GetPrefabPath()
+        {
+            string path = CustomPostprocessor.GetExtractDataPathFor(game);
+            return path + genericPath + "Prefabs/" + mapName + ".prefab";
+        }
+
+        public TexAssetPaths GetHardTextureTRPaths()
+        {
+            string path = CustomPostprocessor.GetHardDataPathFor(game);
+            if (path.Contains("cc/cc")) // Done for SH3, Check for SH2
+            {
+                return new TexAssetPaths(path + genericPath + "cc01TR.tex", game);
+            }
+            return new TexAssetPaths(path + genericPath + mapName + "TR.tex", game);
+        }
+
+        public TexAssetPaths GetHardTextureGBPaths()
+        {
+            string path = CustomPostprocessor.GetHardDataPathFor(game);
+            string mapcode = genericPath.Substring(genericPath.Length - 3, 2);
+            return new TexAssetPaths(path + genericPath + mapcode + "GB.tex", game);
+        }
+    }
+
     public class Map : MonoBehaviour 
     {
         public int Unknown1;
@@ -20,30 +74,28 @@ namespace ShiningHill
         public short LocalTextureCount;
         public short LocalTextureBaseIndexModifier;
 
-        public static Map ReadMap(string path)
+        public static Map ReadMap(MapAssetPaths asset)
         {
-            
-            GameObject subGO = Scene.BeginEditingPrefab(path, "Map");
-            
+            GameObject subGO = Scene.BeginEditingPrefab(asset.GetPrefabPath(), "Map");
 
             try
             {
                 Map scene = subGO.AddComponent<Map>();
 
-                BinaryReader reader = new BinaryReader(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read));
+                BinaryReader reader = new BinaryReader(new FileStream(asset.GetHardAssetPath(), FileMode.Open, FileAccess.Read, FileShare.Read));
 
                 //Header
                 int marker = reader.PeekInt32(); //marker
 
                 if (marker != -1) //SH2
                 {
-                    ReadSH2Map(reader, scene, path);
-                    Scene.FinishEditingPrefab(path, subGO);
+                    ReadSH2Map(reader, scene, asset);
+                    Scene.FinishEditingPrefab(asset.GetPrefabPath(), subGO);
                 }
                 else if (marker == -1) //SH3
                 {
-                    ReadSH3Map(reader, scene, path);
-                    Scene.FinishEditingPrefab(path, subGO);
+                    ReadSH3Map(reader, scene, asset);
+                    Scene.FinishEditingPrefab(asset.GetPrefabPath(), subGO);
                 }
 
                 return scene;
@@ -57,10 +109,9 @@ namespace ShiningHill
             return null;
         }
 
-        static void ReadSH2Map(BinaryReader reader, Map scene, string path)
+        static void ReadSH2Map(BinaryReader reader, Map scene, MapAssetPaths paths)
         {
             GameObject subGO = scene.gameObject;
-            string assetPath = path.Replace(".map", ".asset");
 
             /*int fileID = */reader.ReadInt32();
             /*int fileSize = */reader.ReadInt32();
@@ -68,7 +119,7 @@ namespace ShiningHill
             reader.SkipInt32(0);
 
             //Textures
-            Texture[] textures = TextureUtils.ReadDDS(Path.GetFileName(path).Replace(".map", "_tex"), reader);
+            Texture[] textures = TextureUtils.ReadDDS(paths.GetTextureName(), reader);
 
 
             //Meshes
@@ -78,7 +129,7 @@ namespace ShiningHill
             reader.SkipInt32(0);
 
             long magicPosition = reader.BaseStream.Position;
-            reader.SkipInt32(0x20010730); //Magic number?
+            reader.SkipInt32(0x20010730); //date?
             reader.SkipInt32(1);
             int materialsOffset = reader.ReadInt32() + (int)magicPosition; 
             int meshCount = reader.ReadInt32();
@@ -93,9 +144,9 @@ namespace ShiningHill
             reader.SkipInt32(8);
             
             long v1offset = reader.BaseStream.Position;
-            reader.ReadVector3YInverted(); //V1
+            reader.ReadVector3(); //V1
             reader.SkipInt32(0);
-            reader.ReadVector3YInverted(); //V2
+            reader.ReadVector3(); //V2
             reader.SkipInt32(0);
             /*int headerLength = */reader.ReadInt32(); //From v1 to vertexLength
 
@@ -124,8 +175,8 @@ namespace ShiningHill
 
             for (int i = 0; i != vertexElementsCount; i++)
             {
-                verts.Add(reader.ReadVector3YInverted() * Scene.GLOBAL_SCALE);
-                norms.Add(reader.ReadVector3YInverted());
+                verts.Add(reader.ReadVector3());
+                norms.Add(reader.ReadVector3());
                 if (elementLength == 36)
                 {
                     colors.Add(reader.ReadBGRA());
@@ -157,7 +208,7 @@ namespace ShiningHill
             reader.BaseStream.Position = materialsOffset;
 
             //Mesh renderer
-            MaterialRolodex rolodex = MaterialRolodex.GetOrCreateAt(assetPath);
+            MaterialRolodex rolodex = MaterialRolodex.GetOrCreateAt(paths.GetExtractAssetPath());
             rolodex.AddTextures(textures);
             
 
@@ -179,7 +230,7 @@ namespace ShiningHill
 
             foreach (MeshFilter mf in subGO.GetComponentsInChildren<MeshFilter>())
             {
-                AssetDatabase.AddObjectToAsset(mf.sharedMesh, assetPath);
+                AssetDatabase.AddObjectToAsset(mf.sharedMesh, paths.GetExtractAssetPath());
             }
         }
 
@@ -199,10 +250,9 @@ namespace ShiningHill
 
         }
 
-        static void ReadSH3Map(BinaryReader reader, Map scene, string path)
+        static void ReadSH3Map(BinaryReader reader, Map scene, MapAssetPaths paths)
         {
             GameObject subGO = scene.gameObject;
-            string assetPath = path.Replace(".map", ".asset");
 
             reader.SkipInt32(-1);
             reader.SkipInt32(0);
@@ -235,7 +285,7 @@ namespace ShiningHill
             //Read textures
             long goBack = reader.BaseStream.Position;
             reader.BaseStream.Position = TextureGroupOffset;
-            Texture2D[] textures = TextureUtils.ReadTex32(Path.GetFileName(path).Replace(".map", "_tex"), reader);
+            Texture2D[] textures = TextureUtils.ReadTex32(paths.GetTextureName(), reader);
 
             reader.BaseStream.Position = goBack;
 
@@ -255,12 +305,12 @@ namespace ShiningHill
 
             //reader.BaseStream.Position = transformOffset;
             //Matrix4x4 mat4x4 = reader.ReadMatrix4x4();
-            Matrix4x4Utils.SetTransformFromSH3Matrix(subGO.transform, ref subGO.GetComponentInChildren<Skybox>().Matrix);
+            Matrix4x4Utils.SetTransformFromMatrix(subGO.transform, ref subGO.GetComponentInChildren<Skybox>().Matrix);
 
             reader.Close();
 
             //Asset bookkeeping
-            MaterialRolodex rolodex = MaterialRolodex.GetOrCreateAt(assetPath);
+            MaterialRolodex rolodex = MaterialRolodex.GetOrCreateAt(paths.GetExtractAssetPath());
             rolodex.AddTextures(textures);
 
             int baseIndex = 0;
@@ -276,21 +326,11 @@ namespace ShiningHill
                 }
                 else if (group.TextureGroup == 2)
                 {
-                    string trpath;
-                    if (path.Contains("cc/cc"))
-                    {
-                        trpath = path.Substring(0, path.IndexOf(".map") - 2) + "01TR.tex";
-                    }
-                    else
-                    {
-                        trpath = path.Replace(".map", "TR.tex");
-                    }
-                    goodRolodex = MaterialRolodex.GetOrCreateAt(trpath);
+                    goodRolodex = CustomPostprocessor.ProcessTEX(paths.GetHardTextureTRPaths());
                 }
                 else if (group.TextureGroup == 1)
                 {
-                    string name = Path.GetFileName(path);
-                    goodRolodex = MaterialRolodex.GetOrCreateAt(path.Replace(name, name.Substring(0, 2) + "GB.tex"));
+                    goodRolodex = CustomPostprocessor.ProcessTEX(paths.GetHardTextureGBPaths());
                 }
                 else
                 {
@@ -299,7 +339,7 @@ namespace ShiningHill
 
                 if (goodRolodex == null)
                 {
-                    Debug.LogWarning("Couldn't find rolodex for group " + group.TextureGroup + " on " + path);
+                    Debug.LogWarning("Couldn't find rolodex for group " + group.TextureGroup + " on " + paths.GetHardAssetPath());
                     continue;
                 }
 
@@ -333,7 +373,7 @@ namespace ShiningHill
 
             foreach (MeshFilter mf in subGO.GetComponentsInChildren<MeshFilter>())
             {
-                AssetDatabase.AddObjectToAsset(mf.sharedMesh, assetPath);
+                AssetDatabase.AddObjectToAsset(mf.sharedMesh, paths.GetExtractAssetPath());
             }
         }
     }

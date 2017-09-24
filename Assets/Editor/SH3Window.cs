@@ -13,7 +13,7 @@ public class SH3Window : EditorWindow
         MethodInfo isDockedMethod = typeof(EditorWindow).GetProperty("docked", BindingFlags.NonPublic | BindingFlags.Instance).GetGetMethod(true);
         _IsDocked = (Func<EditorWindow, bool>)Delegate.CreateDelegate(typeof(Func<EditorWindow, bool>), isDockedMethod);
 
-        SH3RunEntity.GetMemHandle = () => { return ((SH3Window)EditorWindow.GetWindow(typeof(SH3Window), false, "Silent Hill 3", false)).memHandle; };
+        StateChecker.GetHandleFromWindow = () => { return mainWindow.memHandle; };
     }
 
     //EXE Settings 
@@ -34,7 +34,15 @@ public class SH3Window : EditorWindow
 
     [SerializeField]
     private long _memHandle;
-    public IntPtr memHandle { get { return new IntPtr(_memHandle); } set { _memHandle = value.ToInt64(); } }
+    public IntPtr memHandle
+    {
+        get { return new IntPtr(_memHandle); }
+        set
+        {
+            _memHandle = value.ToInt64();
+            if (StateChecker.instance != null) StateChecker.instance.memHandle = value;
+        }
+    }
 
     [SerializeField]
     private long _unityWindow;
@@ -72,14 +80,17 @@ public class SH3Window : EditorWindow
         Ratio21x9 = 0x07,
     }
 
+    private static SH3Window _mainWindow;
+    public static SH3Window mainWindow { get { if (_mainWindow == null) _mainWindow = (SH3Window)EditorWindow.GetWindow(typeof(SH3Window), false, "Silent Hill 3", false); return _mainWindow; } }
+
     [MenuItem("ShiningHill/Silent Hill 3")]
     public static void ShowWindow()
     {
-        SH3Window ew = (SH3Window)EditorWindow.GetWindow(typeof(SH3Window));
-        ew.titleContent = new GUIContent("Silent Hill 3");
+        _mainWindow = (SH3Window)EditorWindow.GetWindow(typeof(SH3Window));
+        _mainWindow.titleContent = new GUIContent("Silent Hill 3");
         
         Process cproc = Process.GetCurrentProcess();
-        ew.unityWindow = User32.util.GetMainWindow(cproc);
+        _mainWindow.unityWindow = User32.util.GetMainWindow(cproc);
 
     }
 

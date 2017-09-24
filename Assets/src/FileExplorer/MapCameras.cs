@@ -10,24 +10,61 @@ using Object = UnityEngine.Object;
 
 namespace ShiningHill
 {
-	public class MapCameras : MonoBehaviour 
-	{
-        public List<Camera> cameras = new List<Camera>();
-        public static MapCameras ReadCameras(string path)
+    public struct MapCamerasAssetPaths
+    {
+        string camName;
+        string genericPath;
+        SHGame game;
+
+        public MapCamerasAssetPaths(string hardAssetPath, SHGame forgame)
         {
-            /*string assetPath = path.Replace(".cam", ".asset");*/
-            GameObject subGO = Scene.BeginEditingPrefab(path, "Cameras");
+            camName = Path.GetFileNameWithoutExtension(hardAssetPath);
+            genericPath = Path.GetDirectoryName(hardAssetPath).Substring(hardAssetPath.LastIndexOf("/data/") + 1).Replace("\\", "/") + "/";
+            game = forgame;
+        }
+
+        public string GetHardAssetPath()
+        {
+            string path = CustomPostprocessor.GetHardDataPathFor(game);
+            return path + genericPath + camName + ".cam";
+        }
+
+        public string GetExtractAssetPath()
+        {
+            string path = CustomPostprocessor.GetExtractDataPathFor(game);
+            return path + genericPath + camName + ".asset";
+        }
+
+        public string GetPrefabPath()
+        {
+            string path = CustomPostprocessor.GetExtractDataPathFor(game);
+            return path + genericPath + "Prefabs/" + camName + ".prefab";
+        }
+    }
+
+
+    public class MapCameras : MonoBehaviour 
+	{
+        [MenuItem("Assets/holla/amigo")]
+        public static void ImportMap()
+        {
+
+        }
+
+        public List<Camera> cameras = new List<Camera>();
+        public static MapCameras ReadCameras(MapCamerasAssetPaths paths)
+        {
+            GameObject subGO = Scene.BeginEditingPrefab(paths.GetPrefabPath(), "Cameras");
 
             try
             {
                 MapCameras cams = subGO.AddComponent<MapCameras>();
 
-                BinaryReader reader = new BinaryReader(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read));
-
-                Matrix4x4 transMat = cams.GetComponentInParent<Scene>().GetSH3ToUnityMatrix();
+                BinaryReader reader = new BinaryReader(new FileStream(paths.GetHardAssetPath(), FileMode.Open, FileAccess.Read, FileShare.Read));
+                
                 while (true)
                 {
-                    Camera cam = Camera.TryMakeCamera(reader, transMat);
+                    Camera cam = Camera.TryMakeCamera(reader);
                     if (cam == null)
                     {
                         break;
@@ -40,7 +77,7 @@ namespace ShiningHill
 
                 reader.Close();
 
-                Scene.FinishEditingPrefab(path, subGO);
+                Scene.FinishEditingPrefab(paths.GetPrefabPath(), subGO);
 
                 return cams;
 
@@ -53,20 +90,22 @@ namespace ShiningHill
             return null;
         }
 
+        Matrix4x4 adjustedMat = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(0.002f, -0.002f, 0.002f));
         void OnDrawGizmosSelected()
         {
             
             foreach (Camera cam in cameras)
             {
                 Gizmos.color = Color.red;
+                Gizmos.matrix = adjustedMat;
                 Gizmos.DrawWireCube(cam.activeArea.center, cam.activeArea.size);
 
                 Gizmos.color = Color.magenta;
                 if (cam.constraintsArea.size == Vector3.zero)
                 {
-                    Gizmos.matrix = Matrix4x4.TRS(cam.constraintsArea.center, Quaternion.LookRotation(Vector3.Normalize(cam.activeArea.center - cam.constraintsArea.center)), Vector3.one);
+                    Gizmos.matrix = Matrix4x4.TRS(cam.constraintsArea.center, Quaternion.LookRotation(Vector3.Normalize(cam.activeArea.center - cam.constraintsArea.center)), new Vector3(0.002f, -0.002f, 0.002f));
                     Gizmos.DrawFrustum(cam.constraintsArea.center, 60.0f, 1.0f, 0.1f, 1.33f);
-                    Gizmos.matrix = Matrix4x4.identity;
+                    Gizmos.matrix = adjustedMat;
                 }
                 else
                 {
@@ -88,7 +127,7 @@ namespace ShiningHill
             public Vector2 Unknown5;
             public Vector2 Unknown6;
 
-            public static Camera TryMakeCamera(BinaryReader reader, Matrix4x4 transMat)
+            public static Camera TryMakeCamera(BinaryReader reader)
             {
                 Vector2 zoneA = reader.ReadVector2();
                 reader.SkipBytes(8);
@@ -116,15 +155,15 @@ namespace ShiningHill
                 {
                     Camera cam = new Camera();
 
-                    Vector3 activeMin = new Vector3(zoneA.x, -zoneHeights.x, zoneA.y);
-                    Vector3 activeMax = new Vector3(zoneB.x, -zoneHeights.y, zoneB.y);
+                    Vector3 activeMin = new Vector3(zoneA.x, zoneHeights.x, zoneA.y);
+                    Vector3 activeMax = new Vector3(zoneB.x, zoneHeights.y, zoneB.y);
                     cam.activeArea = new Bounds();
-                    cam.activeArea.SetMinMax(transMat.MultiplyPoint(activeMin), transMat.MultiplyPoint(activeMax));
+                    cam.activeArea.SetMinMax(activeMin, activeMax);
 
-                    Vector3 constraintMin = new Vector3(constraintA.x, -constraintHeights.x, constraintA.y);
-                    Vector3 constraintMax = new Vector3(constraintB.x, -constraintHeights.y, constraintB.y);
+                    Vector3 constraintMin = new Vector3(constraintA.x, constraintHeights.x, constraintA.y);
+                    Vector3 constraintMax = new Vector3(constraintB.x, constraintHeights.y, constraintB.y);
                     cam.constraintsArea = new Bounds();
-                    cam.constraintsArea.SetMinMax(transMat.MultiplyPoint(constraintMin), transMat.MultiplyPoint(constraintMax));
+                    cam.constraintsArea.SetMinMax(constraintMin, constraintMax);
 
                     cam.type = type;
                     cam.Unknown1 = Unknown1;

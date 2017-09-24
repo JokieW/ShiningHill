@@ -11,6 +11,38 @@ using Object = UnityEngine.Object;
 
 namespace ShiningHill
 {
+    public struct MapCollisionsAssetPaths
+    {
+        string cldName;
+        string genericPath;
+        SHGame game;
+
+        public MapCollisionsAssetPaths(string hardAssetPath, SHGame forgame)
+        {
+            cldName = Path.GetFileNameWithoutExtension(hardAssetPath);
+            genericPath = Path.GetDirectoryName(hardAssetPath).Substring(hardAssetPath.LastIndexOf("/data/") + 1).Replace("\\", "/") + "/";
+            game = forgame;
+        }
+
+        public string GetHardAssetPath()
+        {
+            string path = CustomPostprocessor.GetHardDataPathFor(game);
+            return path + genericPath + cldName + ".cld";
+        }
+
+        public string GetExtractAssetPath()
+        {
+            string path = CustomPostprocessor.GetExtractDataPathFor(game);
+            return path + genericPath + cldName + ".asset";
+        }
+
+        public string GetPrefabPath()
+        {
+            string path = CustomPostprocessor.GetExtractDataPathFor(game);
+            return path + genericPath + "Prefabs/" + cldName + ".prefab";
+        }
+    }
+
     [Serializable]
 	public class MapCollisions : MonoBehaviour 
 	{
@@ -18,16 +50,15 @@ namespace ShiningHill
         public List<CollisionPane> panes = new List<CollisionPane>();
         public int DispalyKind = -1;
 
-		public static MapCollisions ReadCollisions(string path)
+		public static MapCollisions ReadCollisions(MapCollisionsAssetPaths paths)
         {
-            string assetPath = path.Replace(".cld", ".asset");
-            GameObject subGO = Scene.BeginEditingPrefab(path, "Collisions");
+            GameObject subGO = Scene.BeginEditingPrefab(paths.GetPrefabPath(), "Collisions");
 
             try
             {
                 MapCollisions cols = subGO.AddComponent<MapCollisions>();
 
-                BinaryReader reader = new BinaryReader(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read));
+                BinaryReader reader = new BinaryReader(new FileStream(paths.GetHardAssetPath(), FileMode.Open, FileAccess.Read, FileShare.Read));
 
                 /*Vector2 origin = */reader.ReadVector2();
                 reader.SkipInt32(160);
@@ -48,8 +79,7 @@ namespace ShiningHill
                 {
                     offsets.Add(offset);
                 }*/
-
-                Matrix4x4 transMat = cols.GetComponentInParent<Scene>().GetSH3ToUnityMatrix();
+                
                 foreach (int off in offsets)
                 {
                     reader.BaseStream.Position = off - 4;
@@ -61,7 +91,7 @@ namespace ShiningHill
                             peek = reader.PeekInt32();
                             if (peek != 0)
                             {
-                                cols.panes.Add(new CollisionPane(reader, transMat));
+                                cols.panes.Add(new CollisionPane(reader));
                             }
                             else
                             {
@@ -118,10 +148,10 @@ namespace ShiningHill
 
                 foreach (MeshCollider mc in subGO.GetComponentsInChildren<MeshCollider>())
                 {
-                    AssetDatabase.AddObjectToAsset(mc.sharedMesh, assetPath);
+                    AssetDatabase.AddObjectToAsset(mc.sharedMesh, paths.GetExtractAssetPath());
                 }
 
-                Scene.FinishEditingPrefab(path, subGO);
+                Scene.FinishEditingPrefab(paths.GetPrefabPath(), subGO);
 
                 return cols;
 
@@ -148,7 +178,7 @@ namespace ShiningHill
             [SerializeField]
             public float radius;
 
-            public CollisionPane(BinaryReader reader, Matrix4x4 transMat)
+            public CollisionPane(BinaryReader reader)
             {
                 type = reader.ReadInt32();
                 int vectorsToRead = reader.ReadInt32(); //Not neccessarely
@@ -157,11 +187,11 @@ namespace ShiningHill
 
                 if (type == 769)
                 {
-                    Vector3 vertex = reader.ReadVector3YInverted();
-                    vectors = new Vector3[] { transMat.MultiplyPoint(vertex) };
+                    Vector3 vertex = reader.ReadVector3();
+                    vectors = new Vector3[] { vertex };
                     reader.SkipSingle(1.0f);
-                    offset = transMat.MultiplyPoint(reader.ReadVector3YInverted());
-                    radius = reader.ReadSingle() * Scene.GLOBAL_SCALE;
+                    offset = reader.ReadVector3();
+                    radius = reader.ReadSingle();
                 }
                 else if (type == 257 || type == 1)
                 {
@@ -173,8 +203,8 @@ namespace ShiningHill
                             reader.SkipBytes(16);
                             continue;
                         }
-                        Vector3 vertex = reader.ReadVector3YInverted();
-                        v3s.Add(transMat.MultiplyPoint(vertex));
+                        Vector3 vertex = reader.ReadVector3();
+                        v3s.Add(vertex);
                         reader.SkipSingle(1.0f);
                     }
                     vectors = v3s.ToArray();

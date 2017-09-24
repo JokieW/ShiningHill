@@ -48,23 +48,13 @@ namespace ShiningHill
         }
 
         /// <summary>
-        /// Reads 3 singles and return a Vector3 with a negated y
-        /// </summary>
-        /// <param name="reader"></param>
-        /// <returns></returns>
-        public static Vector3 ReadVector3YInverted(this BinaryReader reader)
-        {
-            return new Vector3(reader.ReadSingle(), -reader.ReadSingle(), reader.ReadSingle());
-        }
-
-        /// <summary>
-        /// Reads 3 shorts and returns a Vector3 with a negated y
+        /// Reads 3 shorts and returns a Vector3
         /// </summary>
         /// <param name="reader"></param>
         /// <returns></returns>
         public static Vector3 ReadShortVector3(this BinaryReader reader)
         {
-            return new Vector3(reader.ReadInt16(), -reader.ReadInt16(), reader.ReadInt16());
+            return new Vector3(reader.ReadInt16(), reader.ReadInt16(), reader.ReadInt16());
         }
 
         /// <summary>
@@ -166,6 +156,24 @@ namespace ShiningHill
                 sb.Append(c);
             }
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Reads a whole buffer of bytes, builds one null terminated string contained within
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
+        public static string ReadStringBuffer(this BinaryReader reader, int bufferSize)
+        {
+            char[] buffer = reader.ReadChars(bufferSize);
+            int length = 0;
+
+            for (int i = 0; i != bufferSize; i++)
+            {
+                if (buffer[i] != 0) length++; else break;
+            }
+
+            return new string(buffer, 0, length);
         }
         #endregion
 
