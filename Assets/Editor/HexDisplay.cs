@@ -24,7 +24,7 @@ public class HexDisplay
 
     private static string _goToAddressText = "";
 
-    static HexDisplay.DisplayType _dispType = HexDisplay.DisplayType.ANSI;
+    static HexDisplay.DisplayType _dispType = HexDisplay.DisplayType.Byte4;
     static bool _equalizePreview = true;
     static int _bytesPerRow = 16;
     static int _grouping = 4;

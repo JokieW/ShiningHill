@@ -98,8 +98,10 @@ namespace ShiningHill
                 reader.SkipBytes(24 + buffer); //skips -1 0 0 0 0 0 + buffer
 
                 Color32[] _pixels = null;
-                if (bits == 32)
+                TextureFormat format = TextureFormat.RGBA32;
+                if (bits == 32 || bits == 24)
                 {
+                    format = (bits == 24 ? TextureFormat.RGB24 : TextureFormat.RGBA32);
                     _pixels = new Color32[lengthOfTex / 4];
                     for (int j = 0; j != lengthOfTex / 4; j++)
                     {
@@ -108,6 +110,7 @@ namespace ShiningHill
                 }
                 else if (bits == 16)
                 {
+                    format = TextureFormat.RGBA32;
                     _pixels = new Color32[lengthOfTex / 2];
                     for (int j = 0; j != lengthOfTex / 2; j ++)
                     {
@@ -115,7 +118,7 @@ namespace ShiningHill
                     }
                 }
 
-                Texture2D text = new Texture2D(width, height, TextureFormat.RGBA32, false);
+                Texture2D text = new Texture2D(width, height, format, false);
                 text.SetPixels32(_pixels);
                 text.Apply();
 

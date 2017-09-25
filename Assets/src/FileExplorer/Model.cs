@@ -20,6 +20,11 @@ namespace ShiningHill
             game = forgame;
         }
 
+        public string GetTextureName()
+        {
+            return mdlName + "_tex";
+        }
+
         public string GetHardAssetPath()
         {
             string path = CustomPostprocessor.GetHardDataPathFor(game);
@@ -44,7 +49,7 @@ namespace ShiningHill
         [ContextMenu("Load")]
         public void Doit()
         {
-            LoadModel(new ModelAssetPaths("C:/Git/ShiningHill/Assets/sh3pc/data/pcchr/wp/rwp_fir.mdl", SHGame.SH3PC));
+            LoadModel(new ModelAssetPaths("C:/Git/ShiningHill/Assets/sh3pc/data/pcchr/wp/rwp_subs.mdl", SHGame.SH3PC));
         }
 
         public static void LoadModel(ModelAssetPaths paths)
@@ -56,52 +61,158 @@ namespace ShiningHill
             {
                 reader = new BinaryReader(new FileStream(paths.GetHardAssetPath(), FileMode.Open, FileAccess.Read, FileShare.Read));
 
-                //00
+                //Main header
                 reader.SkipInt32(0);
                 int unknown1 = reader.ReadInt32();
-                int unknown2 = reader.ReadInt32();
-                int unknown3 = reader.ReadInt32();
-
-                //10
-                reader.SkipInt32(unknown2);
-                int unknown5 = reader.ReadInt32();
+                int textureCount = reader.ReadInt32();
+                int textureOffset = reader.ReadInt32();
+                
+                reader.SkipInt32(textureCount);
+                int offsetToModel = reader.ReadInt32();
                 reader.SkipInt32(0);
-                reader.SkipInt32(1);
-
-                //20 30
+                reader.SkipInt32(1); //model count?
+                
                 reader.SkipBytes(32, 0);
-
-                //40
-                reader.SkipInt32(unknown5);
-                reader.SkipInt32(unknown3);
+                
+                reader.SkipInt32(offsetToModel);
+                reader.SkipInt32(textureOffset);
                 reader.SkipInt32(0);
                 reader.SkipInt32(0);
 
-                //blah blah
-                reader.SkipBytes(128, 0);
+                //Model header
+                long modelOrigin = reader.BaseStream.Position;
+                reader.SkipUInt32(0xffff0003);
+                reader.SkipInt32(3);
+                int matricesOffset = reader.ReadInt32();
+                int matricesCount = reader.ReadInt32();
 
-                //D0
-                Matrix4x4 matrix1 = reader.ReadMatrix4x4();
+                int offsetToAfterMatrices = reader.ReadInt32();
+                reader.SkipInt32(0);
+                reader.SkipInt32(offsetToAfterMatrices + 0x10);
+                reader.SkipInt32(offsetToAfterMatrices + 0x10);
 
-                //110
-                Matrix4x4 matrix2 = reader.ReadMatrix4x4();
+                int meshCount = reader.ReadInt32();
+                int offsetMesh = reader.ReadInt32();
+                reader.SkipInt32(0);
+                reader.SkipInt32(textureOffset);
 
-                reader.BaseStream.Position = 0x2d0;
+                int unknown2 = reader.ReadInt32(); // texture to use?
+                reader.SkipInt32(offsetToAfterMatrices + 0x10);
+                reader.SkipInt32(1);
+                reader.SkipInt32(offsetToAfterMatrices + 0x20);
 
-                array = new TestS[237];
-                for (int i = 0; i != 237; i++)
+                reader.SkipInt32(0);
+                reader.SkipInt32(0);
+                reader.SkipInt32(offsetToAfterMatrices + 0x30);
+                reader.SkipInt32(0);
+
+                reader.SkipInt32(offsetToAfterMatrices + 0x30);
+                reader.SkipInt32(0);
+                reader.SkipInt32(offsetToAfterMatrices + 0x30);
+                reader.SkipInt32(offsetToAfterMatrices + 0x30);
+
+                reader.SkipInt32(offsetToAfterMatrices + 0x40);
+                reader.SkipInt32(1);
+                reader.SkipInt32(0);
+                reader.SkipInt32(0);
+
+                reader.SkipBytes(16, 0);
+
+                Matrix4x4[] modelMatrices = new Matrix4x4[matricesCount];
+                for (int i = 0; i != matricesCount; i++)
                 {
-                    array[i] = new TestS()
-                    {
-                        position = reader.ReadVector3(),
-                        charmingman = reader.ReadVector3(),
-                        unknow = reader.ReadSingle(),
-                        normal = reader.ReadVector3(),
-                        uv = reader.ReadVector2()
-                    };
+                    modelMatrices[i] = reader.ReadMatrix4x4();
                 }
 
+                reader.SkipInt32(0xFF);
+                reader.SkipBytes(12, 0);
+
+                reader.SkipBytes(176, 0);
+
+                reader.BaseStream.Position = textureOffset;
+                Texture2D[] textures = TextureUtils.ReadTex32(paths.GetTextureName(), reader);
+
+                Mesh[] meshes = new Mesh[2];
+                reader.BaseStream.Position = modelOrigin + offsetMesh;
+                //Mesh Header
+                for (int meshi = 0; meshi != meshCount; meshi++)
+                {
+                    long meshOrigin = reader.BaseStream.Position;
+                    int length = reader.ReadInt32();
+                    reader.SkipInt32();
+                    int valuesOffset = reader.ReadInt32();
+                    reader.SkipInt32();
+
+                    int indicesCount = reader.ReadInt32();
+                    reader.SkipInt32();
+                    int unknown3 = reader.ReadInt32();
+                    int meshID = reader.ReadInt32(); //mesh id?
+
+                    reader.SkipInt32(unknown3);
+                    reader.SkipInt32(0);
+                    reader.SkipInt32();
+                    reader.SkipInt32();
+
+                    reader.SkipInt32();
+                    reader.SkipInt32(1);
+                    reader.SkipInt32();
+                    reader.SkipInt32(0xB0);
+                    
+                    reader.SkipInt32(valuesOffset);
+                    int valuesCount = reader.ReadInt32();
+                    int indicesOffset = reader.ReadInt32();
+                    reader.SkipInt32(indicesCount);
+
+                    short textureKind = reader.ReadInt16(); //?
+                    short textureKind2 = reader.ReadInt16(); //?
+                    int textureId = reader.ReadInt32(); //?
+                    Vector2 unknown4 = reader.ReadVector2();
+
+                    Matrix4x4 meshMatrix = reader.ReadMatrix4x4();
+
+                    reader.SkipInt32();
+                    reader.SkipBytes(12, 0);
+
+                    reader.SkipInt32();
+                    reader.SkipInt32(0x1fc);
+                    reader.SkipInt32(0x61);
+                    reader.SkipInt32(0x0);
+
+                    List<Vector3> verts = new List<Vector3>(valuesCount);
+                    List<Quaternion> quats = new List<Quaternion>(valuesCount);
+                    List<Vector3> norms = new List<Vector3>(valuesCount);
+                    List<Vector2> uvs = new List<Vector2>(valuesCount);
+                    for (int i = 0; i != valuesCount; i++)
+                    {
+                        verts.Add(reader.ReadVector3());
+                        quats.Add(reader.ReadQuaternion());
+                        norms.Add(reader.ReadVector3());
+                        uvs.Add(reader.ReadVector2());
+                    }
+
+                    reader.BaseStream.Position = indicesOffset + meshOrigin;
+                    List<short> indices = new List<short>(indicesCount);
+                    for (int i = 0; i != indicesCount; i++)
+                    {
+                        indices.Add((short)reader.ReadInt32());
+                    }
+
+                    meshes[meshi] = MeshUtils.MakeIndexedStrip(verts, indices, norms, uvs);
+                }
                 reader.Close();
+
+                GameObject go = new GameObject("gun");
+
+                for (int i = 0; i != meshCount; i++)
+                {
+                    GameObject mesh = new GameObject();
+                    MeshRenderer mr = mesh.AddComponent<MeshRenderer>();
+                    MeshFilter mf = mesh.AddComponent<MeshFilter>();
+                    mf.mesh = meshes[i];
+                    mr.material.mainTexture = textures[0];
+                    mesh.transform.parent = go.transform;
+                }
+
 
                 //Scene.FinishEditingPrefab(paths.GetPrefabPath(), subGO);
                 
@@ -123,27 +234,24 @@ namespace ShiningHill
             {
                 for (int i = 0; i != 237; i++)
                 {
-                    TestS t = array[i];
+                    ModelMeshValue t = array[i];
                     Gizmos.color = Color.yellow;
                     Gizmos.DrawSphere(t.position, 1);
                     Gizmos.color = Color.red;
                     Gizmos.DrawLine(t.position, t.position + t.normal);
-                    Gizmos.color = Color.blue;
-                    Gizmos.DrawLine(t.position, t.position + t.charmingman);
                 }
             }
         }
 
-        static public TestS[] array;
+        static public ModelMeshValue[] array;
     }
 
     
 
-    public struct TestS
+    public struct ModelMeshValue
     {
         public Vector3 position;
-        public Vector3 charmingman;
-        public float unknow;
+        public Quaternion rotation;
         public Vector3 normal;
         public Vector2 uv;
     }

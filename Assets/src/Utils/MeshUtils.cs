@@ -50,6 +50,43 @@ namespace ShiningHill
             return mesh;
         }
 
+        public static Mesh MakeIndexedStrip(List<Vector3> vertices, List<short> indices, List<Vector3> normals = null, List<Vector2> uvs = null, List<Color32> colors = null, bool isBacksided = false)
+        {
+            Mesh mesh = new Mesh();
+            mesh.SetVertices(vertices);
+            if (normals != null)
+            {
+                mesh.SetNormals(normals);
+            }
+            if (uvs != null)
+            {
+                mesh.SetUVs(0, uvs);
+            }
+            if (colors != null && colors.Count > 0)
+            {
+                mesh.SetColors(colors);
+            }
+            
+            List<int> _tris = new List<int>();
+
+            for (int i = 1; i < indices.Count - 1; i += 2)
+            {
+                _tris.Add(indices[i]);
+                _tris.Add(indices[i - 1]);
+                _tris.Add(indices[i + 1]);
+
+                if (i + 2 < indices.Count)
+                {
+                    _tris.Add(indices[i]);
+                    _tris.Add(indices[i + 1]);
+                    _tris.Add(indices[i + 2]);
+                }
+            }
+
+            mesh.SetTriangles(_tris, 0);
+            return mesh;
+        }
+
         public static Mesh MakeStripped(List<Vector3> vertices, List<Vector3> normals = null, List<Vector2> uvs = null, List<Color32> colors = null, bool isBacksided = false)
         {
             Mesh mesh = new Mesh();
