@@ -49,8 +49,10 @@ namespace ShiningHill
         [ContextMenu("Load")]
         public void Doit()
         {
-            LoadModel(new ModelAssetPaths("C:/Git/ShiningHill/Assets/sh3pc/data/pcchr/wp/rwp_subs.mdl", SHGame.SH3PC));
+            LoadModel(new ModelAssetPaths(path, SHGame.SH3PC));
         }
+
+        public string path = "Assets/sh3pc/data/pcchr/wp/rwp_fir.mdl";
 
         public static void LoadModel(ModelAssetPaths paths)
         {
@@ -123,6 +125,7 @@ namespace ShiningHill
                 {
                     modelMatrices[i] = reader.ReadMatrix4x4();
                 }
+                testdata = modelMatrices;
 
                 reader.SkipInt32(0xFF);
                 reader.SkipBytes(12, 0);
@@ -179,15 +182,28 @@ namespace ShiningHill
                     reader.SkipInt32(0x0);
 
                     List<Vector3> verts = new List<Vector3>(valuesCount);
-                    List<Quaternion> quats = new List<Quaternion>(valuesCount);
+                    List<Vector3> rots = new List<Vector3>(valuesCount);
+                    List<byte> matIds = new List<byte>(valuesCount);
                     List<Vector3> norms = new List<Vector3>(valuesCount);
                     List<Vector2> uvs = new List<Vector2>(valuesCount);
                     for (int i = 0; i != valuesCount; i++)
                     {
                         verts.Add(reader.ReadVector3());
-                        quats.Add(reader.ReadQuaternion());
-                        norms.Add(reader.ReadVector3());
+                        rots.Add(reader.ReadVector3());
+                        byte b1 = reader.ReadByte();
+                        matIds.Add(reader.ReadByte());
+                        reader.SkipByte(b1);
+                        reader.SkipByte(b1);
+                        norms.Add(-reader.ReadVector3());
                         uvs.Add(reader.ReadVector2());
+                    }
+
+                    for (int i = 0; i != valuesCount; i++)
+                    {
+                        Matrix4x4 mat = modelMatrices[matIds[i]];
+                        verts[i] = mat.MultiplyPoint(verts[i]);
+                        rots[i] = mat.MultiplyPoint(rots[i]);
+                        norms[i] = mat.MultiplyPoint(norms[i]);
                     }
 
                     reader.BaseStream.Position = indicesOffset + meshOrigin;
@@ -197,7 +213,7 @@ namespace ShiningHill
                         indices.Add((short)reader.ReadInt32());
                     }
 
-                    meshes[meshi] = MeshUtils.MakeIndexedStrip(verts, indices, norms, uvs);
+                    meshes[meshi] = MeshUtils.MakeIndexedStripInverted(verts, indices, norms, uvs);
                 }
                 reader.Close();
 
@@ -230,20 +246,26 @@ namespace ShiningHill
 
         void OnDrawGizmos()
         {
-            if (array != null)
+            if (testdata != null)
             {
-                for (int i = 0; i != 237; i++)
+                for (int i = 0; i != testdata.Length; i++)
                 {
-                    ModelMeshValue t = array[i];
+                    Matrix4x4 t = testdata[i];
                     Gizmos.color = Color.yellow;
-                    Gizmos.DrawSphere(t.position, 1);
+                    Vector3 pos = Matrix4x4Utils.ExtractTranslationFromMatrix(ref t);
+                    Quaternion rot = Matrix4x4Utils.ExtractRotationFromMatrix(ref t);
+                    Gizmos.DrawSphere(pos, 0.2f);
+                    Gizmos.color = Color.blue;
+                    Gizmos.DrawLine(pos, pos + (rot * Vector3.forward));
+                    Gizmos.color = Color.green;
+                    Gizmos.DrawLine(pos, pos + (rot * Vector3.up));
                     Gizmos.color = Color.red;
-                    Gizmos.DrawLine(t.position, t.position + t.normal);
+                    Gizmos.DrawLine(pos, pos + (rot * Vector3.right));
                 }
             }
         }
 
-        static public ModelMeshValue[] array;
+        static public Matrix4x4[] testdata;
     }
 
     
