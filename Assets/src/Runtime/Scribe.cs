@@ -220,16 +220,19 @@ public static unsafe class Scribe
     public static Vector3 ReadVector3(IntPtr handle, IntPtr address)
     {
         IntPtr bytesRead;
-        Vector3 data = new Vector3();
-        Kernel32.ReadProcessMemory(handle, address, &data, 12, out bytesRead);
-        return data;
+        float* buffer = stackalloc float[3];
+        Kernel32.ReadProcessMemory(handle, address, buffer, 12, out bytesRead);
+        return new Vector3(buffer[0], buffer[1], buffer[2]);
     }
 
     public static void WriteVector3(IntPtr handle, IntPtr address, Vector3 data)
     {
         IntPtr bytesWrite;
-
-        if (!Kernel32.WriteProcessMemory(handle, address, &data, 12, out bytesWrite))
+        float* buffer = stackalloc float[3];
+        buffer[0] = data.x;
+        buffer[1] = data.y;
+        buffer[2] = data.z;
+        if (!Kernel32.WriteProcessMemory(handle, address, buffer, 12, out bytesWrite))
         {
             Console.WriteLine("WriteVector3 error: " + Kernel32.GetLastError().ToString("X"));
         }

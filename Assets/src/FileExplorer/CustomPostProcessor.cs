@@ -88,23 +88,31 @@ namespace ShiningHill
             {
                 foreach (string asset in importedAssets)
                 {
-                    string extension = Path.GetExtension(asset);
-                    SHGame forGame = SHGame.SH3PC;
-                    if (asset.Contains("sh2pc")) forGame = SHGame.SH2PC;
-                    else if (asset.Contains("sh3pc_demo")) forGame = SHGame.SH3PCdemo;
-                    else if (asset.Contains("sh3pc")) forGame = SHGame.SH3PC;
-                    else if (asset.Contains("sh4pc")) forGame = SHGame.SH4PC;
-                    else continue;
+                    try
+                    {
+                        string extension = Path.GetExtension(asset);
+                        SHGame forGame = SHGame.SH3PC;
+                        if (asset.Contains("sh2pc")) forGame = SHGame.SH2PC;
+                        else if (asset.Contains("sh3pc_demo")) forGame = SHGame.SH3PCdemo;
+                        else if (asset.Contains("sh3pc")) forGame = SHGame.SH3PC;
+                        else if (asset.Contains("sh4pc")) forGame = SHGame.SH4PC;
+                        else continue;
 
-                    //Debug.Log("Loading " + asset);
+                        //Debug.Log("Loading " + asset);
 
-                    if (extension == ".tex") { ProcessTEX(new TexAssetPaths(asset, forGame)); continue; }
-                    if (extension == ".map") { Map.ReadMap(new MapAssetPaths(asset, forGame)); continue; }
-                    if (extension == ".cld") { MapCollisions.ReadCollisions(new MapCollisionsAssetPaths(asset, forGame)); continue; }
-                    if (extension == ".kg2") { MapShadows.ReadShadowCasters(new MapShadowsAssetPaths(asset, forGame)); continue; }
-                    if (extension == ".ded") { MapLights.ReadLights(new MapLightsAssetPaths(asset, forGame)); continue; }
-                    if (extension == ".cam") { MapCameras.ReadCameras(new MapCamerasAssetPaths(asset, forGame)); continue; }
-                    if (extension == ".afs") { AFSReader.ReadAFSFiles(new AFSAssetPaths(asset, forGame)); continue; }
+                        if (extension == ".tex") { ProcessTEX(new TexAssetPaths(asset, forGame)); continue; }
+                        if (extension == ".map") { Map.ReadMap(new MapAssetPaths(asset, forGame)); continue; }
+                        if (extension == ".cld") { MapCollisions.ReadCollisions(new MapCollisionsAssetPaths(asset, forGame)); continue; }
+                        if (extension == ".kg2") { MapShadows.ReadShadowCasters(new MapShadowsAssetPaths(asset, forGame)); continue; }
+                        if (extension == ".ded") { MapLights.ReadLights(new MapLightsAssetPaths(asset, forGame)); continue; }
+                        if (extension == ".cam") { MapCameras.ReadCameras(new MapCamerasAssetPaths(asset, forGame)); continue; }
+                        if (extension == ".afs") { AFSReader.ReadAFSFiles(new AFSAssetPaths(asset, forGame)); continue; }
+                        if (extension == ".mdl") { Model.LoadModel(new ModelAssetPaths(asset, forGame)); continue; }
+                    }
+                    catch(Exception e)
+                    {
+                        Debug.LogException(e);
+                    }
                 }
                 AssetDatabase.SaveAssets();
             }

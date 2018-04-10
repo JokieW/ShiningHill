@@ -70,8 +70,8 @@ public class SH3RunEntity : MonoBehaviour
         IntPtr handle = checker.memHandle;
         if (handle != IntPtr.Zero)
         {
-            transform.position = (Scribe.ReadVector3(handle, v3_position));
-            transform.rotation = Quaternion.Euler(Scribe.ReadVector3(handle, v3_rotation) * Mathf.Rad2Deg);
+            transform.localPosition = Scribe.ReadVector3(handle, v3_position);
+            transform.localRotation = Quaternion.Euler(Scribe.ReadVector3(handle, v3_rotation) * Mathf.Rad2Deg);
             transform.localScale = Scribe.ReadVector3(handle, v3_scale);
 
             health = Scribe.ReadSingle(handle, float_health);

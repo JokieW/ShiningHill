@@ -74,7 +74,6 @@ namespace ShiningHill
                         /*short casterGroup = */reader.ReadInt16();
                         Matrix4x4 mainMatrix = reader.ReadMatrix4x4();
                         Vector3 debugPosition = Matrix4x4Utils.ExtractTranslationFromMatrix(ref mainMatrix);
-                        debugPosition.y = -debugPosition.y;
                         Vector3 currentNormal = Vector3.zero;
 
                         //reading shapes

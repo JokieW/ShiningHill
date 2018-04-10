@@ -5,7 +5,6 @@ using System.Collections.Generic;
 
 using UnityEngine;
 using UnityEditor;
-using Eppy;
 
 using Object = UnityEngine.Object;
 

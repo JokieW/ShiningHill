@@ -131,9 +131,9 @@ namespace ShiningHill
 
                     Light light = lightGO.AddComponent<Light>();
                     light.type = LightType.Point;
-                    light.range = ll.Range;
+                    light.range = ll.Range * 0.002f;
                     light.color = ll.color;
-                    light.intensity = 8.0f;
+                    light.intensity = 8.0f; // magic number, looks right
                     light.bounceIntensity = 1.0f;
                 }
 
