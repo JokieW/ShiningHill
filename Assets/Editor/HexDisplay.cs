@@ -66,50 +66,60 @@ public class HexDisplay
                 {
                     for (long i = 0L; i != chunkSize; i++)
                     {
-                        int length = 0;
-                        string value;
+                        int length = 1;
+                        string value = "BAD";
+                        byte* dataptr = ptr + pointer + i;
+                        long ptrRelative = (long)dataptr - (long)ptr;
                         if (_dispType == DisplayType.Byte)
                         {
+                            if(ptrRelative >= data.Length) goto SKIP;
                             length = 4;
-                            value = (*(ptr + pointer + i)).ToString();
+                            value = (*dataptr).ToString();
                         }
                         else if (_dispType == DisplayType.Byte2)
                         {
+                            if (ptrRelative + 1L >= data.Length) goto SKIP;
                             length = 7;
-                            value = (*(short*)(ptr + pointer + i)).ToString();
+                            value = (*(short*)dataptr).ToString();
                             i += 1;
                         }
                         else if (_dispType == DisplayType.Byte4)
                         {
+                            if (ptrRelative + 3L >= data.Length) goto SKIP;
                             length = 12;
-                            value = (*(int*)(ptr + pointer + i)).ToString();
+                            value = (*(int*)dataptr).ToString();
                             i += 3;
                         }
                         else if (_dispType == DisplayType.Byte8)
                         {
+                            if (ptrRelative + 7L >= data.Length) goto SKIP;
                             length = 21;
-                            value = (*(long*)(ptr + pointer + i)).ToString();
+                            value = (*(long*)dataptr).ToString();
                             i += 7;
                         }
                         else if (_dispType == DisplayType.Float)
                         {
+                            if (ptrRelative + 3L >= data.Length) goto SKIP;
                             length = 14;
-                            value = (*(float*)(ptr + pointer + i)).ToString();
+                            value = (*(float*)dataptr).ToString();
                             i += 3;
                         }
                         else if (_dispType == DisplayType.Double)
                         {
+                            if (ptrRelative + 7L >= data.Length) goto SKIP;
                             length = 23;
-                            value = (*(double*)(ptr + pointer + i)).ToString();
+                            value = (*(double*)dataptr).ToString();
                             i += 7;
                         }
                         else //ANSI
                         {
+                            if (ptrRelative >= data.Length) goto SKIP;
                             length = 1;
-                            byte b = *(ptr + pointer + i);
+                            byte b = *dataptr;
                             value = new string(BadChar(b) ? '.' : System.Convert.ToChar(b), 1);
                         }
 
+                        SKIP:
                         if (length != 1)
                         {
                             if (_equalizePreview)
