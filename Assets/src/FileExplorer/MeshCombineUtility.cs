@@ -25,13 +25,7 @@ namespace ShiningHill
 
                     if (generateStrips)
                     {
-#if UNITY_3_5
-                    // SUBOPTIMAL FOR PERFORMANCE
-                    int curStripCount = combine.mesh.GetTriangleStrip(combine.subMeshIndex).Length;
-#else
                         int curStripCount = 0;
-#endif
-
                         if (curStripCount != 0)
                         {
                             if (stripCount != 0)
@@ -134,11 +128,7 @@ namespace ShiningHill
                 {
                     if (generateStrips)
                     {
-#if UNITY_3_5
-                    int[] inputstrip = combine.mesh.GetTriangleStrip(combine.subMeshIndex);
-#else
                         int[] inputstrip = new int[0];
-#endif
                         if (stripOffset != 0)
                         {
                             if ((stripOffset & 1) == 1)
@@ -184,15 +174,7 @@ namespace ShiningHill
             mesh.uv = uv;
             mesh.uv2 = uv1;
             mesh.tangents = tangents;
-
-#if UNITY_3_5
-        if (generateStrips)
-            mesh.SetTriangleStrip(strip, 0);
-        else
             mesh.triangles = triangles;
-#else
-            mesh.triangles = triangles;
-#endif
 
             return mesh;
         }

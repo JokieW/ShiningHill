@@ -16,8 +16,8 @@ namespace ShiningHill
             EditorWindow.GetWindow(typeof(HalfFloatConverter));
         }
 
-        string hexField;
-        float floatField;
+        string hexField = "0";
+        float floatField = 0.0f;
         void OnGUI()
         {
             EditorGUILayout.LabelField("Hex to float");

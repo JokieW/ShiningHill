@@ -19,7 +19,7 @@ namespace ShiningHill
         public MapCamerasAssetPaths(string hardAssetPath, SHGame forgame)
         {
             camName = Path.GetFileNameWithoutExtension(hardAssetPath);
-            genericPath = Path.GetDirectoryName(hardAssetPath).Substring(hardAssetPath.LastIndexOf("/data/") + 1).Replace("\\", "/") + "/";
+            genericPath = Path.GetDirectoryName(hardAssetPath).Substring(hardAssetPath.LastIndexOf("/data/data/") + 1).Replace("\\", "/") + "/";
             game = forgame;
         }
 

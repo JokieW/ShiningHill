@@ -73,7 +73,7 @@ public class StateChecker : MonoBehaviour
         string mapname;
         if (_idToMapName.TryGetValue(lastMap, out mapname))
         {
-            string path = "Assets/SilentHill3/Resources/data/bg/" + mapname + "/";
+            string path = "Assets/SilentHill3/Resources/data/data/bg/" + mapname + "/";
 
             for (byte x = 0; x != 0x10; x++)
             {
@@ -96,7 +96,7 @@ public class StateChecker : MonoBehaviour
                             catch (Exception e)
                             { }
                         }
-                        UnityEngine.Object o = Resources.Load("data/bg/" + mapname + "/" + sectorname, typeof(GameObject));
+                        UnityEngine.Object o = Resources.Load("data/data/bg/" + mapname + "/" + sectorname, typeof(GameObject));
                         if (o == null)
                         {
                             Debug.LogError("Failed loading " + sectorname);

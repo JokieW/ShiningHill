@@ -20,7 +20,7 @@ namespace ShiningHill
         public MapCollisionsAssetPaths(string hardAssetPath, SHGame forgame)
         {
             cldName = Path.GetFileNameWithoutExtension(hardAssetPath);
-            genericPath = Path.GetDirectoryName(hardAssetPath).Substring(hardAssetPath.LastIndexOf("/data/") + 1).Replace("\\", "/") + "/";
+            genericPath = Path.GetDirectoryName(hardAssetPath).Substring(hardAssetPath.LastIndexOf("/data/data/") + 1).Replace("\\", "/") + "/";
             game = forgame;
         }
 
