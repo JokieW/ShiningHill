@@ -9,6 +9,16 @@ namespace ShiningHill
 {
 	public static class BinaryReaderExtensions
     {
+        public static IntPtr ReadIntPtr(this BinaryReader reader)
+        {
+            return (IntPtr)reader.ReadInt32();
+        }
+
+        public static float ReadHalf(this BinaryReader reader)
+        {
+            return DataUtils.HalfToSingleFloat(reader.ReadUInt16());
+        }
+
         #region Matrices
         /// <summary>
         /// Reads 16 singles and returns a Matrix4x4

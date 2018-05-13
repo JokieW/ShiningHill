@@ -26,6 +26,10 @@ namespace ShiningHill
             {
                 new ArcFileSystem();
             }
+            if (GUILayout.Button("Load exe"))
+            {
+                SH3exeExtractor.ExtractRegionEventData();
+            }
         }
     }
 }
