@@ -124,7 +124,7 @@ namespace ShiningHill
             [SerializeField]
             public float offsetB;
 
-            public Vector3 GetFinalPosition()
+            public Vector3 GetCenterPosition()
             {
                 float _x = x;
                 float _y = y;
@@ -159,6 +159,47 @@ namespace ShiningHill
                         break;
                 }
                 return new Vector3(_x, _y, _z);
+            }
+
+            public void GetBounds(out Vector3 lower, out Vector3 upper)
+            {
+                float _lx = x;
+                float _ly = y + 100.0f;
+                float _lz = z;
+                float _hx = x;
+                float _hy = y - 900.0f;
+                float _hz = z;
+                switch (type)
+                {
+                    case 2:
+                    case 11:
+                    case 17:
+                        _hz -= offsetA;
+                        break;
+                    case 3:
+                    case 12:
+                    case 18:
+                        _hz += offsetA;
+                        break;
+                    case 4:
+                    case 13:
+                    case 19:
+                        _hx -= offsetA;
+                        break;
+                    case 5:
+                    case 14:
+                    case 20:
+                        _hx += offsetA;
+                        break;
+                    case 6:
+                    case 15:
+                    case 21:
+                        _hx += offsetA;
+                        _hz += offsetB;
+                        break;
+                }
+                lower = new Vector3(_lx, _ly, _lz);
+                upper = new Vector3(_hx, _hy, _hz);
             }
 
         }
