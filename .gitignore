@@ -1,10 +1,12 @@
 #VS
+.vs/*
 *.csproj
 *.sln
 *.userprefs
 *.suo
 *.arc
 *.arc.meta
+*.VC.db
 
 obj/
 #Unity
@@ -12,11 +14,15 @@ Library/
 Temp/
 Assets/UnityVS/Editor/UnityVS.VersionSpecific.dll
 Assets/UnityVS/Editor/UnityVS.VersionSpecific.dll.meta
+Assets/ShaderForge/*
+Assets/ShaderForge.meta
 
+Assets/sh1/*
 Assets/sh2pc/*
 Assets/sh3pc/*
 Assets/sh3pc_demo/*
 Assets/sh4pc/*
+Assets/sh1.meta
 Assets/sh2pc.meta
 Assets/sh3pc.meta
 Assets/sh3pc_demo.meta
