@@ -20,7 +20,26 @@ namespace ShiningHill
 
         public long raw
         {
-            get { return address >= 0x00400000L ? address - 0x00400000L : address; }
+            get
+            {
+                long rawAddr = address - 0x00400000L;
+                return rawAddr < 0L ? 0L : rawAddr;
+            }
+        }
+
+        public bool IsAboveRawSpace()
+        {
+            return raw > 0x0032CFFFL;
+        }
+
+        public bool IsRawSpace()
+        {
+            return raw >= 0x1000 && raw <= 0x0032CFFFL;
+        }
+
+        public bool IsNull()
+        {
+            return raw < 0x1000L;
         }
 
         public long @virtual
@@ -54,6 +73,8 @@ namespace ShiningHill
             public string name;
             public List<EventInfo> events;
             public List<EventMarker> markers;
+            public List<EventInfo> secondEvents;
+            public List<EntityInfo> entityInfos;
         }
         #endregion
 
@@ -120,86 +141,194 @@ namespace ShiningHill
             [SerializeField]
             public float z;
             [SerializeField]
-            public float offsetA;
+            public float offset1;
             [SerializeField]
-            public float offsetB;
+            public float offset2;
+            [SerializeField]
+            public float offset3;
+            [SerializeField]
+            public float offset4;
+            [SerializeField]
+            public float offset5;
+            [SerializeField]
+            public float offset6;
+            [SerializeField]
+            public float offset7;
+            [SerializeField]
+            public float offset8;
 
-            public Vector3 GetCenterPosition()
+            private Vector3[] GetAppliedOffsets()
             {
-                float _x = x;
-                float _y = y;
-                float _z = z;
-                switch(type)
+                int type2 = type >= 16 ? type - 15 : type;
+                switch (type2)
                 {
+                    case 1:
+                        return null;
                     case 2:
-                    case 11:
-                    case 17:
-                        _z -= offsetA * 0.5f;
-                        break;
+                        return new Vector3[] { new Vector3(x, y, z - offset1) };
                     case 3:
-                    case 12:
-                    case 18:
-                        _z += offsetA * 0.5f;
-                        break;
+                        return new Vector3[] { new Vector3(x, y, z + offset1) };
                     case 4:
-                    case 13:
-                    case 19:
-                        _x -= offsetA * 0.5f;
-                        break;
+                        return new Vector3[] { new Vector3(x - offset1, y, z) };
                     case 5:
-                    case 14:
-                    case 20:
-                        _x += offsetA * 0.5f;
-                        break;
+                        return new Vector3[] { new Vector3(x + offset1, y, z) };
                     case 6:
+                        return new Vector3[] { new Vector3(x + offset1, y, z + offset2) };
+                    case 7:
+                        return new Vector3[] { new Vector3(x + offset1, y, z + offset2), new Vector3(x + offset3, y, z + offset4) };
+                    case 8:
+                        return new Vector3[] { new Vector3(x + offset1, y, z + offset2), new Vector3(x + offset3, y, z + offset4),
+                            new Vector3(x + offset5, y, z + offset6) };
+                    case 9:
+                        return new Vector3[] { new Vector3(x + offset1, y, z + offset2), new Vector3(x + offset3, y, z + offset4),
+                            new Vector3(x + offset5, y, z + offset6), new Vector3(x + offset7, y, z + offset8) };
+                    case 13:
+                        return new Vector3[] { new Vector3(x + offset1, y, z + offset2) };
                     case 15:
-                    case 21:
-                        _x += offsetA * 0.5f;
-                        _z += offsetB * 0.5f;
-                        break;
+                        return new Vector3[] { new Vector3(x + offset1, y, z + offset2), new Vector3(x + offset3, y, z + offset4), new Vector3(x + offset5, y, z + offset6) };
+                    default:
+                        return null;
                 }
-                return new Vector3(_x, _y, _z);
             }
 
-            public void GetBounds(out Vector3 lower, out Vector3 upper)
+            public Vector3 GetCenter()
             {
-                float _lx = x;
-                float _ly = y + 100.0f;
-                float _lz = z;
-                float _hx = x;
-                float _hy = y - 900.0f;
-                float _hz = z;
-                switch (type)
+                Vector3 center = new Vector3(x, y, z);
+                int count = 1;
+                Vector3[] offs = GetAppliedOffsets();
+                if (offs != null)
+                {
+                    for (int i = 0; i != offs.Length; i++)
+                    {
+                        center += offs[i];
+                        count++;
+                    }
+                }
+
+                return center / count;
+
+            }
+
+            public void GenerateMesh(out Mesh mesh, out Vector3[] lines)
+            {
+                Vector3[] offsets = GetAppliedOffsets();
+                int type2;
+                float lowYAdj = 0.0f;
+                float highYAdj = -1000.0f;
+                if (type >= 16)
+                {
+                    type2 = type - 15;
+                }
+                else
+                {
+                    type2 = type;
+                    lowYAdj = 100.0f;
+                    highYAdj = -900.0f;
+                }
+                
+                switch(type2)
                 {
                     case 2:
-                    case 11:
-                    case 17:
-                        _hz -= offsetA;
-                        break;
                     case 3:
-                    case 12:
-                    case 18:
-                        _hz += offsetA;
-                        break;
                     case 4:
-                    case 13:
-                    case 19:
-                        _hx -= offsetA;
-                        break;
                     case 5:
-                    case 14:
-                    case 20:
-                        _hx += offsetA;
-                        break;
                     case 6:
+                        {
+                            Vector3 v0 = new Vector3(x, y + lowYAdj, z);
+                            Vector3 v1 = new Vector3(x, y + highYAdj, z);
+                            Vector3 v2 = offsets[0] + new Vector3(0, highYAdj, 0);
+                            Vector3 v3 = offsets[0] + new Vector3(0, lowYAdj, 0);
+                            mesh = new Mesh();
+                            mesh.vertices = new Vector3[] { v0, v1, v2, v3 };
+                            mesh.triangles = new int[] { 0, 1, 2, 0, 2, 3 };
+                            mesh.RecalculateNormals();
+                            lines = new Vector3[] { v0, v3, v1, v2, v0, v1, v2, v3 };
+                            return;
+                        }
+                    case 7:
+                        {
+                            Vector3 v0 = new Vector3(x, y + lowYAdj, z);
+                            Vector3 v1 = new Vector3(x, y + highYAdj, z);
+                            Vector3 v2 = offsets[0] + new Vector3(0, highYAdj, 0);
+                            Vector3 v3 = offsets[0] + new Vector3(0, lowYAdj, 0);
+                            Vector3 v4 = offsets[1] + new Vector3(0, highYAdj, 0);
+                            Vector3 v5 = offsets[1] + new Vector3(0, lowYAdj, 0);
+                            mesh = new Mesh();
+                            mesh.vertices = new Vector3[] { v0, v1, v2, v3, v4, v5 };
+                            mesh.triangles = new int[] { 0, 1, 2, 0, 2, 3, 3, 2, 5, 5, 2, 4 };
+                            mesh.RecalculateNormals();
+                            lines = new Vector3[] { v0, v3, v3, v5, v1, v2, v2, v4, v0, v1, v4, v5 };
+                            return;
+                        }
+                    case 8:
+                        {
+                            Vector3 v0 = new Vector3(x, y + lowYAdj, z);
+                            Vector3 v1 = new Vector3(x, y + highYAdj, z);
+                            Vector3 v2 = offsets[0] + new Vector3(0, highYAdj, 0);
+                            Vector3 v3 = offsets[0] + new Vector3(0, lowYAdj, 0);
+                            Vector3 v4 = offsets[1] + new Vector3(0, highYAdj, 0);
+                            Vector3 v5 = offsets[1] + new Vector3(0, lowYAdj, 0);
+                            Vector3 v6 = offsets[2] + new Vector3(0, highYAdj, 0);
+                            Vector3 v7 = offsets[2] + new Vector3(0, lowYAdj, 0);
+                            mesh = new Mesh();
+                            mesh.vertices = new Vector3[] { v0, v1, v2, v3, v4, v5, v6, v7 };
+                            mesh.triangles = new int[] { 0, 1, 2, 0, 2, 3, 3, 2, 5, 5, 2, 4, 5, 4, 7, 7, 4, 6 };
+                            mesh.RecalculateNormals();
+                            lines = new Vector3[] { v0, v3, v3, v5, v5, v7, v1, v2, v2, v4, v4, v6, v0, v1, v7, v6 };
+                            return;
+                        }
+                    case 9:
+                        {
+                            Vector3 v0 = new Vector3(x, y + lowYAdj, z);
+                            Vector3 v1 = new Vector3(x, y + highYAdj, z);
+                            Vector3 v2 = offsets[0] + new Vector3(0, highYAdj, 0);
+                            Vector3 v3 = offsets[0] + new Vector3(0, lowYAdj, 0);
+                            Vector3 v4 = offsets[1] + new Vector3(0, highYAdj, 0);
+                            Vector3 v5 = offsets[1] + new Vector3(0, lowYAdj, 0);
+                            Vector3 v6 = offsets[2] + new Vector3(0, highYAdj, 0);
+                            Vector3 v7 = offsets[2] + new Vector3(0, lowYAdj, 0);
+                            Vector3 v8 = offsets[3] + new Vector3(0, highYAdj, 0);
+                            Vector3 v9 = offsets[3] + new Vector3(0, lowYAdj, 0);
+                            mesh = new Mesh();
+                            mesh.vertices = new Vector3[] { v0, v1, v2, v3, v4, v5, v6, v7, v8, v9 };
+                            mesh.triangles = new int[] { 0, 1, 2, 0, 2, 3, 3, 2, 5, 5, 2, 4, 5, 4, 7, 7, 4, 6, 7, 6, 9, 9, 6, 8};
+                            mesh.RecalculateNormals();
+                            lines = new Vector3[] { v0, v3, v3, v5, v5, v7, v7, v9, v1, v2, v2, v4, v4, v6, v6, v8, v0, v1, v9, v8 };
+                            return;
+                        }
+                    case 13:
+                        {
+                            Vector3 v0 = new Vector3(x, y + lowYAdj, z);
+                            Vector3 v1 = new Vector3(x + offset1, y + lowYAdj, z);
+                            Vector3 v2 = new Vector3(x + offset1, y + lowYAdj, z + offset2);
+                            Vector3 v3 = new Vector3(x, y + lowYAdj, z + offset2);
+                            Vector3 ex = new Vector3(0, -1000, 0);
+                            mesh = new Mesh();
+                            mesh.vertices = new Vector3[] { v0, v1, v2, v3 };
+                            mesh.triangles = new int[] { 0, 1, 2, 0, 2, 3 };
+                            mesh.RecalculateNormals();
+                            lines = new Vector3[] { v0, v1, v0, v3, v2, v1, v2, v3, v0, v0 + ex, v1, v1 + ex, v2, v2 + ex, v3, v3 + ex };
+                            return;
+                        }
                     case 15:
-                    case 21:
-                        _hx += offsetA;
-                        _hz += offsetB;
-                        break;
+                        {
+                            Vector3 v0 = new Vector3(x, y + lowYAdj, z);
+                            Vector3 v1 = new Vector3(x + offset1, y + lowYAdj, z + offset2);
+                            Vector3 v2 = new Vector3(x + offset3, y + lowYAdj, z + offset4);
+                            Vector3 v3 = new Vector3(x + offset5, y + lowYAdj, z + offset6);
+                            Vector3 ex = new Vector3(0, -1000, 0);
+                            mesh = new Mesh();
+                            mesh.vertices = new Vector3[] { v0, v1, v2, v3 };
+                            mesh.triangles = new int[] { 0, 2, 1, 0, 3, 2 };
+                            mesh.RecalculateNormals();
+                            lines = new Vector3[] { v0, v1, v0, v3, v2, v1, v2, v3, v0, v0 + ex, v1, v1 + ex, v2, v2 + ex, v3, v3 + ex };
+                            return;
+                        }
+                    default:
+                        mesh = null;
+                        lines = null;
+                        return;
                 }
-                lower = new Vector3(_lx, _ly, _lz);
-                upper = new Vector3(_hx, _hy, _hz);
             }
 
         }
@@ -260,6 +389,54 @@ namespace ShiningHill
         public static EventInfoGetter f724 = new EventInfoGetter(0x04, 0x18, 0xFF); //f724
         public static EventInfoGetter f728 = new EventInfoGetter(0x04, 0x15, 0x01); //f728
         public static EventInfoGetter f72c = new EventInfoGetter(0x04, 0x14, 0x01); //f72c
+        #endregion
+
+        #region Entities
+        [Serializable]
+        [StructLayout(LayoutKind.Sequential)]
+        public struct EntityInfo
+        {
+            [SerializeField]
+            public short entityTypeID;
+            [SerializeField]
+            public short globalID;
+            [SerializeField]
+            public float x;
+            [SerializeField]
+            public float y;
+            [SerializeField]
+            public float z;
+            [SerializeField]
+            public float rotY;
+            [SerializeField]
+            public short a;
+            [SerializeField]
+            public short b;
+            [SerializeField]
+            public short c;
+            [SerializeField]
+            public short d;
+
+            public EntityInfo(BinaryReader reader)
+            {
+                entityTypeID = reader.ReadInt16();
+                globalID = reader.ReadInt16();
+                x = reader.ReadInt32();
+                z = reader.ReadInt32();
+                y = reader.ReadHalf();
+                rotY = reader.ReadHalf();
+                a = reader.ReadInt16();
+                b = reader.ReadInt16();
+                c = reader.ReadInt16();
+                d = reader.ReadInt16();
+                if (entityTypeID == 0x216) Debug.Log("id " + globalID + " d " + d);
+            }
+
+            public bool IsNull()
+            {
+                return entityTypeID == 0;
+            }
+        }
         #endregion
     }
 }

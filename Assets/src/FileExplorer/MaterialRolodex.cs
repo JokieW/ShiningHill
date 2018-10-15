@@ -64,6 +64,19 @@ namespace ShiningHill
             }
         }
 
+        private static Material _defaultGizmo;
+        public static Material defaultGizmo
+        {
+            get
+            {
+                if (_defaultGizmo == null)
+                {
+                    _defaultGizmo = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/DefaultGizmoMaterial.mat");
+                }
+                return _defaultGizmo;
+            }
+        }
+
         public List<TexMatsPair> texMatPairs = new List<TexMatsPair>();
 
         private MaterialRolodex(){}

@@ -17,7 +17,14 @@ namespace ShiningHill
         public ModelAssetPaths(string hardAssetPath, SHGame forgame)
         {
             mdlName = Path.GetFileNameWithoutExtension(hardAssetPath);
-            genericPath = Path.GetDirectoryName(hardAssetPath).Substring(hardAssetPath.LastIndexOf("/data/data/") + 1).Replace("\\", "/") + "/";
+            if (forgame == SHGame.SH3PC || forgame == SHGame.SH3PCdemo)
+            {
+                genericPath = Path.GetDirectoryName(hardAssetPath).Substring(hardAssetPath.LastIndexOf("/data/data/") + 1).Replace("\\", "/") + "/";
+            }
+            else
+            {
+                genericPath = Path.GetDirectoryName(hardAssetPath).Substring(hardAssetPath.LastIndexOf("/data/") + 1).Replace("\\", "/") + "/";
+            }
             game = forgame;
         }
 

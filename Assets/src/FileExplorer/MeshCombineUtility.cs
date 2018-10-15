@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace ShiningHill
@@ -12,7 +13,7 @@ namespace ShiningHill
             public Matrix4x4 transform;
         }
 
-        public static Mesh Combine(MeshInstance[] combines, bool generateStrips)
+        public static Mesh Combine(IList<MeshInstance> combines, bool generateStrips)
         {
             int vertexCount = 0;
             int triangleCount = 0;

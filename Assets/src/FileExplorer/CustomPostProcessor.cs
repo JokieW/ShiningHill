@@ -11,6 +11,7 @@ namespace ShiningHill
 {
     public enum SHGame
     {
+        SH1,
         SH2PC,
         SH3PC,
         SH3PCdemo,
@@ -28,7 +29,7 @@ namespace ShiningHill
         {
             forMap = hardAssetPath.Contains("TR.tex") || hardAssetPath.Contains("GB.tex");
             filename = Path.GetFileNameWithoutExtension(hardAssetPath);
-            genericPath = Path.GetDirectoryName(hardAssetPath).Substring(hardAssetPath.LastIndexOf("/data/") + 1).Replace("\\", "/") + "/";
+            genericPath = Path.GetDirectoryName(hardAssetPath).Substring(hardAssetPath.LastIndexOf("/data/data/") + 1).Replace("\\", "/") + "/";
             game = forgame;
         }
 
@@ -52,11 +53,13 @@ namespace ShiningHill
 
     public class CustomPostprocessor : AssetPostprocessor
     {
+        public const string SH1DataPath = "Assets/sh1/";
         public const string SH2PCDataPath = "Assets/sh2pc/";
         public const string SH3PCDataPath = "Assets/sh3pc/";
         public const string SH3PCdemoDataPath = "Assets/sh3pc_demo/";
         public const string SH4PCDataPath = "Assets/sh4pc/";
 
+        public const string SH1ExtractPath = "Assets/Resources/sh1/";
         public const string SH2PCExtractPath = "Assets/Resources/sh2pc/";
         public const string SH3PCExtractPath = "Assets/Resources/sh3pc/";
         public const string SH3PCdemoExtractPath = "Assets/Resources/sh3pc_demo/";
@@ -64,6 +67,7 @@ namespace ShiningHill
 
         public static string GetHardDataPathFor(SHGame game)
         {
+            if (game == SHGame.SH1) return CustomPostprocessor.SH1DataPath;
             if (game == SHGame.SH2PC) return CustomPostprocessor.SH2PCDataPath;
             if (game == SHGame.SH3PC) return CustomPostprocessor.SH3PCDataPath;
             if (game == SHGame.SH3PCdemo) return CustomPostprocessor.SH3PCdemoDataPath;
@@ -73,6 +77,7 @@ namespace ShiningHill
 
         public static string GetExtractDataPathFor(SHGame game)
         {
+            if (game == SHGame.SH1) return CustomPostprocessor.SH1ExtractPath;
             if (game == SHGame.SH2PC) return CustomPostprocessor.SH2PCExtractPath;
             if (game == SHGame.SH3PC) return CustomPostprocessor.SH3PCExtractPath;
             if (game == SHGame.SH3PCdemo) return CustomPostprocessor.SH3PCdemoExtractPath;
@@ -92,7 +97,8 @@ namespace ShiningHill
                     {
                         string extension = Path.GetExtension(asset);
                         SHGame forGame = SHGame.SH3PC;
-                        if (asset.Contains("sh2pc")) forGame = SHGame.SH2PC;
+                        if (asset.Contains("sh1")) forGame = SHGame.SH1;
+                        else if(asset.Contains("sh2pc")) forGame = SHGame.SH2PC;
                         else if (asset.Contains("sh3pc_demo")) forGame = SHGame.SH3PCdemo;
                         else if (asset.Contains("sh3pc")) forGame = SHGame.SH3PC;
                         else if (asset.Contains("sh4pc")) forGame = SHGame.SH4PC;

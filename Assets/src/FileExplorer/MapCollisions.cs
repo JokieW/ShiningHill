@@ -20,7 +20,14 @@ namespace ShiningHill
         public MapCollisionsAssetPaths(string hardAssetPath, SHGame forgame)
         {
             cldName = Path.GetFileNameWithoutExtension(hardAssetPath);
-            genericPath = Path.GetDirectoryName(hardAssetPath).Substring(hardAssetPath.LastIndexOf("/data/data/") + 1).Replace("\\", "/") + "/";
+            if(forgame == SHGame.SH3PC || forgame == SHGame.SH3PCdemo)
+            {
+                genericPath = Path.GetDirectoryName(hardAssetPath).Substring(hardAssetPath.LastIndexOf("/data/data/") + 1).Replace("\\", "/") + "/";
+            }
+            else
+            {
+                genericPath = Path.GetDirectoryName(hardAssetPath).Substring(hardAssetPath.LastIndexOf("/data/") + 1).Replace("\\", "/") + "/";
+            }
             game = forgame;
         }
 
@@ -136,7 +143,7 @@ namespace ShiningHill
                         }
                     }
 
-                    Mesh mesh = MeshCombineUtility.Combine(meshes.ToArray(), false);
+                    Mesh mesh = MeshCombineUtility.Combine(meshes, false);
                     mesh.RecalculateNormals();
                     mesh.name = "collisionMesh_" + group;
                     MeshCollider mc = colGO.AddComponent<MeshCollider>();

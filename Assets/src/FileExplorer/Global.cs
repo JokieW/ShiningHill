@@ -13,10 +13,11 @@ namespace ShiningHill
             {
                 SH3_ExeData.RegionData data = regionPointers[i];
                 GameObject go = new GameObject("Region " + i + ": " + data.name);
-                go.AddComponent<Region>().ResetRegion(data);
+                go.AddComponent<SH3_Region>().ResetRegion(data);
                 go.transform.parent = transform;
                 go.transform.localScale = Vector3.one;
             }
+            SH3exeExtractor.UpdateAssetsFromRegions(regionPointers);
         }
     }
 }
