@@ -4,68 +4,70 @@ using System.IO;
 using System.Runtime.InteropServices;
 using UnityEngine;
 
-public unsafe class CDROMStream: System.IDisposable
+public unsafe class CDROMStream: FileStream, IXStream
 {
     const long DEFAULT_CACHE_SIZE = 445;
     const long DATA_SIZE = 0x800;
 
     readonly long _sectorSize;
     readonly long _totalFileSectors;
-
-    FileStream _fs;
+    
     byte[] _cache;
+    byte* _cachePtr;
+    GCHandle _cacheHandle;
+
     long _cacheSectorCount;
     long _lastReadSector;
     long _firstCachedSector;
     long _dataPosition;
     long _cachePosition;
 
-    public long length
+    public override long Length
     {
         get { return _totalFileSectors * DATA_SIZE; }
     }
 
-    public long position
+    public override long Position
     {
         get { return _dataPosition; }
         set { _dataPosition = value; }
     }
 
-    public CDROMStream(string cuePath)
+    public static CDROMStream MakeFromCue(string cuePath)
     {
         if (!File.Exists(cuePath)) throw new FileNotFoundException("CDROM cue file not found", cuePath);
         if (Path.GetExtension(cuePath).ToLower() != ".cue") throw new FileNotFoundException("File is not a .cue", cuePath);
 
         string binPath;
         byte mode;
-        if (!ReadCueSheet(cuePath, out binPath, out mode, out _sectorSize)) throw new InvalidOperationException("Invalid cue file " + cuePath);
+        long sectorSize;
+        if (!ReadCueSheet(cuePath, out binPath, out mode, out sectorSize)) throw new InvalidOperationException("Invalid cue file " + cuePath);
         if (!File.Exists(binPath)) throw new FileNotFoundException("CDROM bin file not found", binPath);
-        
+
+        return new CDROMStream(binPath, sectorSize);
+    }
+
+    private CDROMStream(string binPath, long sectorSize) : base(binPath, FileMode.Open, FileAccess.Read, FileShare.Read, 0, FileOptions.None)
+    {
+        _sectorSize = sectorSize;
         _totalFileSectors = new FileInfo(binPath).Length / _sectorSize;
 
         ResetCacheSize();
-        _fs = new FileStream(binPath, FileMode.Open, FileAccess.Read, FileShare.Read, _cache.Length, FileOptions.None);
 
         _lastReadSector = -1;
         _dataPosition = 0;
         CheckCache(true);
     }
 
-    public void Close()
+    ~CDROMStream()
     {
-        Dispose();
-    }
-
-    public void Dispose()
-    {
-        if (_fs != null)
+        if (_cacheHandle.IsAllocated)
         {
-            _fs.Close();
-            _fs = null;
+            _cacheHandle.Free();
         }
     }
 
-    private bool ReadCueSheet(string path, out string bpath, out byte bmode, out long bsize)
+    private static bool ReadCueSheet(string path, out string bpath, out byte bmode, out long bsize)
     {
         // Garbage, works for now
         string[] lines = File.ReadAllLines(path);
@@ -126,17 +128,14 @@ public unsafe class CDROMStream: System.IDisposable
                 {
                     newCacheStart = _totalFileSectors - _cacheSectorCount;
                 }
-                _fs.Position = newCacheStart * _sectorSize;
-                _fs.Read(_cache, 0, _cache.Length);
+                base.Position = newCacheStart * _sectorSize;
+                base.Read(_cache, 0, _cache.Length);
                 _firstCachedSector = newCacheStart;
             }
             
-            fixed (byte* b = _cache)
-            {
-                long init = (long)b;
-                CDSector* cds = ((CDSector*)b) + (curSector - _firstCachedSector);
-                _cachePosition = ((long)cds - init) + cds->dataOffset + (_dataPosition % DATA_SIZE);
-            }
+            CDSector* cds = ((CDSector*)_cachePtr) + (curSector - _firstCachedSector);
+            _cachePosition = ((long)cds - (long)_cachePtr) + cds->dataOffset + (_dataPosition % DATA_SIZE);
+            
             _lastReadSector = curSector;
         }
     }
@@ -146,52 +145,46 @@ public unsafe class CDROMStream: System.IDisposable
         _dataPosition = sector * DATA_SIZE;
     }
 
-    public void Read(byte[] buffer, long size)
+    public override int Read(byte[] array, int offset, int count)
     {
-        fixed(byte* b = buffer)
+        fixed(byte* b = array)
         {
-            Read(b, size);
+            return Read(b, offset, count);
         }
     }
 
-    public void Read(byte* buffer, long size)
+    public int Read(byte* array, int offset, int count)
     {
-        if (_dataPosition + size > length) throw new EndOfStreamException("Read would go out of stream range");
-        long sizeLeft = size;
+        if (_dataPosition + count > Length) throw new EndOfStreamException("Read would go out of stream range");
+        long sizeLeft = count;
         while (sizeLeft != 0)
         {
             CheckCache();
-            
+
             long remainingBytes = RemainingBytesInSectorData();
             long lumpSize = remainingBytes >= sizeLeft ? sizeLeft : remainingBytes;
             sizeLeft -= lumpSize;
             remainingBytes -= lumpSize;
             
-            fixed (byte* c = _cache)
+            long longLength = lumpSize >> 3; // Divide by 8
+            ulong* longcache = (ulong*)(_cachePtr + _cachePosition);
+            ulong* longbuffer = (ulong*)array;
+            for (int j = 0; j != longLength; j++)
             {
-                byte* cc = c + _cachePosition;
-                long longLength = lumpSize >> 3; // Divide by 8
-                long remainderLength = lumpSize - (longLength << 3); //Multiply by 8
-                for (int j = 0; j != remainderLength; j++)
-                {
-                    *buffer++ = *cc++;
-                }
-
-                ulong* ccc = (ulong*)cc;
-                ulong* buf = (ulong*)buffer;
-                for (int j = 0; j != longLength; j++)
-                {
-                    *buf++ = *ccc++;
-                }
+                *longbuffer++ = *longcache++;
             }
+
+            long remainderLength = lumpSize - (longLength << 3); //Multiply by 8
+            byte* newbytecache = (byte*)longcache;
+            for (int j = 0; j != remainderLength; j++)
+            {
+                *array++ = *newbytecache++;
+            }
+
             _cachePosition += lumpSize;
             _dataPosition += lumpSize;
         }
-    }
-
-    public static void LongCopy(byte* src, byte *dst, long length)
-    {
-
+        return count;
     }
     
     private long RemainingBytesInSectorData()
@@ -201,14 +194,20 @@ public unsafe class CDROMStream: System.IDisposable
 
     public void SetCacheSize(long newsize)
     {
+        if(_cacheHandle.IsAllocated)
+        {
+            _cacheHandle.Free();
+        }
         _cacheSectorCount = TruncateCacheSize(newsize);
         _cache = new byte[_cacheSectorCount * _sectorSize];
+
+        _cacheHandle = GCHandle.Alloc(_cache, GCHandleType.Pinned);
+        _cachePtr = (byte*)_cacheHandle.AddrOfPinnedObject();
     }
 
     public void ResetCacheSize()
     {
-        _cacheSectorCount = TruncateCacheSize(DEFAULT_CACHE_SIZE);
-        _cache = new byte[_cacheSectorCount * _sectorSize];
+        SetCacheSize(DEFAULT_CACHE_SIZE);
     }
 
     private long TruncateCacheSize(long size)
@@ -270,17 +269,14 @@ public unsafe class CDROMStream: System.IDisposable
             return (*sector).mode == 1 ? &(*sector).data_mode1 : &(*sector).data_mode2;
         }
 
-        private static byte ReadHexAsDecimal(byte v)
+        private static int ReadHexAsDecimal(int v)
         {
-            byte r = 0;
-            for (int i = 0, b = 0, e = 1; i != 8; i++, b++)
+            int r = 0;
+            for (int e = 1; v != 0; v >>= 4, e *= 10)
             {
-                if (b == 4) { b = 0; e *= 10; }
-                if ((v & 0x01) != 0) { r += (byte)((1 << b) * e); }
-                v >>= 1;
+                r += (v & 0x0F) * e;
             }
             return r;
         }
-
     }
 }

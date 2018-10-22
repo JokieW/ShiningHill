@@ -69,7 +69,7 @@ namespace ShiningHill
                 int writeSize = 2048;
                 byte[] buf = new byte[writeSize];
                 
-                using (ISO9660FS fs = new ISO9660FS(new CDROMStream("G:/SH/SH1/1999.02.09 [SLUS-00707][US][PS] Silent Hill.cue")))
+                using (ISO9660FS fs = new ISO9660FS(CDROMStream.MakeFromCue("G:/SH/SH1/1999.02.09 [SLUS-00707][US][PS] Silent Hill.cue")))
                 {
                 }
             }

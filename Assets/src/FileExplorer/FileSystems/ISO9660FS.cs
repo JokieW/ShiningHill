@@ -8,23 +8,92 @@ using UnityEngine;
 //Thanks to https://wiki.osdev.org/ISO_9660
 public unsafe class ISO9660FS : System.IDisposable
 {
-    CDROMStream _stream;
+    IXStream _stream;
+    long _start;
+    long _length;
+
     PrimaryVolumeDescriptor _pvd;
     DirectoryRecord _root;
 
-    public ISO9660FS(CDROMStream stream)
+    public ISO9660FS(IXStream stream, long start = 0L, long length = long.MaxValue)
     {
-        this._stream = stream;
-        
+        _stream = stream;
+        _start = start;
+        _length = length;
+        if (_length > _stream.Length) _length = _stream.Length;
+
         PrimaryVolumeDescriptor p;
-        stream.position = 0x8000;
-        stream.Read((byte*)&p, 2048);
+        stream.Position = _start + 0x8000;
+        stream.Read((byte*)&p, 0, 2048);
         _root = *(DirectoryRecord*)&p.rootDirectory;
         _pvd = p;
+    }
 
-        string total = "";
-        PrintPathsOf((DirectoryRecord*)&p.rootDirectory, "", ref total, true);
-        Debug.Log(total);
+    public void Close()
+    {
+        Dispose();
+    }
+
+    public void Dispose()
+    {
+        if (_stream != null)
+        {
+            _stream.Dispose();
+            _stream = null;
+        }
+    }
+
+    public DirectoryEntry GetUniformDirectories()
+    {
+        DirectoryRecord root = _root;
+        return GetUniformDirectories(&root);
+    }
+
+    public DirectoryEntry GetUniformDirectories(DirectoryRecord* recDir)
+    {
+        DirectoryEntry uniDir = new DirectoryEntry();
+        uniDir.name = GetNameOfDirectoryRecord(recDir);
+
+        if ((recDir->fileFlags & FileFlags.IsSubdirectory) != 0)
+        {
+            _stream.Position = _start + (0x800 * recDir->extentLocation);
+            byte* extent = stackalloc byte[(int)recDir->extentLength];
+            _stream.Read(extent, 0, (int)recDir->extentLength);
+
+            List<DirectoryEntry> entries = new List<DirectoryEntry>();
+            while (true)
+            {
+                byte len = *extent;
+                if (len == 0) break;
+
+                DirectoryRecord* subdir = (DirectoryRecord*)extent;
+                if (subdir->fileIdentifier != 0 && subdir->fileIdentifier != 1)
+                {
+                    DirectoryEntry subDir = GetUniformDirectories(subdir);
+                    subDir.parent = uniDir;
+                    entries.Add(subDir);
+                }
+                extent += len;
+            }
+            uniDir.subentries = entries.ToArray();
+        }
+        else
+        {
+            uniDir.flags |= DirectoryEntry.DirFlags.IsFile;
+        }
+        return uniDir;
+    }
+
+    static string GetNameOfDirectoryRecord(DirectoryRecord* dir)
+    {
+        int nameLength = dir->fileIdentifierLength;
+        sbyte* nameBuffer = stackalloc sbyte[nameLength];
+        for (int i = 0; i != nameLength; i++)
+        {
+            nameBuffer[i] = (sbyte)*(&dir->fileIdentifier + i);
+        }
+        
+        return *nameBuffer == 0 || *nameBuffer == 1 ? "" : new string(nameBuffer, 0, nameLength);
     }
 
     void PrintPathsOf(DirectoryRecord* dir, string pathSoFar, ref string total, bool andExtract)
@@ -57,9 +126,9 @@ public unsafe class ISO9660FS : System.IDisposable
 
         if (isDir)
         {
-            _stream.position = 0x800 * dir->extentLocation;
+            _stream.Position = _start + (0x800 * dir->extentLocation);
             byte* extent = stackalloc byte[(int)dir->extentLength];
-            _stream.Read(extent, dir->extentLength);
+            _stream.Read(extent, 0, (int)dir->extentLength);
 
             while (true)
             {
@@ -76,7 +145,7 @@ public unsafe class ISO9660FS : System.IDisposable
         }
         else if(andExtract)
         {
-            _stream.position = 0x800 * dir->extentLocation;
+            _stream.Position = _start + (0x800 * dir->extentLocation);
             int numLeft = (int)dir->extentLength;
             byte[] extent = new byte[2048];
             string extractPath = "D:/result" + (myName.Substring(0, myName.Length - 2));
@@ -89,24 +158,10 @@ public unsafe class ISO9660FS : System.IDisposable
                 {
                     int lump = numLeft > 2048 ? 2048 : numLeft;
                     numLeft -= lump;
-                    _stream.Read(extent, lump);
+                    _stream.Read(extent, 0, lump);
                     fs.Write(extent, 0, lump);
                 }
             }
-        }
-    }
-
-    public void Close()
-    {
-        Dispose();
-    }
-
-    public void Dispose()
-    {
-        if (_stream != null)
-        {
-            _stream.Close();
-            _stream = null;
         }
     }
 
@@ -166,7 +221,7 @@ public unsafe class ISO9660FS : System.IDisposable
         public ushort volumeSequenceNumber;             //Volume sequence number - the volume that this extent is recorded on, in 16 bit both-endian format. 
         private ushort volumeSequenceNumber_msb;
         public byte fileIdentifierLength;               //Length of file identifier (file name). This terminates with a ';' character followed by the file ID number in ASCII coded decimal ('1'). 
-        public byte fileIdentifier;                    //[strD] File identifier.
+        public byte fileIdentifier;                     //[strD] File identifier.
                                                         //Padding field - zero if length of file identifier is even, otherwise, this field is not present. This means that a directory entry will always start on an even byte number. 
                                                         //System Use - The remaining bytes up to the maximum record size of 255 may be used for extensions of ISO 9660. The most common one is the System Use Share Protocol (SUSP) and its application, the Rock Ridge Interchange Protocol (RRIP). 
     }
@@ -203,7 +258,7 @@ public unsafe class ISO9660FS : System.IDisposable
         private uint locOfTypeMPathTable;               //LBA location of the path table. The path table pointed to contains only big-endian values. 
         private uint locOfOptTypeMPathTable;            //LBA location of the optional path table. The path table pointed to contains only big-endian values. Zero means that no optional path table exists. 
 
-        public byte rootDirectory;                     //Note that this is not an LBA address, it is the actual Directory Record, which contains a single byte Directory Identifier (0x00), hence the fixed 34 byte size. 
+        public byte rootDirectory;                      //Note that this is not an LBA address, it is the actual Directory Record, which contains a single byte Directory Identifier (0x00), hence the fixed 34 byte size. 
         private fixed byte rootDirectory_rest[33];
 
         public fixed byte volumeSetIdentifier[128];     //[strD] Identifier of the volume set of which this volume is a member.
