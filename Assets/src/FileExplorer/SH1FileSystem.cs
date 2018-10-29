@@ -75,6 +75,7 @@ namespace ShiningHill
             CustomPostprocessor.DoImports = false;
             string hardAssetPath = CustomPostprocessor.GetHardDataPathFor(SHGame.SH1);
 
+            TextReader t = new TextReader()
             BinaryReader exeReader = new BinaryReader(new FileStream(hardAssetPath + "SLUS_007.07", FileMode.Open, FileAccess.Read, FileShare.Read));
             BinaryReader silentReader = new BinaryReader(new FileStream(hardAssetPath + "data/SILENT", FileMode.Open, FileAccess.Read, FileShare.Read));
             try
