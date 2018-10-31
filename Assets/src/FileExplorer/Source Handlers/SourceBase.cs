@@ -35,35 +35,55 @@ namespace ShiningHill
             return _handlers[id];
         }
 
+        protected DirectoryEntry _directories;
+
+        public DirectoryEntry GetDirectories()
+        {
+            return _directories;
+        }
+
+        public DirectoryBrowser GetBrowser()
+        {
+            return new DirectoryBrowser(_directories);
+        }
+
         public void PostProcessDirectories(DirectoryEntry entries)
         {
-            IdentifierBase.RunArchiveIdentifiers(entries);
+            IdentifierBase.RunIdentifiers(entries);
             ExpandArchives(entries);
-
-            //run ids
         }
 
         public void ExpandArchives(DirectoryEntry entries)
         {
-            for (int i = 0; i != entries.subentries.Length; i++)
+            if (entries.subentries != null)
             {
-                DirectoryEntry de = entries.subentries[i];
-                if ()
+                XStream stream = GetStream();
+                for (int i = 0; i != entries.subentries.Length; i++)
+                {
+                    DirectoryEntry de = entries.subentries[i];
+                    if (de.specialFS != 0)
+                    {
+                        FileSystemBase.FileSystemHandler fhs = FileSystemBase.GetHandlerForID(de.specialFS);
+                        using (FileSystemBase fs = fhs.Instantiate(stream.MakeSubStream(de.fileAddress, de.fileLength)))
+                        {
+                            fs.SetUniformDirectories(this, ref de);
+                            PostProcessDirectories(de);
+                        }
+                    }
+                    else
+                    {
+                        ExpandArchives(de);
+                    }
+                }
             }
         }
-
-        DirectoryEntry _directories;
-        public void SetDirectories(DirectoryEntry entries)
-        {
-            _directories = entries;
-        }
-
-        public BinaryReader OpenFile(string path)
+        
+        public XStream OpenFile(string path)
         {
             FileSystemBase.FileSystemHandler fsh = FileSystemBase.GetHandlerForID(_directories.specialFS);
             using (FileSystemBase fs = fsh.Instantiate(GetStream().MakeSubStream()))
             {
-                return fs.OpenFile(path);
+                return fs.OpenFile(_directories, path);
             }
         }
 
@@ -137,10 +157,77 @@ namespace ShiningHill
             }
         }
 
+        public IEnumerable<string> EnumerateDirectories(string path)
+        {
+            DirectoryEntry de = GetEntry(path);
+            if (de.subentries != null)
+            {
+                for (int i = 0; i != de.subentries.Length; i++)
+                {
+                    if (de.subentries[i].isFolder)
+                    {
+                        yield return de.subentries[i].GetFullPath();
+                    }
+                }
+            }
+        }
+
+        public IEnumerable<string> EnumerateFiles(string path)
+        {
+            DirectoryEntry de = GetEntry(path);
+            if (de.subentries != null)
+            {
+                for (int i = 0; i != de.subentries.Length; i++)
+                {
+                    if (de.subentries[i].isFile)
+                    {
+                        yield return de.subentries[i].GetFullPath();
+                    }
+                }
+            }
+        }
+
         public bool Exists(string path)
         {
             DirectoryEntry de;
             return TryGetEntry(path, out de);
+        }
+
+        public string[] GetDirectories(string path)
+        {
+            DirectoryEntry de = GetEntry(path);
+            if (de.subentries != null)
+            {
+                string[] files = new string[de.subentries.Length];
+                for (int i = 0; i != de.subentries.Length; i++)
+                {
+                    files[i] = de.subentries[i].GetFullPath();
+                }
+                return files;
+            }
+            return new string[0];
+        }
+
+        public string[] GetFiles(string path)
+        {
+            DirectoryEntry de = GetEntry(path);
+            if (de.subentries != null)
+            {
+                string[] files = new string[de.subentries.Length];
+                for (int i = 0; i != de.subentries.Length; i++)
+                {
+                    files[i] = de.subentries[i].GetFullPath();
+                }
+                return files;
+            }
+            return new string[0];
+        }
+
+        public string GetParent(string path)
+        {
+            DirectoryEntry de = GetEntry(path);
+            if (de.parent == null) return null;
+            return de.parent.GetFullPath();
         }
 
         public bool TryGetEntry(string path, out DirectoryEntry entry)
@@ -157,24 +244,40 @@ namespace ShiningHill
 
         public DirectoryEntry GetEntry(string path)
         {
-            DirectoryEntry current = _entries;
-            int currentLevel = 0;
-            int currentLength = 1;
+            DirectoryEntry current = null;
+            string[] names = path.Split('/');
+            bool ignoreLast = names[names.Length - 1] == "";
 
-            GODEEP:
-            foreach (DirectoryEntry de in current)
+            for (int i = 0; i != names.Length + (ignoreLast ? -1 : 0); i++)
             {
-                if (CompareNameAtLevel(path, de.name, currentLevel))
+                if(current == null)
                 {
-                    current = de;
-                    currentLevel++;
-                    currentLength += de.name.Length;
-                    if (de.isFolder) currentLength++;
-                    if (currentLength == path.Length) return current;
-                    goto GODEEP;
+                    if(_entries.name == names[i])
+                    {
+                        current = _entries;
+                    }
+                    else
+                    {
+                        throw new DirectoryNotFoundException(path);
+                    }
+                }
+                else if (current.subentries != null)
+                {
+                    for (int j = 0; j != current.subentries.Length; j++)
+                    {
+                        if(current.subentries[j].name == names[i])
+                        {
+                            current = current.subentries[j];
+                            break;
+                        }
+                        if(j + 1 == current.subentries.Length)
+                        {
+                            throw new DirectoryNotFoundException(path);
+                        }
+                    }
                 }
             }
-            throw new DirectoryNotFoundException(path);
+            return current;
         }
     }
 
@@ -213,6 +316,41 @@ namespace ShiningHill
             {
                 return subentries != null && subentries.Length != 0;
             }
+        }
+
+        public DirectoryEntry GetRoot()
+        {
+            DirectoryEntry de = this;
+            while (de.parent != null) de = de.parent;
+            return de;
+        }
+
+        public string GetFullPath()
+        {
+            string path = "";
+            if(parent != null)
+            {
+                path += parent.GetFullPath();
+            }
+            path += name;
+            if (isFolder) path += "/";
+            return path;
+        }
+
+        public string GetDirectoryPath()
+        {
+            string path = "";
+            if (parent != null)
+            {
+                path += parent.GetFullPath();
+            }
+            if (!isFile) path += name + "/";
+            return path;
+        }
+
+        public string GetExtension()
+        {
+            return Path.GetExtension(name);
         }
 
         public void Draw()

@@ -8,15 +8,20 @@ namespace ShiningHill
     {
         public Identifier_SILENTFS(byte id) : base(id) { }
 
-        public override byte GetTargetID()
-        {
-            return FileSystemBase.GetIdForType<SH1FileSystem>();
-        }
-
-        public override bool Run(DirectoryEntry entries)
+        public override void Run(DirectoryEntry entries)
         {
             DirectoryBrowser browser = new DirectoryBrowser(entries);
-            return browser.Exists("/SYSTEM.CNF") && (browser.Exists("/SILENT.") || browser.Exists("/SILENT"));
+            if(browser.Exists("/SYSTEM.CNF"))
+            {
+                if (browser.Exists("/SILENT."))
+                {
+                    browser.GetEntry("/SILENT.").specialFS = FileSystemBase.GetIdForType<SILENTFS>();
+                }
+                else if (browser.Exists("/SILENT"))
+                {
+                    browser.GetEntry("/SILENT").specialFS = FileSystemBase.GetIdForType<SILENTFS>();
+                }
+            }
         }
     }
 }

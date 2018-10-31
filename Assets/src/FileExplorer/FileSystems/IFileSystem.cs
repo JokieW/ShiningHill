@@ -10,7 +10,8 @@ namespace ShiningHill
         static FileSystemHandler[] _handlers = new FileSystemHandler[]
         {
             new FileSystemHandler(0),
-            new FileSystemHandler<ISO9660FS>(1)
+            new FileSystemHandler<ISO9660FS>(1),
+            new FileSystemHandler<SILENTFS>(2)
         };
 
         public static FileSystemHandler GetHandlerForID(byte id)
@@ -36,9 +37,10 @@ namespace ShiningHill
             return 0;
         }
 
-        public virtual BinaryReader OpenFile(string path) { return null; }
+        public virtual XStream OpenFile(DirectoryEntry root, string path) { return null; }
         public virtual FileSystemBase Instantiate(XStream stream) { return null; }
-        public virtual DirectoryEntry GetUniformDirectories() { return null; }
+        public virtual void SetUniformDirectories(SourceBase source, ref DirectoryEntry self) { }
+        public virtual void Dispose() { }
 
         public class FileSystemHandler
         {

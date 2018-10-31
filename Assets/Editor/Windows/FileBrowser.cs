@@ -75,6 +75,7 @@ namespace ShiningHill
 
         void OnGUI()
         {
+            UnityEngine.Profiling.Profiler.BeginSample("FileBrowser");
             if (splitter == null)
             {
                 SetSkin();
@@ -84,19 +85,26 @@ namespace ShiningHill
             GUILayout.BeginHorizontal();
 
             bool repaint = false;
+            UnityEngine.Profiling.Profiler.BeginSample("Display");
             repaint = srcs.Display() || repaint;
             repaint = tree.Display() || repaint;
             repaint = ctxt.Display() || repaint;
+            UnityEngine.Profiling.Profiler.EndSample();
 
             GUILayout.EndHorizontal();
 
+            UnityEngine.Profiling.Profiler.BeginSample("Drag");
             repaint = srcs.UpdateDrag() || repaint;
             repaint = tree.UpdateDrag() || repaint;
+            UnityEngine.Profiling.Profiler.EndSample();
 
             if (repaint)
             {
+                UnityEngine.Profiling.Profiler.BeginSample("Repaint");
                 Repaint();
+                UnityEngine.Profiling.Profiler.EndSample();
             }
+            UnityEngine.Profiling.Profiler.EndSample();
         }
 
         class View

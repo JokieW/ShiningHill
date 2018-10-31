@@ -53,18 +53,13 @@ namespace ShiningHill
 
         public override XStream MakeSubStream()
         {
-            CDROMStream cds = new CDROMStream(_path, _sectorSize);
-            cds._parentStream = this;
-            _childStreams.Add(cds);
-            return cds;
+            return new CDROMStream(_path, _sectorSize);
         }
 
         public override XStream MakeSubStream(long start, long length)
         {
-            long len = length / _sectorSize;
+            long len = length / DATA_SIZE;
             CDROMStream cds =  new CDROMStream(_path, _sectorSize, start / DATA_SIZE, len == 0 ? 1 : len);
-            cds._parentStream = this;
-            _childStreams.Add(cds);
             return cds;
         }
 
@@ -152,9 +147,9 @@ namespace ShiningHill
                 if (forceRecache || curSector < _firstCachedSector || curSector >= _firstCachedSector + _cacheSectorCount)
                 {
                     long newCacheStart = curSector;
-                    if (newCacheStart + _cacheSectorCount > _totalFileSectors)
+                    if (newCacheStart + _cacheSectorCount > (_firstFileSectors + _totalFileSectors))
                     {
-                        newCacheStart = _totalFileSectors - _cacheSectorCount;
+                        newCacheStart = (_firstFileSectors + _totalFileSectors) - _cacheSectorCount;
                     }
                     base.Position = newCacheStart * _sectorSize;
                     base.Read(_cache, 0, _cache.Length);
@@ -178,7 +173,10 @@ namespace ShiningHill
 
         public override int Read(byte* array, int offset, int count)
         {
-            if (_dataPosition + count > Length) throw new EndOfStreamException("Read would go out of stream range");
+            if (_dataPosition + count > Length)
+            {
+                throw new EndOfStreamException("Read would go out of stream range");
+            }
             long sizeLeft = count;
             while (sizeLeft != 0)
             {

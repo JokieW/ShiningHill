@@ -15,6 +15,19 @@ namespace ShiningHill
         DirectoryEntry _uniformRoot;
         DirectoryRecord _root;
 
+        static string GetNameOfDirectoryRecord(DirectoryRecord* dir)
+        {
+            int nameLength = dir->fileIdentifierLength;
+            sbyte* nameBuffer = stackalloc sbyte[nameLength];
+            for (int i = 0; i != nameLength; i++)
+            {
+                nameBuffer[i] = (sbyte)*(&dir->fileIdentifier + i);
+            }
+
+            string name = *nameBuffer == 0 || *nameBuffer == 1 ? "" : new string(nameBuffer, 0, nameLength);
+            return name.Replace(";1", "");
+        }
+
         public ISO9660FS()
         {
         }
@@ -40,49 +53,41 @@ namespace ShiningHill
             Dispose();
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
             if (_stream != null)
             {
                 _stream.Dispose();
                 _stream = null;
             }
-        }
-        
-        public override DirectoryEntry GetUniformDirectories()
-        {
-            if (_uniformRoot != null) return _uniformRoot;
-            DirectoryRecord root = _root;
-            _uniformRoot = GetUniformDirectories(&root);
-            _uniformRoot.specialFS = GetIdForType<ISO9660FS>();
-            return _uniformRoot;
+            base.Dispose();
         }
 
-        public override BinaryReader OpenFile(string path)
+        public override XStream OpenFile(DirectoryEntry root, string path)
         {
             string[] paths = path.Split('/');
-            int i = 0;
-            DirectoryEntry root = _uniformRoot;
+            int i = 1;
             FORE:
-            foreach(DirectoryEntry de in root)
+            foreach (DirectoryEntry de in root)
             {
-                if(de.name == paths[i++])
+                if (de.name == paths[i])
                 {
-                    if(i == paths.Length)
+                    i++;
+                    if (i == paths.Length)
                     {
-                        return new BinaryReader(_stream.MakeSubStream(de.fileAddress, de.fileLength));
+                        return _stream.MakeSubStream(de.fileAddress, de.fileLength);
                     }
-                    else if(de.specialFS != 0)
+                    else if (de.specialFS != 0)
                     {
                         FileSystemHandler fsh = GetHandlerForID(de.specialFS);
                         using (FileSystemBase fs = fsh.Instantiate(_stream.MakeSubStream(de.fileAddress, de.fileLength)))
                         {
                             string substring = "";
-                            for(int j = i; j != paths.Length; j++)
+                            for (int j = i; j != paths.Length; j++)
                             {
                                 substring += "/" + path[j];
                             }
-                            return fs.OpenFile(substring);
+                            return fs.OpenFile(de, substring);
                         }
                     }
                     else
@@ -95,44 +100,22 @@ namespace ShiningHill
             throw new FileNotFoundException(path);
         }
 
-        DirectoryRecord* GetRecordNamed(DirectoryRecord* root, string name)
+        public override void SetUniformDirectories(SourceBase source, ref DirectoryEntry self)
         {
-            _stream.Position = 0x800 * root->extentLocation;
-            byte* extent = stackalloc byte[(int)root->extentLength];
-            _stream.Read(extent, 0, (int)root->extentLength);
-
-            while (true)
+            if (_uniformRoot == null)
             {
-                byte len = *extent;
-                if (len == 0) break;
-
-                DirectoryRecord* subdir = (DirectoryRecord*)extent;
-                if (subdir->fileIdentifier != 0 && subdir->fileIdentifier != 1)
-                {
-                    if (GetNameOfDirectoryRecord(root) == name) return subdir;
-                }
-                extent += len;
+                DirectoryRecord root = _root;
+                SetUniformDirectories(ref self, &root);
+                self.specialFS = GetIdForType<ISO9660FS>();
+                _uniformRoot = self;
             }
-            return null;
+            self = _uniformRoot;
         }
 
-        static string GetNameOfDirectoryRecord(DirectoryRecord* dir)
+        public void SetUniformDirectories(ref DirectoryEntry self, DirectoryRecord* recDir)
         {
-            int nameLength = dir->fileIdentifierLength;
-            sbyte* nameBuffer = stackalloc sbyte[nameLength];
-            for (int i = 0; i != nameLength; i++)
-            {
-                nameBuffer[i] = (sbyte)*(&dir->fileIdentifier + i);
-            }
-
-            string name = *nameBuffer == 0 || *nameBuffer == 1 ? "" : new string(nameBuffer, 0, nameLength);
-            return name.Replace(";1", "");
-        }
-
-        public DirectoryEntry GetUniformDirectories(DirectoryRecord* recDir)
-        {
-            DirectoryEntry uniDir = new DirectoryEntry();
-            uniDir.name = GetNameOfDirectoryRecord(recDir);
+            DirectoryEntry uniDir = self ?? new DirectoryEntry();
+            if(uniDir.name == null) uniDir.name = GetNameOfDirectoryRecord(recDir);
 
             if ((recDir->fileFlags & FileFlags.IsSubdirectory) != 0)
             {
@@ -149,7 +132,8 @@ namespace ShiningHill
                     DirectoryRecord* subdir = (DirectoryRecord*)extent;
                     if (subdir->fileIdentifier != 0 && subdir->fileIdentifier != 1)
                     {
-                        DirectoryEntry subDir = GetUniformDirectories(subdir);
+                        DirectoryEntry subDir = null;
+                        SetUniformDirectories(ref subDir, subdir);
                         subDir.parent = uniDir;
                         entries.Add(subDir);
                     }
@@ -163,76 +147,7 @@ namespace ShiningHill
                 uniDir.fileAddress = 0x800 * recDir->extentLocation;
                 uniDir.fileLength = recDir->extentLength;
             }
-            return uniDir;
-        }
-
-        void PrintPathsOf(DirectoryRecord* dir, string pathSoFar, ref string total, bool andExtract)
-        {
-            DirectoryRecord dbgdir = *dir;
-            int nameLength = dir->fileIdentifierLength;
-            sbyte* nameBuffer = stackalloc sbyte[nameLength];
-            for (int i = 0; i != nameLength; i++)
-            {
-                nameBuffer[i] = (sbyte)*(&dir->fileIdentifier + i);
-            }
-
-            bool isDir = (dir->fileFlags & FileFlags.IsSubdirectory) != 0;
-            bool isSpecialDir = *nameBuffer == 0 || *nameBuffer == 1;
-            string myName = pathSoFar +
-                (isSpecialDir ? "" : new string(nameBuffer, 0, nameLength)) +
-                (isDir ? "/" : "");
-
-            if (isDir)
-            {
-                total += myName + "\n";
-            }
-            else
-            {
-                NumberFormatInfo nfi = (NumberFormatInfo)CultureInfo.InvariantCulture.NumberFormat.Clone();
-                nfi.NumberGroupSeparator = " ";
-                int el = (int)dir->extentLength;
-                total += myName + "    " + el.ToString("#,0", nfi) + "\n";
-            }
-
-            if (isDir)
-            {
-                _stream.Position = 0x800 * dir->extentLocation;
-                byte* extent = stackalloc byte[(int)dir->extentLength];
-                _stream.Read(extent, 0, (int)dir->extentLength);
-
-                while (true)
-                {
-                    byte len = *extent;
-                    if (len == 0) break;
-
-                    DirectoryRecord* subdir = (DirectoryRecord*)extent;
-                    if (subdir->fileIdentifier != 0 && subdir->fileIdentifier != 1)
-                    {
-                        PrintPathsOf(subdir, myName, ref total, andExtract);
-                    }
-                    extent += len;
-                }
-            }
-            else if (andExtract)
-            {
-                _stream.Position = 0x800 * dir->extentLocation;
-                int numLeft = (int)dir->extentLength;
-                byte[] extent = new byte[2048];
-                string extractPath = "D:/result" + (myName.Substring(0, myName.Length - 2));
-                string extractPathShort = Path.GetDirectoryName(extractPath);
-                if (!Directory.Exists(extractPathShort)) Directory.CreateDirectory(extractPathShort);
-
-                using (FileStream fs = new FileStream(extractPath, FileMode.Append, FileAccess.Write, FileShare.Read, 2048, FileOptions.WriteThrough))
-                {
-                    while (numLeft != 0)
-                    {
-                        int lump = numLeft > 2048 ? 2048 : numLeft;
-                        numLeft -= lump;
-                        _stream.Read(extent, 0, lump);
-                        fs.Write(extent, 0, lump);
-                    }
-                }
-            }
+            self = uniDir;
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1, Size = 17)]

@@ -26,10 +26,6 @@ namespace ShiningHill
             {
                 new ArcFileSystem();
             }
-            if (GUILayout.Button("Open SH1"))
-            {
-                SH1FileSystem.ImportAll();
-            }
             if (GUILayout.Button("Load exe"))
             {
                 try

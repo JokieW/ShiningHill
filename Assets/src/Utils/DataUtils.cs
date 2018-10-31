@@ -6,26 +6,26 @@ namespace ShiningHill
 {
     public static class DataUtils
     {
-        public static unsafe string DecodeSH1Name(uint v1, uint v2)
+        public static unsafe string DecodeSH1Name(uint n1, uint n2)
         {
             List<char> name = new List<char>();
 
-            v1 >>= 4;
+            n1 >>= 4;
             int i;
-            for(i = 0; i < 4 && v1 != 0; i++)
+            for(i = 0; i < 4 && n1 != 0; i++)
             {
-                char c = (char)((v1 & 0x3F) + 0x20);
+                char c = (char)((n1 & 0x3F) + 0x20);
                 if (c != '\0') name.Add(c);
-                v1 >>= 6;
+                n1 >>= 6;
             }
 
-            v2 &= 0xFFFFFF;
+            n2 &= 0xFFFFFF;
             int l = i + 4;
-            for(; i < l && v2 != 0; i++)
+            for(; i < l && n2 != 0; i++)
             {
-                char c = (char)((v2 & 0x3F) + 0x20);
+                char c = (char)((n2 & 0x3F) + 0x20);
                 if (c != '\0') name.Add(c);
-                v2 >>= 6;
+                n2 >>= 6;
             }
             return new string(name.ToArray());
         }

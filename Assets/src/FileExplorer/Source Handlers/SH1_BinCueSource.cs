@@ -19,13 +19,13 @@ namespace ShiningHill
         public override void Init(string path)
         {
             _stream = CDROMStream.MakeFromCue(path);
-            DirectoryEntry de;
+            DirectoryEntry de = null;
             using (ISO9660FS fs = new ISO9660FS(_stream.MakeSubStream()))
             {
-                de = fs.GetUniformDirectories();
+                fs.SetUniformDirectories(this, ref de);
             }
+            _directories = de;
             PostProcessDirectories(de);
-            SetDirectories(de);
         }
 
         protected override XStream GetStream()
