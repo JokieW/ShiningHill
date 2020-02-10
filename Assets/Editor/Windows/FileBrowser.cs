@@ -4,18 +4,39 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace ShiningHill
 {
-    public class FileBrowser : EditorWindow
+    public partial class FileBrowser : EditorWindow
     {
         [MenuItem("ShiningHill/File Explorer")]
         public static void ShowWindow()
         {
-            EditorWindow.GetWindow(typeof(FileBrowser));
+            FileBrowser fb = EditorWindow.GetWindow<FileBrowser>();
+            fb.titleContent = new GUIContent("File Explorer");
         }
 
-        static GUIStyle splitter;
+        StyleColor darkLineColor = new StyleColor(/*EditorGUIUtility.isProSkin ?*/ new Color(0.1608f, 0.1608f, 0.1608f) /*: new Color(0.6353f, 0.6353f, 0.6353f)*/);
+
+        FileBrowserSources _sources;
+        SourceBase _currentSource;
+        ListView _sourcesView;
+        ListView _treeView;
+        ListView _filesView;
+        
+        public void OnEnable()
+        {
+            _sources = FileBrowserSources.GetSources();
+            OnEnableLayout();
+        }
+
+        public void OnDisable()
+        {
+            OnDisableLayout();
+        }
+
+        /*static GUIStyle splitter;
         static Color darkLineColor;
         static Color lightLineColor;
         static Color blueSelectionColor;
@@ -455,7 +476,7 @@ namespace ShiningHill
 
                 return repaint;
             }
-        }
+        }*/
     }
 
     public class FileBrowser_AddSource : EditorWindow
@@ -466,6 +487,7 @@ namespace ShiningHill
         string sourceName = "";
         bool namePlayerSet = false;
         SourceBase.SourceHandler handler = null;
+        public Action listUpdateCallback;
 
         private void OnGUI()
         {
@@ -521,12 +543,14 @@ namespace ShiningHill
             {
                 FileBrowserSources.AddSource(path, sourceName, handler.id);
                 this.Close();
+                listUpdateCallback();
             }
             EditorGUI.EndDisabledGroup();
 
             if (GUILayout.Button("Cancel"))
             {
                 this.Close();
+                listUpdateCallback();
             }
             GUILayout.EndHorizontal();
         }
