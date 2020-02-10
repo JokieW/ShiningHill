@@ -24,7 +24,12 @@ namespace ShiningHill
         {
             if (GUILayout.Button("Open"))
             {
-                new ArcFileSystem();
+                ArcFileSystem.DecompressArcs();
+            }
+
+            if (GUILayout.Button("compress"))
+            {
+                ArcFileSystem.CompressArcs();
             }
             if (GUILayout.Button("Load exe"))
             {

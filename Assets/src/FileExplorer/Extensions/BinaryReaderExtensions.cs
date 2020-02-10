@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 
 using UnityEngine;
+using System.Runtime.InteropServices;
 
 namespace ShiningHill
 {
@@ -17,6 +18,17 @@ namespace ShiningHill
         public static float ReadHalf(this BinaryReader reader)
         {
             return DataUtils.HalfToSingleFloat(reader.ReadUInt16());
+        }
+
+        public unsafe static T ReadStruct<T>(this BinaryReader reader) where T: unmanaged
+        {
+            int structlength = Marshal.SizeOf<T>();
+            byte* structbytes = stackalloc byte[structlength];
+            for(int i = 0; i < structlength; i++)
+            {
+                *(structbytes + i) = reader.ReadByte();
+            }
+            return *((T*)structbytes);
         }
 
         #region Matrices
@@ -161,7 +173,7 @@ namespace ShiningHill
         {
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
             char c;
-            while ((c = reader.ReadChar()) != 0)
+            while ((c = (char)reader.ReadByte()) != 0)
             {
                 sb.Append(c);
             }
