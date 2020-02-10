@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEditor;
 
 using Object = UnityEngine.Object;
+using System.Runtime.InteropServices;
 
 namespace ShiningHill
 {
@@ -253,6 +254,169 @@ namespace ShiningHill
                 
                 Gizmos.DrawLine(localpos, localpos + (norms[i]*0.1f));
             }*/
+
+        }
+
+
+        public class MapFile
+        {
+            public Header mainHeader;
+            public Skybox__[] skyboxes;
+            public (MeshGroup, (SubMeshGroup, (SubSubMeshGroup, (MeshPart, VertexInfo[])[])[])[]) meshInfo;
+
+
+            [StructLayout(LayoutKind.Sequential, Pack = 0)]
+            public struct Header
+            {
+                public int int_00;
+                public int field_04;
+                public int field_08;
+                public int mainHeaderSize;
+
+                public int textureGroupOffset;
+                public int field_14;
+                public int mainHeaderSize2__;
+                public int mainHeaderEndPosition__;
+
+                public int field_20;
+                public int sceneStartHeaderOffset__;
+                public int field_28;
+                public int field_2C;
+
+                public int textureGroupOffset2__;
+                public int field_34;
+                public int field_38;
+                public int field_3C;
+
+                public short totalTextures;
+                public short localTextureBaseIndex;
+                public short localTextureCount;
+                public short localTExtureBaseIndexModifier;
+                public int field_48;
+                public int field_4C;
+            }
+
+            [StructLayout(LayoutKind.Sequential, Pack = 0)]
+            public struct Skybox__
+            {
+                public int nextSkyboxOffset; //0 if no more
+                public int headerLength; //32 for skybox
+                public int skyboxLength;
+                public int field_0C;
+
+                public int field_10;
+                public int field_14;
+                public int field_18;
+                public int field_1C;
+
+                public Matrix4x4 matrix;
+                public unsafe fixed float vertices[4 * 8];
+            }
+
+            [StructLayout(LayoutKind.Sequential, Pack = 0)]
+            public struct MeshGroup
+            {
+                public int nextGroupOffset;
+                public int headerLength;
+                public int totalLength;
+                public int field_0C;
+
+                public int textureGroup;
+                public int textureIndex;
+                public int field_18;
+                public int field_1C;
+
+                public int field_20;
+                public int field_24;
+                public int field_28;
+                public int field_2C;
+            }
+
+            [StructLayout(LayoutKind.Sequential, Pack = 0)]
+            public struct SubMeshGroup
+            {
+                public int nextSubMeshGroupOffset;
+                public int headerLength;
+                public int totalLength;
+                public int field_0C;
+
+                public short field_10;
+                public short field_12;
+                public short field_14;
+                public short isTransparent;
+                public int field_18;
+                public int field_1C;
+
+                public int field_20;
+                public int field_24;
+                public int field_28;
+                public int field_2C;
+            }
+
+            [StructLayout(LayoutKind.Sequential, Pack = 0)]
+            public struct SubSubMeshGroup
+            {
+                public int nextSubSubMeshGroupOffset;
+                public int headerLength;
+                public int totalLength;
+                public int field_0C;
+
+                public int illuminationType; //9 ambient?, 8 self-illum, 4 unknown (i.e. bu1f), 0 no illum?
+                public int field_14;
+                public int field_18;
+                public int field_1C;
+
+                public float float_20;
+                public float float_24;
+                public float float_28;
+                public float float_2C;
+            }
+
+            [StructLayout(LayoutKind.Sequential, Pack = 0)]
+            public struct MeshPart
+            {
+                public int nextMeshPartOffset;
+                public int headerLength;
+                public int totalLength;
+                public int field_0C;
+
+                public int vertexCount;
+                public int objectType; //1 = static, 2 = can be or not there, 3 = can move
+                public int occlusionGroup;
+                public int meshFlags;
+
+                public float float_20;
+                public float float_24;
+                public float float_28;
+                public float float_2C;
+
+                public float float_30;
+                public float float_34;
+                public float float_38;
+                public float float_3C;
+            }
+
+            [StructLayout(LayoutKind.Sequential, Pack = 0)]
+            public struct VertexInfo
+            {
+                Vector3 position;
+                Vector3 normal;
+                Vector2 uv;
+                ColorBGRA color;
+            }
+
+            [StructLayout(LayoutKind.Sequential, Pack = 0)]
+            public struct ColorBGRA
+            {
+                public byte blue;
+                public byte green;
+                public byte red;
+                public byte alpha;
+            }
+        }
+
+        static unsafe void WriteSH3Map(BinaryReader reader, Map scene, MapAssetPaths paths)
+        {
 
         }
 

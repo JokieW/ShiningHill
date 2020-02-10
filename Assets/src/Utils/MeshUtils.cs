@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-
+using System.Runtime.InteropServices;
 using UnityEngine;
 
 namespace ShiningHill
@@ -174,6 +174,15 @@ namespace ShiningHill
             return mesh;
         }
 
+        /// <summary>
+        /// /////////////////
+        /// </summary>
+        /// <param name="vertices"></param>
+        /// <param name="normals"></param>
+        /// <param name="uvs"></param>
+        /// <param name="colors"></param>
+        /// <param name="isBacksided"></param>
+        /// <returns></returns>
         public static Mesh MakeStrippedInverted(List<Vector3> vertices, List<Vector3> normals = null, List<Vector2> uvs = null, List<Color32> colors = null, bool isBacksided = false)
         {
             Mesh mesh = new Mesh();
