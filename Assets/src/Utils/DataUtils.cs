@@ -35,6 +35,14 @@ namespace ShiningHill
             return ((v >> 0x13) & 0xFFFF) << 8;
         }
 
+        public static void AlignOffsetToNext(ref int offset, int alignment = 0x10)
+        {
+            if (offset % alignment != 0)
+            {
+                offset += alignment - (offset % alignment);
+            }
+        }
+
         //Taken from the SH3 code
         public static unsafe float HalfToSingleFloatSHStyle(ushort source)
         {

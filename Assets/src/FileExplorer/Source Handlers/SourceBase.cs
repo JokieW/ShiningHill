@@ -355,7 +355,7 @@ namespace ShiningHill
 
         public void Draw()
         {
-            EditorGUILayout.LabelField(name);
+            
         }
 
         public override string ToString()

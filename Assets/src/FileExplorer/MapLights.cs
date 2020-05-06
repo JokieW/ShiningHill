@@ -10,45 +10,6 @@ using Object = UnityEngine.Object;
 
 namespace ShiningHill
 {
-    public struct MapLightsAssetPaths
-    {
-        string dedName;
-        string genericPath;
-        SHGame game;
-
-        public MapLightsAssetPaths(string hardAssetPath, SHGame forgame)
-        {
-            dedName = Path.GetFileNameWithoutExtension(hardAssetPath);
-            if (forgame == SHGame.SH3PC || forgame == SHGame.SH3PCdemo)
-            {
-                genericPath = Path.GetDirectoryName(hardAssetPath).Substring(hardAssetPath.LastIndexOf("/data/data/") + 1).Replace("\\", "/") + "/";
-            }
-            else
-            {
-                genericPath = Path.GetDirectoryName(hardAssetPath).Substring(hardAssetPath.LastIndexOf("/data/") + 1).Replace("\\", "/") + "/";
-            }
-            game = forgame;
-        }
-
-        public string GetHardAssetPath()
-        {
-            string path = CustomPostprocessor.GetHardDataPathFor(game);
-            return path + genericPath + dedName + ".ded";
-        }
-
-        public string GetExtractAssetPath()
-        {
-            string path = CustomPostprocessor.GetExtractDataPathFor(game);
-            return path + genericPath + dedName + ".asset";
-        }
-
-        public string GetPrefabPath()
-        {
-            string path = CustomPostprocessor.GetExtractDataPathFor(game);
-            return path + genericPath + "Prefabs/" + dedName + ".prefab";
-        }
-    }
-
     public class MapLights : MonoBehaviour 
 	{
         public List<GlobalLight> globalLights = new List<GlobalLight>();
@@ -61,15 +22,15 @@ namespace ShiningHill
         public Vector4 Unknown3;
 
 
-        public static MapLights ReadLights(MapLightsAssetPaths paths)
+        public static MapLights ReadLights(/*MapLightsAssetPaths paths*/)
         {
-            GameObject subGO = Scene.BeginEditingPrefab(paths.GetPrefabPath(), "Lights");
+            GameObject subGO = null;//Scene.BeginEditingPrefab(paths.GetPrefabPath(), "Lights");
 
             try
             {
                 MapLights lights = subGO.AddComponent<MapLights>();
 
-                BinaryReader reader = new BinaryReader(new FileStream(paths.GetHardAssetPath(), FileMode.Open, FileAccess.Read, FileShare.Read));
+                BinaryReader reader = null;//new BinaryReader(new FileStream(paths.GetHardAssetPath(), FileMode.Open, FileAccess.Read, FileShare.Read));
 
                 reader.SkipInt16(); //Usually the area's code
                 reader.SkipInt16(); //Usually 1, saw a 20
@@ -152,7 +113,7 @@ namespace ShiningHill
 
                 reader.Close();
 
-                Scene.FinishEditingPrefab(paths.GetPrefabPath(), subGO);
+                //Scene.FinishEditingPrefab(paths.GetPrefabPath(), subGO);
 
                 return lights;
 

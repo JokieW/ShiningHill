@@ -17,6 +17,9 @@ Assets/UnityVS/Editor/UnityVS.VersionSpecific.dll.meta
 Assets/ShaderForge/*
 Assets/ShaderForge.meta
 
+Assets/upk/
+Assets/upk.meta
+
 Assets/sh1/*
 Assets/sh2pc/*
 Assets/sh3pc/*

@@ -9,6 +9,25 @@ namespace ShiningHill
 {
 	public static class MeshUtils 
 	{
+        public static void Invert(ref List<Vector3> vertices, ref List<Vector3> normals, ref List<Vector2> uvs, ref List<Color32> colors)
+        {
+            List<Vector3> newVertices = new List<Vector3>(vertices.Count);
+            List<Vector3> newNormals = new List<Vector3>(normals.Count);
+            List<Vector2> newUvs = new List<Vector2>(uvs.Count);
+            List<Color32> newColors = new List<Color32>(colors.Count);
+            for (int j = vertices.Count - 1; j > -1; j--)
+            {
+                newVertices.Add(vertices[j]);
+                newNormals.Add(normals[j]);
+                newUvs.Add(uvs[j]);
+                newColors.Add(colors[j]);
+            }
+            vertices = newVertices;
+            normals = newNormals;
+            uvs = newUvs;
+            colors = newColors;
+        }
+
         public static Mesh MakeIndexedStrip(List<Vector3> vertices, List<short[]> indices, List<Vector3> normals = null, List<Vector2> uvs = null, List<Color32> colors = null, bool isBacksided = false)
         {
             Mesh mesh = new Mesh();

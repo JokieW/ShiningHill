@@ -11,7 +11,7 @@ namespace ShiningHill
         {
             new FileSystemHandler(0),
             new FileSystemHandler<ISO9660FS>(1),
-            new FileSystemHandler<SILENTFS>(2)
+            new FileSystemHandler<SH1FileSystem>(2)
         };
 
         public static FileSystemHandler GetHandlerForID(byte id)

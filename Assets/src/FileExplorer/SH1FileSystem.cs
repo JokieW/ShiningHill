@@ -1,32 +1,24 @@
 ﻿using System;
 using System.IO;
-using System.IO.Compression;
-using System.Collections;
 using System.Collections.Generic;
-
-using UnityEngine;
-using UnityEditor;
-
-using ICSharpCode.SharpZipLib.Core;
-using ICSharpCode.SharpZipLib.GZip;
 
 namespace ShiningHill
 {
-    public class SILENTFS : FileSystemBase
+    public class SH1FileSystem : FileSystemBase
     {
         XStream _stream;
         DirectoryEntry _uniformRoot;
         string exeName;
 
-        public SILENTFS() { }
-        public SILENTFS(XStream stream)
+        public SH1FileSystem() { }
+        public SH1FileSystem(XStream stream)
         {
             _stream = stream;
         }
 
         public override FileSystemBase Instantiate(XStream stream)
         {
-            return new SILENTFS(stream);
+            return new SH1FileSystem(stream);
         }
 
         public void Close()
@@ -136,7 +128,7 @@ namespace ShiningHill
                     self.subentries = entries.ToArray();
                 }
 
-                self.specialFS = GetIdForType<SILENTFS>();
+                self.specialFS = GetIdForType<SH1FileSystem>();
                 _uniformRoot = self;
             }
             self = _uniformRoot;

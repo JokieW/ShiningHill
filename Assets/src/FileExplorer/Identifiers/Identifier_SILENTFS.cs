@@ -15,11 +15,11 @@ namespace ShiningHill
             {
                 if (browser.Exists("/SILENT."))
                 {
-                    browser.GetEntry("/SILENT.").specialFS = FileSystemBase.GetIdForType<SILENTFS>();
+                    browser.GetEntry("/SILENT.").specialFS = FileSystemBase.GetIdForType<SH1FileSystem>();
                 }
                 else if (browser.Exists("/SILENT"))
                 {
-                    browser.GetEntry("/SILENT").specialFS = FileSystemBase.GetIdForType<SILENTFS>();
+                    browser.GetEntry("/SILENT").specialFS = FileSystemBase.GetIdForType<SH1FileSystem>();
                 }
             }
         }

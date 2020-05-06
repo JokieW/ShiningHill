@@ -20,16 +20,18 @@ namespace ShiningHill
             /*_currentWindow = */EditorWindow.GetWindow(typeof(ArcExporter));
         }
 
+        public static Mesh mesh;
+        public static Texture2D texture;
         unsafe void OnGUI()
         {
-            if (GUILayout.Button("Open"))
+            //if (GUILayout.Button("Open"))
             {
-                ArcFileSystem.DecompressArcs();
+                //ArcFileSystem.DecompressArcs();
             }
 
-            if (GUILayout.Button("compress"))
+            //if (GUILayout.Button("compress"))
             {
-                ArcFileSystem.CompressArcs();
+                //ArcFileSystem.CompressArcs();
             }
             if (GUILayout.Button("Load exe"))
             {
@@ -41,6 +43,40 @@ namespace ShiningHill
                 catch(Exception e)
                 {
                     Debug.LogException(e);
+                }
+            }
+            if (GUILayout.Button("test cld"))
+            {
+                MapCollisions mc = MapCollisions.MakeDebug();
+                /*using (FileStream file = new FileStream(@"C:\Silent Hill 3\arc\bgam\data\bg\am\am1e.cld", FileMode.Open, FileAccess.Read))
+                using (BinaryReader reader = new BinaryReader(file))
+                {
+                    mc = new MapCollisions(reader);
+                }*/
+
+                using (FileStream file = new FileStream(@"C:\Silent Hill 3\arc\bgmr\data\bg\mr\mrff.cld", FileMode.Create, FileAccess.Write))
+                using (BinaryWriter writer = new BinaryWriter(file))
+                {
+                    mc.Write(writer);
+                }
+            }
+            mesh = (Mesh)EditorGUILayout.ObjectField(mesh, typeof(Mesh), true);
+            texture = (Texture2D)EditorGUILayout.ObjectField(texture, typeof(Texture2D), true);
+            if (GUILayout.Button("test map"))
+            {
+                MapFile m;
+                using (FileStream file = new FileStream(@"C:\Silent Hill 3 - Copy\arc\bgmr\data\tmp\mrff.map", FileMode.Open, FileAccess.Read))
+                using (BinaryReader reader = new BinaryReader(file))
+                {
+                    m = new MapFile(reader);
+                }
+
+                m.DoHack(mesh, texture);
+
+                using (FileStream file = new FileStream(@"C:\Silent Hill 3\arc\bgmr\data\tmp\mrff.map", FileMode.Create, FileAccess.Write))
+                using (BinaryWriter writer = new BinaryWriter(file))
+                {
+                    m.Write(writer);
                 }
             }
             if (GUILayout.Button("doit"))

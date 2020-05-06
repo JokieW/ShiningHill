@@ -65,6 +65,8 @@ public class StateChecker : MonoBehaviour
 
     IEnumerator LoadNewMap()
     {
+        //fix with new pipeline
+#if false
         foreach (Transform child in Map.transform)
         {
             GameObject.Destroy(child.gameObject);
@@ -109,6 +111,7 @@ public class StateChecker : MonoBehaviour
                 }
             }
         }
+#endif
         yield return null;
     }
 }

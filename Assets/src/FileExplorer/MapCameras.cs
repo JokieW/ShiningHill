@@ -10,46 +10,6 @@ using Object = UnityEngine.Object;
 
 namespace ShiningHill
 {
-    public struct MapCamerasAssetPaths
-    {
-        string camName;
-        string genericPath;
-        SHGame game;
-
-        public MapCamerasAssetPaths(string hardAssetPath, SHGame forgame)
-        {
-            camName = Path.GetFileNameWithoutExtension(hardAssetPath);
-            if (forgame == SHGame.SH3PC || forgame == SHGame.SH3PCdemo)
-            {
-                genericPath = Path.GetDirectoryName(hardAssetPath).Substring(hardAssetPath.LastIndexOf("/data/data/") + 1).Replace("\\", "/") + "/";
-            }
-            else
-            {
-                genericPath = Path.GetDirectoryName(hardAssetPath).Substring(hardAssetPath.LastIndexOf("/data/") + 1).Replace("\\", "/") + "/";
-            }
-            game = forgame;
-        }
-
-        public string GetHardAssetPath()
-        {
-            string path = CustomPostprocessor.GetHardDataPathFor(game);
-            return path + genericPath + camName + ".cam";
-        }
-
-        public string GetExtractAssetPath()
-        {
-            string path = CustomPostprocessor.GetExtractDataPathFor(game);
-            return path + genericPath + camName + ".asset";
-        }
-
-        public string GetPrefabPath()
-        {
-            string path = CustomPostprocessor.GetExtractDataPathFor(game);
-            return path + genericPath + "Prefabs/" + camName + ".prefab";
-        }
-    }
-
-
     public class MapCameras : MonoBehaviour 
 	{
         [MenuItem("Assets/holla/amigo")]
@@ -59,15 +19,15 @@ namespace ShiningHill
         }
 
         public List<Camera> cameras = new List<Camera>();
-        public static MapCameras ReadCameras(MapCamerasAssetPaths paths)
+        public static MapCameras ReadCameras(/*MapCamerasAssetPaths paths*/)
         {
-            GameObject subGO = Scene.BeginEditingPrefab(paths.GetPrefabPath(), "Cameras");
+            GameObject subGO = null;//Scene.BeginEditingPrefab(paths.GetPrefabPath(), "Cameras");
 
             try
             {
                 MapCameras cams = subGO.AddComponent<MapCameras>();
 
-                BinaryReader reader = new BinaryReader(new FileStream(paths.GetHardAssetPath(), FileMode.Open, FileAccess.Read, FileShare.Read));
+                BinaryReader reader = null;//new BinaryReader(new FileStream(paths.GetHardAssetPath(), FileMode.Open, FileAccess.Read, FileShare.Read));
                 
                 while (true)
                 {
@@ -84,7 +44,7 @@ namespace ShiningHill
 
                 reader.Close();
 
-                Scene.FinishEditingPrefab(paths.GetPrefabPath(), subGO);
+                //Scene.FinishEditingPrefab(paths.GetPrefabPath(), subGO);
 
                 return cams;
 

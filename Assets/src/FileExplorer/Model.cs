@@ -6,6 +6,8 @@ using System.Text;
 using UnityEditor;
 using UnityEngine;
 
+//repair with new pipeline
+#if false
 namespace ShiningHill
 {
     public struct ModelAssetPaths
@@ -369,3 +371,4 @@ namespace ShiningHill
         public Vector2 uv;
     }
 }
+#endif

@@ -23,6 +23,7 @@ namespace ShiningHill
             }
         }
 
+#if false
         public override void OnInspectorGUI()
         {
             bool doCleanup = false;
@@ -121,5 +122,6 @@ namespace ShiningHill
                 AssetDatabase.SaveAssets();
             }
         }
+#endif
 	}
 }

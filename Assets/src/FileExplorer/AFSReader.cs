@@ -7,32 +7,6 @@ using UnityEngine;
 
 namespace ShiningHill
 {
-    public struct AFSAssetPaths
-    {
-        string afsname;
-        string genericPath;
-        SHGame game;
-
-        public AFSAssetPaths(string hardAssetPath, SHGame forgame)
-        {
-            afsname = Path.GetFileNameWithoutExtension(hardAssetPath);
-            genericPath = Path.GetDirectoryName(hardAssetPath).Substring(hardAssetPath.LastIndexOf("/sound/") + 1).Replace("\\", "/") + "/";
-            game = forgame;
-        }
-
-        public string GetHardAssetPath()
-        {
-            string path = CustomPostprocessor.GetHardDataPathFor(game);
-            return path + genericPath + afsname + ".afs";
-        }
-
-        public string GetExtractAssetPath(string filenameWExt)
-        {
-            string path = CustomPostprocessor.GetExtractDataPathFor(game);
-            return path + genericPath + afsname + "/" + filenameWExt;
-        }
-    }
-
     public class AFSReader
     {
         private struct FileOffsets
@@ -53,12 +27,12 @@ namespace ShiningHill
             public int something; 
         }
 
-        public static void ReadAFSFiles(AFSAssetPaths paths)
+        public static void ReadAFSFiles(/*AFSAssetPaths paths*/)
         {
             BinaryReader reader = null;
             try
             {
-                reader = new BinaryReader(new FileStream(paths.GetHardAssetPath(), FileMode.Open, FileAccess.Read, FileShare.Read));
+                reader = null;/*new BinaryReader(new FileStream(paths.GetHardAssetPath(), FileMode.Open, FileAccess.Read, FileShare.Read));*/
 
                 /*string afstag = */
                 reader.ReadNullTerminatedString();
@@ -110,9 +84,9 @@ namespace ShiningHill
                         FileInfo info = _fileInfos[i];
                         reader.BaseStream.Position = offset.offset;
 
-                        string folder = paths.GetExtractAssetPath("");
+                        string folder = null;// paths.GetExtractAssetPath("");
                         if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
-                        string filepath = paths.GetExtractAssetPath(_fileInfos[i].filename);
+                        string filepath = null;//paths.GetExtractAssetPath(_fileInfos[i].filename);
                         if (File.Exists(filepath)) File.Delete(filepath);
 
                         fs = File.Create(filepath, _fileOffsets[i].length);

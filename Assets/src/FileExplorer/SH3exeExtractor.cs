@@ -8,39 +8,12 @@ namespace ShiningHill
 {
     public static class SH3exeExtractor
     {
-        static class SH3ExeAssetPaths
-        {
-            public static string GetHardAssetPath()
-            {
-                string path = CustomPostprocessor.GetHardDataPathFor(SHGame.SH3PC);
-                return path + "sh3.exe";
-            }
-
-            public static string GetExtractAssetPath()
-            {
-                string path = CustomPostprocessor.GetExtractDataPathFor(SHGame.SH3PC);
-                return path + "sh3.asset";
-            }
-
-            public static string GetRegionExtractAssetPath(string regionName)
-            {
-                string path = CustomPostprocessor.GetExtractDataPathFor(SHGame.SH3PC);
-                return path + "Exe/Regions/" + regionName + "/";
-            }
-
-            public static string GetRegionPrefabPath(string regionName)
-            {
-                string path = CustomPostprocessor.GetExtractDataPathFor(SHGame.SH3PC);
-                return path + "Exe/Regions/" + regionName + "/Prefabs/";
-            }
-        }
-
         static VirtualAddress _regionPointerArrayPtr = 0x006cf7d0;
         static VirtualAddress _regionNamesArrayPtr = 0x006cf730;
 
         public static SH3_ExeData.RegionData[] ExtractRegionEventData()
         {
-            BinaryReader reader = new BinaryReader(new FileStream(SH3ExeAssetPaths.GetHardAssetPath(), FileMode.Open, FileAccess.Read, FileShare.Read));
+            BinaryReader reader = null;//new BinaryReader(new FileStream(SH3ExeAssetPaths.GetHardAssetPath(), FileMode.Open, FileAccess.Read, FileShare.Read));
             try
             {
                 reader.BaseStream.Position = _regionPointerArrayPtr.raw;
@@ -252,16 +225,16 @@ namespace ShiningHill
                         reg.markerLines = _lines.ToArray();
                         reg.regionData = region;
                         go.AddComponent<MeshFilter>().sharedMesh = reg.markerMesh;
-                        go.AddComponent<MeshRenderer>().sharedMaterial = MaterialRolodex.defaultGizmo;
+                        go.AddComponent<MeshRenderer>().sharedMaterial = null;//MaterialRolodex.defaultGizmo;
 
                         {
-                            string path = SH3ExeAssetPaths.GetRegionExtractAssetPath(region.name) + region.name + ".asset";
+                            string path = null;//SH3ExeAssetPaths.GetRegionExtractAssetPath(region.name) + region.name + ".asset";
                             MakeDirectory(path);
                             AssetDatabase.DeleteAsset(path);
                             AssetDatabase.CreateAsset(reg.markerMesh, path);
                         }
                         {
-                            string path = SH3ExeAssetPaths.GetRegionPrefabPath(region.name) + region.name + ".prefab";
+                            string path = null;//SH3ExeAssetPaths.GetRegionPrefabPath(region.name) + region.name + ".prefab";
                             MakeDirectory(path);
                             AssetDatabase.DeleteAsset(path);
                             PrefabUtility.CreatePrefab(path, go);

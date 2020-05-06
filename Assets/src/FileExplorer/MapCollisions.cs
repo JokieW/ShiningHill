@@ -8,221 +8,333 @@ using UnityEngine;
 using UnityEditor;
 
 using Object = UnityEngine.Object;
+using System.Runtime.InteropServices;
 
 namespace ShiningHill
 {
-    public struct MapCollisionsAssetPaths
+    [StructLayout(LayoutKind.Sequential, Pack = 0)]
+    public unsafe struct CollisionHeader
     {
-        string cldName;
-        string genericPath;
-        SHGame game;
+        public Vector2 origin;
+        public int floorGroupLength;
+        public int wallGroupLength;
 
-        public MapCollisionsAssetPaths(string hardAssetPath, SHGame forgame)
+        public int something__GroupLength;
+        public int furniture__GroupLength;
+        public int radialGroupLength;
+        public int padding;
+
+        public CollisionOffsetTable offsetTable;
+
+        public void UpdateFrom(Vector2 origin, int[][][] indicesList, CollisionQuad[][] quads, CollisionCylinder[] cylinders)
         {
-            cldName = Path.GetFileNameWithoutExtension(hardAssetPath);
-            if(forgame == SHGame.SH3PC || forgame == SHGame.SH3PCdemo)
+            this.floorGroupLength = (quads[0].Length + 1) * 0x50;
+            this.wallGroupLength = (quads[1].Length + 1) * 0x50;
+            this.something__GroupLength = (quads[2].Length + 1) * 0x50;
+            this.furniture__GroupLength = (quads[3].Length + 1) * 0x50;
+            this.radialGroupLength = (cylinders.Length + 1) * 0x30;
+            this.padding = 0x00;
+
+            this.offsetTable = new CollisionOffsetTable();
+
+            int fileOffset = 0x0174;
+            for(int i = 0; i < CollisionOffsetTable.IndicesPerGroup; i++)
             {
-                genericPath = Path.GetDirectoryName(hardAssetPath).Substring(hardAssetPath.LastIndexOf("/data/data/") + 1).Replace("\\", "/") + "/";
+                offsetTable.group0IndicesOffsets[i] = fileOffset;
+                fileOffset += 0x04 + (0x04 * indicesList[0][i].Length);
             }
-            else
+            for (int i = 0; i < CollisionOffsetTable.IndicesPerGroup; i++)
             {
-                genericPath = Path.GetDirectoryName(hardAssetPath).Substring(hardAssetPath.LastIndexOf("/data/") + 1).Replace("\\", "/") + "/";
+                offsetTable.group1IndicesOffsets[i] = fileOffset;
+                fileOffset += 0x04 + (0x04 * indicesList[1][i].Length);
             }
-            game = forgame;
-        }
+            for (int i = 0; i < CollisionOffsetTable.IndicesPerGroup; i++)
+            {
+                offsetTable.group2IndicesOffsets[i] = fileOffset;
+                fileOffset += 0x04 + (0x04 * indicesList[2][i].Length);
+            }
+            for (int i = 0; i < CollisionOffsetTable.IndicesPerGroup; i++)
+            {
+                offsetTable.group3IndicesOffsets[i] = fileOffset;
+                fileOffset += 0x04 + (0x04 * indicesList[3][i].Length);
+            }
+            for (int i = 0; i < CollisionOffsetTable.IndicesPerGroup; i++)
+            {
+                offsetTable.group4IndicesOffsets[i] = fileOffset;
+                fileOffset += 0x04 + (0x04 * indicesList[4][i].Length);
+            }
 
-        public string GetHardAssetPath()
-        {
-            string path = CustomPostprocessor.GetHardDataPathFor(game);
-            return path + genericPath + cldName + ".cld";
-        }
+            if (fileOffset % 0x10 != 0)
+            {
+                fileOffset += 0x10 - (fileOffset % 0x10);
+            }
 
-        public string GetExtractAssetPath()
-        {
-            string path = CustomPostprocessor.GetExtractDataPathFor(game);
-            return path + genericPath + cldName + ".asset";
-        }
+            offsetTable.group0VertexOffset = fileOffset;
+            fileOffset += 0x50 + (0x50 * quads[0].Length);
 
-        public string GetPrefabPath()
-        {
-            string path = CustomPostprocessor.GetExtractDataPathFor(game);
-            return path + genericPath + "Prefabs/" + cldName + ".prefab";
+            offsetTable.group1VertexOffset = fileOffset;
+            fileOffset += 0x50 + (0x50 * quads[1].Length);
+
+            offsetTable.group2VertexOffset = fileOffset;
+            fileOffset += 0x50 + (0x50 * quads[2].Length);
+
+            offsetTable.group3VertexOffset = fileOffset;
+            fileOffset += 0x50 + (0x50 * quads[3].Length);
+
+            offsetTable.group4VertexOffset = fileOffset;
+            fileOffset += 0x30 + (0x30 * cylinders.Length);
         }
     }
 
-    [Serializable]
-	public class MapCollisions : MonoBehaviour 
-	{
-        [SerializeField]
-        public List<CollisionPane> panes = new List<CollisionPane>();
-        public int DispalyKind = -1;
+    [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 0x154)]
+    public unsafe struct CollisionOffsetTable
+    {
+        public const int OffsetsCount = 0x55;
+        public const int IndicesPerGroup = 0x10;
+        [FieldOffset(0x00)]
+        public fixed int allOffsets[OffsetsCount];
+        [FieldOffset(IndicesPerGroup * 0x00)]
+        public fixed int group0IndicesOffsets[IndicesPerGroup];
+        [FieldOffset(IndicesPerGroup * 0x04)]
+        public fixed int group1IndicesOffsets[IndicesPerGroup];
+        [FieldOffset(IndicesPerGroup * 0x08)]
+        public fixed int group2IndicesOffsets[IndicesPerGroup];
+        [FieldOffset(IndicesPerGroup * 0x0C)]
+        public fixed int group3IndicesOffsets[IndicesPerGroup];
+        [FieldOffset(IndicesPerGroup * 0x10)]
+        public fixed int group4IndicesOffsets[IndicesPerGroup];
 
-		public static MapCollisions ReadCollisions(MapCollisionsAssetPaths paths)
+        [FieldOffset((IndicesPerGroup * 0x14) + 0x00)]
+        public int group0VertexOffset;
+        [FieldOffset((IndicesPerGroup * 0x14) + 0x04)]
+        public int group1VertexOffset;
+        [FieldOffset((IndicesPerGroup * 0x14) + 0x08)]
+        public int group2VertexOffset;
+        [FieldOffset((IndicesPerGroup * 0x14) + 0x0C)]
+        public int group3VertexOffset;
+
+        [FieldOffset(IndicesPerGroup * 0x15)]
+        public int group4VertexOffset;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 0)]
+    public struct CollisionQuad
+    {
+        public int field_00;
+        public int field_04; //Always 4?
+        public int field_08;
+        public int padding;
+
+        public Vector4 vertex0;
+        public Vector4 vertex1;
+        public Vector4 vertex2;
+        public Vector4 vertex3;
+
+        public CollisionQuad(int field_00, int field_08, Vector3 v0, Vector3 v1, Vector3 v2, Vector3 v3)
         {
-            GameObject subGO = Scene.BeginEditingPrefab(paths.GetPrefabPath(), "Collisions");
+            this.field_00 = field_00;
+            this.field_04 = 0x04;
+            this.field_08 = field_08;
+            this.padding = 0x00;
+            this.vertex0 = new Vector4(v0.x, v0.y, v0.z, 1.0f);
+            this.vertex1 = new Vector4(v1.x, v1.y, v1.z, 1.0f);
+            this.vertex2 = new Vector4(v2.x, v2.y, v2.z, 1.0f);
+            this.vertex3 = new Vector4(v3.x, v3.y, v3.z, 1.0f);
+        }
+    }
 
-            try
+    [StructLayout(LayoutKind.Sequential, Pack = 0)]
+    public struct CollisionCylinder
+    {
+        public int field_00;
+        public int field_04; //Always 4?
+        public int field_08;
+        public int padding;
+
+        public Vector4 position;
+        public Vector3 height;
+        public float radius;
+    }
+
+    public unsafe class MapCollisions
+    {
+        public CollisionHeader header;
+        public int[][][] groupIndicesLists; //[group][subgroup][indices]
+        public CollisionQuad[][] group0123Quads;
+        public CollisionCylinder[] group4Cylinders;
+
+        private MapCollisions()
+        {
+            header = new CollisionHeader();
+            groupIndicesLists = new int[5][][];
+            for (int i = 0; i < 5; i++)
             {
-                MapCollisions cols = subGO.AddComponent<MapCollisions>();
-
-                BinaryReader reader = new BinaryReader(new FileStream(paths.GetHardAssetPath(), FileMode.Open, FileAccess.Read, FileShare.Read));
-
-                /*Vector2 origin = */reader.ReadVector2();
-                reader.SkipInt32(160);
-                reader.SkipInt32(880);
-                reader.SkipInt32(160);
-                reader.SkipInt32(80);
-                /*int vertexCount = */reader.ReadInt32();
-                reader.SkipInt32(0);
-
-                List<int> offsets = new List<int>();
-                
-                for (int i = 0; i != 85; i++)
+                int[][] subgroup = new int[CollisionOffsetTable.IndicesPerGroup][];
+                for (int j = 0; j < CollisionOffsetTable.IndicesPerGroup; j++)
                 {
-                    offsets.Add(reader.ReadInt32());
+                    subgroup[j] = new int[0];
                 }
-                /*int offset;
-                while ((offset = reader.ReadInt32()) != 0 && offset != -1)
-                {
-                    offsets.Add(offset);
-                }*/
-                
-                foreach (int off in offsets)
-                {
-                    reader.BaseStream.Position = off - 4;
-                    int peek = reader.ReadInt32();
-                    if (peek == 0)
-                    {
-                        while (true)
-                        {
-                            peek = reader.PeekInt32();
-                            if (peek != 0)
-                            {
-                                cols.panes.Add(new CollisionPane(reader));
-                            }
-                            else
-                            {
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                int[] groups = cols.panes.Select(x => x.group).Distinct().ToArray();
-                foreach (int group in groups)
-                {
-                    List<MeshCombineUtility.MeshInstance> meshes = new List<MeshCombineUtility.MeshInstance>();
-                    GameObject colGO = new GameObject("Collision " + group);
-                    colGO.isStatic = true;
-                    foreach (CollisionPane pane in cols.panes.Where(x => x.group == group))
-                    {
-                        if (pane.type == 257)
-                        {
-                            MeshCombineUtility.MeshInstance inst = new MeshCombineUtility.MeshInstance();
-                            inst.mesh = MeshUtils.MakeSquareInverted(pane.vectors.ToList());
-                            inst.subMeshIndex = 0;
-                            inst.transform = Matrix4x4.identity;
-                            meshes.Add(inst);
-                            
-                        }
-                        else if (pane.type == 1)
-                        {
-                            MeshCombineUtility.MeshInstance inst = new MeshCombineUtility.MeshInstance();
-                            inst.mesh = MeshUtils.MakeStrippedInverted(pane.vectors.ToList());
-                            inst.subMeshIndex = 0;
-                            inst.transform = Matrix4x4.identity;
-                            meshes.Add(inst);
-                        }
-                        else if (pane.type == 769)
-                        {
-                            CapsuleCollider cc = colGO.AddComponent<CapsuleCollider>();
-                            cc.center = pane.vectors[0] + (pane.offset * 0.5f);
-                            cc.radius = pane.radius;
-                            cc.height = pane.offset.y;
-                            cc.direction = 1;
-                        }
-                    }
-
-                    Mesh mesh = MeshCombineUtility.Combine(meshes, false);
-                    mesh.RecalculateNormals();
-                    mesh.name = "collisionMesh_" + group;
-                    MeshCollider mc = colGO.AddComponent<MeshCollider>();
-                    mc.sharedMesh = mesh;
-                    colGO.transform.SetParent(subGO.transform);
-                }
-
-                reader.Close();
-
-                foreach (MeshCollider mc in subGO.GetComponentsInChildren<MeshCollider>())
-                {
-                    AssetDatabase.AddObjectToAsset(mc.sharedMesh, paths.GetExtractAssetPath());
-                }
-
-                Scene.FinishEditingPrefab(paths.GetPrefabPath(), subGO);
-
-                return cols;
-
-            }
-            catch (Exception e)
-            {
-                Debug.LogException(e);
+                groupIndicesLists[i] = subgroup;
             }
 
-            return null;
+            group0123Quads = new CollisionQuad[4][];
+            for (int i = 0; i < 4; i++)
+            {
+                group0123Quads[i] = new CollisionQuad[0];
+            }
+
+            group4Cylinders = new CollisionCylinder[0];
+            header.UpdateFrom(Vector2.zero, groupIndicesLists, group0123Quads, group4Cylinders);
         }
 
-        [Serializable]
-        public class CollisionPane
+        public MapCollisions(BinaryReader reader)
         {
-            [SerializeField]
-            public int type;
-            [SerializeField]
-            public int group;
-            [SerializeField]
-            public Vector3[] vectors;
-            [SerializeField]
-            public Vector3 offset;
-            [SerializeField]
-            public float radius;
+            header = reader.ReadStruct<CollisionHeader>();
 
-            public CollisionPane(BinaryReader reader)
+            int i = 0;
             {
-                type = reader.ReadInt32();
-                int vectorsToRead = reader.ReadInt32(); //Not neccessarely
-                group = reader.ReadInt32(); //More like group
-                reader.SkipInt32(0);
-
-                if (type == 769)
+                List<int> indicesBuffer = new List<int>(0x20);
+                groupIndicesLists = new int[5][][];
+                for (int j = 0; j < 5; j++)
                 {
-                    Vector3 vertex = reader.ReadVector3();
-                    vectors = new Vector3[] { vertex };
-                    reader.SkipSingle(1.0f);
-                    offset = reader.ReadVector3();
-                    radius = reader.ReadSingle();
-                }
-                else if (type == 257 || type == 1)
-                {
-                    List<Vector3> v3s = new List<Vector3>();
-                    for (int i = 0; i != vectorsToRead; i++)
+                    groupIndicesLists[j] = new int[CollisionOffsetTable.IndicesPerGroup][];
+                    for (int k = 0; k < CollisionOffsetTable.IndicesPerGroup; k++)
                     {
-                        if (type == 1 && i != 0 && i % 3 == 0)
+                        reader.BaseStream.Position = header.offsetTable.allOffsets[i++];
+                        indicesBuffer.Clear();
+                        int index;
+                        while ((index = reader.ReadInt32()) != -1)
                         {
-                            reader.SkipBytes(16);
-                            continue;
+                            indicesBuffer.Add(index);
                         }
-                        Vector3 vertex = reader.ReadVector3();
-                        v3s.Add(vertex);
-                        reader.SkipSingle(1.0f);
+                        groupIndicesLists[j][k] = indicesBuffer.ToArray();
                     }
-                    vectors = v3s.ToArray();
-                    offset = Vector3.zero;
-                    radius = 0.0f;
-                }
-                else
-                {
-                    Debug.LogWarning("UNHANDLED COLLIDER TYPE " + type + " FIX IT");
                 }
             }
+
+            {
+                group0123Quads = new CollisionQuad[4][];
+                List<CollisionQuad> quadBuffer = new List<CollisionQuad>(0x20);
+                for (int j = 0; j < 4; j++)
+                {
+                    reader.BaseStream.Position = header.offsetTable.allOffsets[i++];
+                    quadBuffer.Clear();
+                    CollisionQuad quad;
+                    while((quad = reader.ReadStruct<CollisionQuad>()).field_00 != 0 || quad.field_04 != 0 || quad.field_08 != 0)
+                    {
+                        quadBuffer.Add(quad);
+                    }
+                    group0123Quads[j] = quadBuffer.ToArray();
+                }
+            }
+
+            {
+                List<CollisionCylinder> cylinderBuffer = new List<CollisionCylinder>(0x08);
+                reader.BaseStream.Position = header.offsetTable.allOffsets[i++];
+                CollisionCylinder cylinder;
+                while ((cylinder = reader.ReadStruct<CollisionCylinder>()).field_00 != 0 || cylinder.field_04 != 0 || cylinder.field_08 != 0)
+                {
+                    cylinderBuffer.Add(cylinder);
+                }
+                group4Cylinders = cylinderBuffer.ToArray();
+            }
         }
-	}
+
+        public static MapCollisions MakeEmpty()
+        {
+            MapCollisions mc = new MapCollisions();
+            mc.UpdateHeader(Vector2.zero);
+            return mc;
+        }
+
+        public static MapCollisions MakeDebug()
+        {
+            MapCollisions mc = new MapCollisions();
+            CollisionQuad[] floor = new CollisionQuad[1]
+            {
+                new CollisionQuad(1, 80,
+                    new Vector3(-12575.0f, 0.0f, -15000.0f),
+                    new Vector3(-12575.0f, 0.0f, -25000.0f),
+                    new Vector3(-27400.0f, 0.0f, -25000.0f),
+                    new Vector3(-27400.0f, 0.0f, -15000.0f))
+            };
+            int[] floorIndices = new int[1] { 0 };
+            mc.group0123Quads[0] = floor;
+            mc.groupIndicesLists[0][0] = floorIndices;
+
+            CollisionQuad[] walls = new CollisionQuad[4]
+            {
+                new CollisionQuad(1, 0x80,
+                    new Vector3(-12600.0f, 0.0f, -15000.0f),
+                    new Vector3(-12600.0f, -2500.0f, -15000.0f),
+                    new Vector3(-12600.0f, -2500.0f, -25000.0f),
+                    new Vector3(-12600.0f, 0.0f, -25000.0f)),
+                new CollisionQuad(1, 0x80,
+                    new Vector3(-12600.0f, 0.0f, -25000.0f),
+                    new Vector3(-12600.0f, -2500.0f, -25000.0f),
+                    new Vector3(-22600.0f, -2500.0f, -25000.0f),
+                    new Vector3(-22600.0f, 0.0f, -25000.0f)),
+                new CollisionQuad(1, 0x80,
+                    new Vector3(-22600.0f, 0.0f, -25000.0f),
+                    new Vector3(-22600.0f, -2500.0f, -25000.0f),
+                    new Vector3(-22600.0f, -2500.0f, -15000.0f),
+                    new Vector3(-22600.0f, 0.0f, -15000.0f)),
+                new CollisionQuad(1, 0x80,
+                    new Vector3(-22600.0f, 0.0f, -15000.0f),
+                    new Vector3(-22600.0f, -2500.0f, -15000.0f),
+                    new Vector3(-12600.0f, -2500.0f, -15000.0f),
+                    new Vector3(-12600.0f, 0.0f, -15000.0f)),
+            };
+            int[] wallIndices = new int[4] { 0, 1, 2, 3 };
+            mc.group0123Quads[1] = walls;
+            mc.groupIndicesLists[1][0] = wallIndices;
+
+            mc.UpdateHeader(new Vector2(-20000.0f, -20000.0f));
+            return mc;
+        }
+
+        public void UpdateHeader(Vector2 origin)
+        {
+            header.UpdateFrom(origin, groupIndicesLists, group0123Quads, group4Cylinders);
+        }
+
+        public void Write(BinaryWriter writer)
+        {
+            writer.WriteStruct(in header);
+            int i = 0;
+            for (int j = 0; j < 5; j++)
+            {
+                for (int k = 0; k < CollisionOffsetTable.IndicesPerGroup; k++)
+                {
+                    int[] indices = groupIndicesLists[j][k];
+                    writer.BaseStream.Position = header.offsetTable.allOffsets[i++];
+                    for(int l = 0; l < indices.Length; l++)
+                    {
+                        writer.Write(indices[l]);
+                    }
+                    writer.Write(-1);
+                }
+            }
+
+            for (int j = 0; j < 4; j++)
+            {
+                writer.BaseStream.Position = header.offsetTable.allOffsets[i++];
+                CollisionQuad[] quads = group0123Quads[j];
+                for(int k = 0; k < quads.Length; k++)
+                {
+                    writer.WriteStruct(in quads[k]);
+                }
+                writer.WriteStruct<CollisionQuad>(default);
+            }
+
+            {
+                writer.BaseStream.Position = header.offsetTable.allOffsets[i++];
+                for (int j = 0; j < group4Cylinders.Length; j++)
+                {
+                    writer.WriteStruct(in group4Cylinders[j]);
+                }
+                writer.WriteStruct<CollisionCylinder>(default);
+            }
+        }
+    }
 }

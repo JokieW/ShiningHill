@@ -63,6 +63,11 @@ namespace ShiningHill
             base.Dispose();
         }
 
+        public XStream OpenFile(DirectoryEntry entry)
+        {
+            return _stream.MakeSubStream(entry.fileAddress, entry.fileLength);
+        }
+
         public override XStream OpenFile(DirectoryEntry root, string path)
         {
             string[] paths = path.Split('/');
@@ -148,6 +153,56 @@ namespace ShiningHill
                 uniDir.fileLength = recDir->extentLength;
             }
             self = uniDir;
+        }
+
+        public void ExtractFiles(string toPath)
+        {
+            DirectoryRecord root = _root;
+            ExtractFiles(toPath, "", &root);
+        }
+
+        public void ExtractFiles(string toPath, string currentPath, DirectoryRecord* recDir)
+        {
+            string dirname = GetNameOfDirectoryRecord(recDir);
+
+            if ((recDir->fileFlags & FileFlags.IsSubdirectory) != 0)
+            {
+                _stream.Position = 0x800 * recDir->extentLocation;
+                byte* extent = stackalloc byte[(int)recDir->extentLength];
+                _stream.Read(extent, 0, (int)recDir->extentLength);
+
+                while (true)
+                {
+                    byte len = *extent;
+                    if (len == 0) break;
+
+                    DirectoryRecord* subdir = (DirectoryRecord*)extent;
+                    if (subdir->fileIdentifier != 0 && subdir->fileIdentifier != 1)
+                    {
+                        ExtractFiles(toPath, currentPath + dirname + "/", subdir);
+                    }
+                    extent += len;
+                }
+            }
+            else
+            {
+                long oldpos = _stream.Position;
+                _stream.Position = 0x800 * recDir->extentLocation;
+                byte[] extent = new byte[(int)recDir->extentLength];
+                _stream.Read(extent, 0, (int)recDir->extentLength);
+                _stream.Position = oldpos;
+                string fullpath = toPath + currentPath.Substring(1);
+                if(!Directory.Exists(fullpath))
+                {
+                    Directory.CreateDirectory(fullpath);
+                }
+
+                using (FileStream file = new FileStream(fullpath + dirname, FileMode.Create, FileAccess.Write))
+                using (BinaryWriter writer = new BinaryWriter(file))
+                {
+                    writer.Write(extent);
+                }
+            }
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1, Size = 17)]

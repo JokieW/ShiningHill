@@ -1,40 +1,27 @@
 ﻿using System;
 using System.IO;
 using System.IO.Compression;
-using System.Collections;
 using System.Collections.Generic;
 
 using UnityEngine;
 using UnityEditor;
 
-using ICSharpCode.SharpZipLib.Core;
-using ICSharpCode.SharpZipLib.GZip;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace ShiningHill
 {
     public class ArcFileSystem
     {
-        public static void DecompressArcs(string from = "C:/Silent Hill 3/", string to = "C:/Silent Hill 3/")
+        public static void UnpackArcArc(string arcarcPath, out Root root)
         {
-            Root root = default;
-            float totalFiles = 0.0f;
+            root = default;
             using (MemoryStream stream = new MemoryStream())
             {
-                using (FileStream file = new FileStream(from + "data/" + "arc.arc", FileMode.Open, FileAccess.Read))
+                using (FileStream file = new FileStream(arcarcPath, FileMode.Open, FileAccess.ReadWrite))
                 using (GZipStream gzip = new GZipStream(file, CompressionMode.Decompress))
                 {
                     gzip.CopyTo(stream);
                 }
-
-                /*using (FileStream file = new FileStream(to + "arcuncompressed", FileMode.Create, FileAccess.Write))
-                {
-                    stream.Position = 0L;
-                    byte[] buffer = new byte[stream.Length];
-                    stream.Read(buffer, 0, (int)stream.Length);
-                    file.Write(buffer, 0, buffer.Length);
-                }*/
 
                 using (BinaryReader reader = new BinaryReader(stream))
                 {
@@ -42,224 +29,190 @@ namespace ShiningHill
                     ArcArcHeader header = reader.ReadStruct<ArcArcHeader>();
                     int folderCount = 0;
 
-                    StringBuilder sb = new StringBuilder();
                     while (reader.BaseStream.Position != reader.BaseStream.Length)
                     {
                         ArcArcEntry entry = new ArcArcEntry(reader);
-                        switch (entry.type)
+                        if(entry.type == 1) //Is Root
                         {
-                            case 1:
-                                root = new Root();
-                                root.entry = entry;
-                                root.folders = new Root.Folder[entry.indexOrIndices];
-                                sb.AppendLine("- Root");
-                                break;
-
-                            case 2:
-                                Root.Folder folder = new Root.Folder();
-                                folder.entry = entry;
-                                folder.files = new ArcArcEntry[entry.indexOrIndices];
-                                root.folders[folderCount++] = folder;
-                                sb.AppendLine("  - "+ folder.entry.name);
-                                break;
-
-                            case 3:
-                                root.folders[entry.indexOfParent].files[entry.indexOrIndices] = entry;
-                                totalFiles++;
-                                sb.AppendLine("    - " + entry.name);
-                                break;
+                            root = new Root();
+                            root.entry = entry;
+                            root.folders = new Root.Folder[entry.indexOrIndices];
                         }
-                    }
-                    File.WriteAllText(to + "extractedfiles.txt", sb.ToString());
-                }
-            }
-
-            string toArc = to + "arc/";
-            if (Directory.Exists(toArc)) Directory.Delete(toArc, true);
-
-            try
-            {
-                float filesExtracted = 0.0f;
-                for (int i = 0; i < root.folders.Length; i++)
-                {
-                    Root.Folder folder = root.folders[i];
-                    string arcPath = from + "data/" + folder.entry.name + ".arc";
-                    using (FileStream inputFile = new FileStream(arcPath, FileMode.Open, FileAccess.Read))
-                    using (BinaryReader reader = new BinaryReader(inputFile))
-                    {
-                        reader.BaseStream.Position = 0L;
-                        ArcHeader header = reader.ReadStruct<ArcHeader>();
-
-                        for (int j = 0; j < folder.files.Length; j++)
+                        else if(entry.type == 2) //Is Folder
                         {
-                            ArcArcEntry file = folder.files[j];
-                            if (EditorUtility.DisplayCancelableProgressBar("Extracting Files...", file.name, filesExtracted / totalFiles))
-                            {
-                                return;
-                            }
-
-                            string fullFilePath = toArc + folder.entry.name + "/" + file.name;
-                            {
-                                string fullFilePathName = Path.GetDirectoryName(fullFilePath).Replace('\\', '/');
-                                if (!Directory.Exists(fullFilePathName)) Directory.CreateDirectory(fullFilePathName);
-                            }
-
-                            reader.BaseStream.Position = Marshal.SizeOf<ArcHeader>() + (file.indexOrIndices * Marshal.SizeOf<ArcEntry>());
-                            ArcEntry entry = reader.ReadStruct<ArcEntry>();
-                            reader.BaseStream.Position = entry.offset;
-
-                            File.WriteAllBytes(fullFilePath, reader.ReadBytes((int)entry.length));
-                            filesExtracted++;
+                            Root.Folder folder = new Root.Folder();
+                            folder.entry = entry;
+                            folder.files = new Root.Folder.File[entry.indexOrIndices];
+                            root.folders[folderCount++] = folder;
+                        }
+                        else if (entry.type == 3) //Is File
+                        {
+                            Root.Folder.File file = new Root.Folder.File();
+                            file.entry = entry;
+                            file.filesize = 0;
+                            ref readonly Root.Folder folder = ref root.folders[entry.indexOfParent];
+                            folder.files[entry.indexOrIndices] = file;
                         }
                     }
                 }
-            }
-            finally
-            {
-                EditorUtility.ClearProgressBar();
             }
         }
 
-        static readonly string rootName = new string(new char[] { (char)0xEC, (char)0x0A });
-
-        public static void CompressArcs(string from = "C:/Silent Hill 3/", string to = "C:/Silent Hill 3/")
+        public static void PackArcArc(string pathToArcArc, in Root root)
         {
-            int arcArcUncompressedSize = Marshal.SizeOf<ArcArcHeader>();
-            Root root = new Root();
-            float totalFiles = 0.0f;
-            Dictionary<string, int> totalFileSizes = new Dictionary<string, int>();
-            {
-                string rootPath = from + "arc/";
-
-                string[] rootFolders = Directory.GetDirectories(rootPath);
-                root.entry = new ArcArcEntry(1, (short)rootFolders.Length, 0, rootName);
-                root.folders = new Root.Folder[rootFolders.Length];
-                arcArcUncompressedSize += root.entry.entryLength;
-
-                for (short i = 0; i < rootFolders.Length; i++)
-                {
-                    string currentFolderPath = rootFolders[i].Replace('\\', '/');
-                    string folderShortName = currentFolderPath.Substring(currentFolderPath.LastIndexOf("/") + 1);
-                    currentFolderPath += '/';
-                    string[] files = Directory.GetFiles(currentFolderPath, "*", SearchOption.AllDirectories);
-
-                    Root.Folder folder = new Root.Folder();
-                    folder.entry = new ArcArcEntry(2, (short)files.Length, 0, folderShortName);
-                    folder.files = new ArcArcEntry[files.Length];
-                    arcArcUncompressedSize += folder.entry.entryLength;
-                    root.folders[i] = folder;
-
-                    for (short j = 0; j < files.Length; j++)
-                    {
-                        string filePath = files[j].Replace('\\', '/');
-                        string fileName = filePath.Substring(currentFolderPath.Length);
-                        ArcArcEntry file = new ArcArcEntry(3, j, i, fileName);
-                        int size = (int)new FileInfo(filePath).Length;
-                        totalFileSizes.Add(file.name, size);
-                        folder.files[j] = file;
-                        arcArcUncompressedSize += file.entryLength;
-                        totalFiles++;
-                    }
-                }
-            }
-
-            byte[] arcArcUncompressed = new byte[arcArcUncompressedSize];
-            StringBuilder sb = new StringBuilder();
+            byte[] arcArcUncompressed = new byte[root.GetUncompressedSize()];
             using (MemoryStream memory = new MemoryStream(arcArcUncompressed))
             using (BinaryWriter writer = new BinaryWriter(memory))
             {
                 writer.BaseStream.Position = 0L;
                 writer.WriteStruct(ArcArcHeader.Make());
                 root.entry.Write(writer);
-                sb.AppendLine("- Root");
                 for (short i = 0; i < root.folders.Length; i++)
                 {
-                    Root.Folder folder = root.folders[i];
+                    ref readonly Root.Folder folder = ref root.folders[i];
                     folder.entry.Write(writer);
-                    sb.AppendLine("  - " + folder.entry.name);
                     for (short j = 0; j < folder.files.Length; j++)
                     {
-                        ArcArcEntry entry = folder.files[j];
-                        entry.Write(writer);
-                        sb.AppendLine("    - " + entry.name);
+                        ref readonly Root.Folder.File file = ref folder.files[j];
+                        file.entry.Write(writer);
                     }
                 }
             }
-            File.WriteAllText(to + "compressedfiles.txt", sb.ToString());
 
-
-            string toData = to + "data/";
-            if (!Directory.Exists(toData)) Directory.CreateDirectory(toData);
-            using (FileStream file = new FileStream(toData + "arc.arc", FileMode.Create, FileAccess.Write))
+            using (FileStream file = new FileStream(pathToArcArc, FileMode.Create, FileAccess.ReadWrite))
             using (GZipStream gzip = new GZipStream(file, CompressionMode.Compress))
             {
                 gzip.Write(arcArcUncompressed, 0, arcArcUncompressed.Length);
             }
-            /*using (FileStream file = new FileStream(toData + "arcuncompressed", FileMode.Create, FileAccess.Write))
-            {
-                file.Write(arcArcUncompressed, 0, arcArcUncompressed.Length);
-            }*/
+        }
 
+
+        static readonly string rootName = new string(new char[] { (char)0xEC, (char)0x0A });
+        public static void MakeArcArcInfo(string rootPath, (string, string[]) map, out Root.Folder folder)
+        {
+            Root root;
+            MakeArcArcInfo(rootPath, new (string, string[])[1] { map }, out root);
+            folder = root.folders[0];
+        }
+
+        public static void MakeArcArcInfo(string rootPath, (string, string[])[] map, out Root root)
+        {
+            root = new Root();
+            {
+                root.entry = new ArcArcEntry(1, (short)map.Length, 0, rootName);
+                root.folders = new Root.Folder[map.Length];
+
+                for (short i = 0; i < map.Length; i++)
+                {
+                    (string, string[]) folderMap = map[i];
+                    Root.Folder folder = new Root.Folder();
+                    folder.entry = new ArcArcEntry(2, (short)folderMap.Item2.Length, 0, folderMap.Item1);
+                    folder.files = new Root.Folder.File[folderMap.Item2.Length];
+                    root.folders[i] = folder;
+
+                    for (short j = 0; j < folderMap.Item2.Length; j++)
+                    {
+                        string fileName = folderMap.Item2[j];
+                        ArcArcEntry entry = new ArcArcEntry(3, j, i, fileName);
+                        int size = (int)new FileInfo(rootPath + fileName).Length;
+                        folder.files[j] = new Root.Folder.File() { entry = entry, filesize = size };
+                    }
+                }
+            }
+        }
+
+        public static void UnpackArc(in Root.Folder folder, string arcPath, string to)
+        {
             try
             {
-                float filesCompressed = 0.0f;
-                for (int i = 0; i < root.folders.Length; i++)
+                float filesExtracted = 0.0f;
+                using (FileStream inputFile = new FileStream(arcPath, FileMode.Open, FileAccess.ReadWrite))
+                using (BinaryReader reader = new BinaryReader(inputFile))
                 {
-                    Root.Folder folder = root.folders[i];
-                    int topSize = Marshal.SizeOf<ArcHeader>() +
-                        (Marshal.SizeOf<ArcEntry>() * folder.files.Length);
+                    reader.BaseStream.Position = 0L;
+                    ArcHeader header = reader.ReadStruct<ArcHeader>();
 
-                    using (FileStream stream = new FileStream(toData + folder.entry.name + ".arc", FileMode.Create, FileAccess.Write))
-                    using (BinaryWriter writer = new BinaryWriter(stream))
+                    for (int j = 0; j < folder.files.Length; j++)
                     {
-                        int paddingLength = 0;
-                        for (int j = 0; j < folder.files.Length; j++)
+                        Root.Folder.File file = folder.files[j];
+                        if (EditorUtility.DisplayCancelableProgressBar("Extracting " + folder.entry.name + "...", file.entry.name, filesExtracted / folder.files.Length))
                         {
-                            ArcArcEntry file = folder.files[j];
-                            int fileSize = totalFileSizes[file.name];
-                            if (fileSize > 0)
-                            {
-                                paddingLength += (((fileSize - 1) / 0xFFFF) + 1) * 4;
-                            }
+                            return;
                         }
 
-                        ArcHeader header = new ArcHeader((uint)folder.files.Length, (uint)paddingLength);
-                        writer.WriteStruct(header);
-
-                        int currentOffset = topSize + paddingLength;
-                        int currentPaddingOffset = topSize;
-                        for (int j = 0; j < folder.files.Length; j++)
+                        string fullFilePath = to + file.entry.name;
                         {
-                            ArcArcEntry file = folder.files[j];
-                            int fileSize = totalFileSizes[file.name];
-                            ArcEntry entry = new ArcEntry((uint)currentOffset, (uint)currentPaddingOffset, (uint)fileSize);
-                            writer.WriteStruct(entry);
-
-                            if (fileSize > 0)
-                            {
-                                currentPaddingOffset += (((fileSize - 1) / 0xFFFF) + 1) * 4;
-                                currentOffset += fileSize;
-                            }
+                            string fullFilePathName = Path.GetDirectoryName(fullFilePath).Replace('\\', '/');
+                            if (!Directory.Exists(fullFilePathName)) Directory.CreateDirectory(fullFilePathName);
                         }
 
-                        writer.BaseStream.Position += paddingLength;
-                        string folderFromPath = from + "arc/" + folder.entry.name + "/";
-                        for (int j = 0; j < folder.files.Length; j++)
+                        reader.BaseStream.Position = Marshal.SizeOf<ArcHeader>() + (file.entry.indexOrIndices * Marshal.SizeOf<ArcEntry>());
+                        ArcEntry entry = reader.ReadStruct<ArcEntry>();
+                        reader.BaseStream.Position = entry.offset;
+
+                        File.WriteAllBytes(fullFilePath, reader.ReadBytes((int)entry.length));
+                        filesExtracted++;
+                    }
+                }
+            }
+            finally
+            {
+                EditorUtility.ClearProgressBar();
+            }
+        }
+
+        public static void PackArc(in Root.Folder folder, string rootFrom, string arcPath)
+        {
+            try
+            {
+                int topSize = Marshal.SizeOf<ArcHeader>() +
+                    (Marshal.SizeOf<ArcEntry>() * folder.files.Length);
+
+                using (FileStream stream = new FileStream(arcPath, FileMode.Create, FileAccess.ReadWrite))
+                using (BinaryWriter writer = new BinaryWriter(stream))
+                {
+                    int paddingLength = 0;
+                    for (int j = 0; j < folder.files.Length; j++)
+                    {
+                        ref readonly Root.Folder.File file = ref folder.files[j];
+                        if (file.filesize > 0)
                         {
-                            ArcArcEntry file = folder.files[j];
-                            if (EditorUtility.DisplayCancelableProgressBar("Compressing Files...", folder.entry.name + "/" + file.name, filesCompressed / totalFiles))
-                            {
-                                return;
-                            }
-                            byte[] fileBytes = null;
-                            using (FileStream fileStream = new FileStream(folderFromPath + file.name, FileMode.Open, FileAccess.Read))
-                            using (BinaryReader reader = new BinaryReader(fileStream))
-                            {
-                                fileBytes = reader.ReadBytes((int)reader.BaseStream.Length);
-                            }
-                            writer.Write(fileBytes);
-                            filesCompressed++;
+                            paddingLength += (((file.filesize - 1) / 0xFFFF) + 1) * 4;
                         }
+                    }
+
+                    ArcHeader header = new ArcHeader((uint)folder.files.Length, (uint)paddingLength);
+                    writer.WriteStruct(header);
+
+                    int currentOffset = topSize + paddingLength;
+                    int currentPaddingOffset = topSize;
+                    for (int j = 0; j < folder.files.Length; j++)
+                    {
+                        ref readonly Root.Folder.File file = ref folder.files[j];
+                        ArcEntry entry = new ArcEntry((uint)currentOffset, (uint)currentPaddingOffset, (uint)file.filesize);
+                        writer.WriteStruct(entry);
+
+                        if (file.filesize > 0)
+                        {
+                            currentPaddingOffset += (((file.filesize - 1) / 0xFFFF) + 1) * 4;
+                            currentOffset += file.filesize;
+                        }
+                    }
+
+                    writer.BaseStream.Position += paddingLength;
+                    float filesCompressed = 0.0f;
+                    for (int j = 0; j < folder.files.Length; j++)
+                    {
+                        ref readonly Root.Folder.File file = ref folder.files[j];
+                        if (EditorUtility.DisplayCancelableProgressBar("Compressing Files...", file.entry.name, filesCompressed / (float)folder.files.Length)) return;
+                        byte[] fileBytes = null;
+                        using (FileStream fileStream = new FileStream(rootFrom + file.entry.name, FileMode.Open, FileAccess.ReadWrite))
+                        using (BinaryReader reader = new BinaryReader(fileStream))
+                        {
+                            fileBytes = reader.ReadBytes((int)reader.BaseStream.Length);
+                        }
+                        writer.Write(fileBytes);
+                        filesCompressed++;
                     }
                 }
             }
@@ -270,19 +223,61 @@ namespace ShiningHill
         }
 
 
-
+        [Serializable]
         public struct Root
         {
             public ArcArcEntry entry;
             public Folder[] folders;
 
+            public int GetUncompressedSize()
+            {
+                int arcArcUncompressedSize = Marshal.SizeOf<ArcArcHeader>();
+                arcArcUncompressedSize += entry.entryLength;
+
+                for (short i = 0; i < folders.Length; i++)
+                {
+                    ref readonly Root.Folder folder = ref folders[i];
+                    arcArcUncompressedSize += folder.entry.entryLength;
+
+                    for (short j = 0; j < folder.files.Length; j++)
+                    {
+                        arcArcUncompressedSize += folder.files[j].entry.entryLength;
+                    }
+                }
+                return arcArcUncompressedSize;
+            }
+
+            public bool GetFolder(string name, out Folder folder)
+            {
+                for(int i = 0; i < folders.Length; i++)
+                {
+                    ref readonly Folder f = ref folders[i];
+                    if(f.entry.name == name)
+                    {
+                        folder = f;
+                        return true;
+                    }
+                }
+                folder = default;
+                return false;
+            }
+
+            [Serializable]
             public struct Folder
             {
                 public ArcArcEntry entry;
-                public ArcArcEntry[] files;
+                public File[] files;
+
+                [Serializable]
+                public struct File
+                {
+                    public ArcArcEntry entry;
+                    public int filesize;
+                }
             }
         }
 
+        [Serializable]
         public struct ArcHeader
         {
             public uint magicbytes;
@@ -299,6 +294,7 @@ namespace ShiningHill
             }
         }
 
+        [Serializable]
         public struct ArcArcHeader
         {
             public uint magicbytes;
@@ -318,6 +314,7 @@ namespace ShiningHill
             }
         }
 
+        [Serializable]
         public struct ArcEntry
         {
             public uint offset;
@@ -334,6 +331,7 @@ namespace ShiningHill
             }
         }
 
+        [Serializable]
         public struct ArcArcEntry
         {
             public short type; //1 arcarc, 2 arc, 3 file

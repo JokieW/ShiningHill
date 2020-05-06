@@ -31,6 +31,53 @@ namespace ShiningHill
             return *((T*)structbytes);
         }
 
+        public unsafe static void ReadStruct<T>(this BinaryReader reader, T[] buffer) where T : unmanaged
+        {
+            int structlength = Marshal.SizeOf<T>();
+            int totalLength = structlength * buffer.Length;
+
+            UnityEngine.Profiling.Profiler.BeginSample("readbytes");
+            byte[] bytes = GetReadBuffer(totalLength);
+            reader.Read(bytes, 0, totalLength);
+            UnityEngine.Profiling.Profiler.EndSample();
+            fixed (void* bufferPtr = buffer, bytesPtr = bytes)
+            {
+                UnityEngine.Profiling.Profiler.BeginSample("MemoryCopy");
+                MemCopy(bytesPtr, bufferPtr, totalLength);
+                UnityEngine.Profiling.Profiler.EndSample();
+            }
+        }
+
+        private static unsafe void MemCopy(void* source, void* destination, long count)
+        {
+            long lenghtByte = count % 8;
+            byte* sourceByte = (byte*)source;
+            byte* destinationByte = (byte*)destination;
+            for (long i = 0; i < lenghtByte; i++)
+            {
+                *destinationByte++ = *sourceByte++;
+            }
+
+            long lengthLong = count - lenghtByte;
+            ulong* sourceLong = (ulong*)sourceByte;
+            ulong* destinationLong = (ulong*)destinationByte;
+            for (int i = 0; i < lengthLong; i += 8)
+            {
+                *destinationLong++ = *sourceLong++;
+            }
+        }
+
+        [ThreadStatic]
+        private static byte[] _readBuffer;
+        private static byte[] GetReadBuffer(int neededCount)
+        {
+            if (_readBuffer == null || _readBuffer.Length < neededCount)
+            {
+                _readBuffer = new byte[neededCount];
+            }
+            return _readBuffer;
+        }
+
         #region Matrices
         /// <summary>
         /// Reads 16 singles and returns a Matrix4x4

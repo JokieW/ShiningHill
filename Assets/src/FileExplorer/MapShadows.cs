@@ -10,57 +10,19 @@ using Object = UnityEngine.Object;
 
 namespace ShiningHill
 {
-    public struct MapShadowsAssetPaths
-    {
-        string kg2Name;
-        string genericPath;
-        SHGame game;
-
-        public MapShadowsAssetPaths(string hardAssetPath, SHGame forgame)
-        {
-            kg2Name = Path.GetFileNameWithoutExtension(hardAssetPath);
-            if (forgame == SHGame.SH3PC || forgame == SHGame.SH3PCdemo)
-            {
-                genericPath = Path.GetDirectoryName(hardAssetPath).Substring(hardAssetPath.LastIndexOf("/data/data/") + 1).Replace("\\", "/") + "/";
-            }
-            else
-            {
-                genericPath = Path.GetDirectoryName(hardAssetPath).Substring(hardAssetPath.LastIndexOf("/data/") + 1).Replace("\\", "/") + "/";
-            }
-            game = forgame;
-        }
-
-        public string GetHardAssetPath()
-        {
-            string path = CustomPostprocessor.GetHardDataPathFor(game);
-            return path + genericPath + kg2Name + ".kg2";
-        }
-
-        public string GetExtractAssetPath()
-        {
-            string path = CustomPostprocessor.GetExtractDataPathFor(game);
-            return path + genericPath + kg2Name + ".asset";
-        }
-
-        public string GetPrefabPath()
-        {
-            string path = CustomPostprocessor.GetExtractDataPathFor(game);
-            return path + genericPath + "Prefabs/" + kg2Name + ".prefab";
-        }
-    }
     [Serializable]
 	public class MapShadows : MonoBehaviour 
 	{
 
-        public static MapShadows ReadShadowCasters(MapShadowsAssetPaths paths)
+        public static MapShadows ReadShadowCasters(/*MapShadowsAssetPaths paths*/)
         {
-            GameObject subGO = Scene.BeginEditingPrefab(paths.GetPrefabPath(), "Shadows");
+            GameObject subGO = null;//Scene.BeginEditingPrefab(paths.GetPrefabPath(), "Shadows");
 
             try
             {
                 MapShadows casters = subGO.AddComponent<MapShadows>();
 
-                BinaryReader reader = new BinaryReader(new FileStream(paths.GetHardAssetPath(), FileMode.Open, FileAccess.Read, FileShare.Read));
+                BinaryReader reader = null;//new BinaryReader(new FileStream(paths.GetHardAssetPath(), FileMode.Open, FileAccess.Read, FileShare.Read));
 
                 if (reader.BaseStream.Length != 0)
                 {
@@ -132,7 +94,7 @@ namespace ShiningHill
                             go.transform.SetParent(subGO.transform);
                             go.AddComponent<MeshFilter>().sharedMesh = mesh;
                             MeshRenderer mr = go.AddComponent<MeshRenderer>();
-                            mr.sharedMaterial = MaterialRolodex.defaultDiffuse;
+                            mr.sharedMaterial = null;//MaterialRolodex.defaultDiffuse;
                             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
 
 
@@ -148,10 +110,10 @@ namespace ShiningHill
 
                 foreach (MeshFilter mf in subGO.GetComponentsInChildren<MeshFilter>())
                 {
-                    AssetDatabase.AddObjectToAsset(mf.sharedMesh, paths.GetExtractAssetPath());
+                    //AssetDatabase.AddObjectToAsset(mf.sharedMesh, paths.GetExtractAssetPath());
                 }
 
-                Scene.FinishEditingPrefab(paths.GetPrefabPath(), subGO);
+                //Scene.FinishEditingPrefab(paths.GetPrefabPath(), subGO);
 
                 return casters;
 
