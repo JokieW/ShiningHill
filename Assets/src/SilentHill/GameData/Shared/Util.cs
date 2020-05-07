@@ -1,5 +1,5 @@
 ﻿
-namespace SH.DataFormat.Shared
+namespace SH.GameData.Shared
 {
     public static class Util
     {

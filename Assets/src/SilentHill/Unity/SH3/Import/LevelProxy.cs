@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using SH.Unity.Shared;
-using SH.DataFormat.SH3;
+using SH.GameData.SH3;
 
 namespace SH.Unity.SH3
 {

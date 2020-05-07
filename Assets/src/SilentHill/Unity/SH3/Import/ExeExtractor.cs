@@ -3,9 +3,9 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.IO;
 using System;
-using SH.DataFormat.SH3;
+using SH.GameData.SH3;
 using SH.Core;
-using SH.DataFormat.Shared;
+using SH.GameData.Shared;
 
 namespace SH.Unity.SH3
 {

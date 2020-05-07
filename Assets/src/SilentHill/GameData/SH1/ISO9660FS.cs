@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 using SH.Core.Stream;
 
-namespace SH.DataFormat.SH1
+namespace SH.GameData.SH1
 {
     //Thanks to https://wiki.osdev.org/ISO_9660
     public unsafe class ISO9660FS : IDisposable

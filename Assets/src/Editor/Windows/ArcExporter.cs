@@ -7,10 +7,10 @@ using System.Linq;
 using UnityEngine;
 using UnityEditor;
 using Object = UnityEngine.Object;
-using SH.DataFormat.SH3;
+using SH.GameData.SH3;
 using SH.Unity.SH3;
-using SH.DataFormat.Shared;
-using SH.DataFormat.SH1;
+using SH.GameData.Shared;
+using SH.GameData.SH1;
 using SH.Core.Stream;
 
 namespace ShiningHill

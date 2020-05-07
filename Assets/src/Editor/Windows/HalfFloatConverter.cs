@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using System.Text.RegularExpressions;
-using SH.DataFormat.Shared;
+using SH.GameData.Shared;
 
 namespace ShiningHill
 {

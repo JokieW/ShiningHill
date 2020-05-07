@@ -7,7 +7,7 @@ using UnityEngine;
 
 using SH.Core;
 
-namespace SH.DataFormat.Shared
+namespace SH.GameData.Shared
 {
     [Serializable]
     [StructLayout(LayoutKind.Sequential, Pack = 0)]

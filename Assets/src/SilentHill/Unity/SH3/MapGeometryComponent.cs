@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-using SH.DataFormat.SH3;
+using SH.GameData.SH3;
 
 namespace SH.Unity.SH3
 {

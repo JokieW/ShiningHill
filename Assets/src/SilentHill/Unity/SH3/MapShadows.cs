@@ -8,7 +8,7 @@ using UnityEditor;
 
 using Object = UnityEngine.Object;
 using SH.Core;
-using SH.DataFormat.Shared;
+using SH.GameData.Shared;
 
 namespace SH.Unity.SH3
 {

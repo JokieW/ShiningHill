@@ -2,7 +2,7 @@
 
 using UnityEngine;
 
-namespace SH.DataFormat.SH3
+namespace SH.GameData.SH3
 {
 	public static class TextureUtil
 	{

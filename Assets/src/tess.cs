@@ -1,4 +1,4 @@
-﻿using SH.DataFormat.Shared;
+﻿using SH.GameData.Shared;
 using SH.Native;
 using ShiningHill;
 using System.Collections;

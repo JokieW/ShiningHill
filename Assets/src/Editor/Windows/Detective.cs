@@ -7,7 +7,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEditor;
 using Object = UnityEngine.Object;
-using SH.DataFormat.SH3;
+using SH.GameData.SH3;
 
 namespace ShiningHill
 {

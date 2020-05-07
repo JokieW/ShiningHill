@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace SH.DataFormat.SH1
+namespace SH.GameData.SH1
 {
     public static class Util
     {

@@ -6,10 +6,10 @@ using System.Runtime.InteropServices;
 using UnityEngine;
 
 using SH.Core;
-using SH.DataFormat.Shared;
+using SH.GameData.Shared;
 using SH.Native;
 
-namespace SH.DataFormat.SH3
+namespace SH.GameData.SH3
 {
     [Serializable]
     public class MapGeometry

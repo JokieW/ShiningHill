@@ -7,7 +7,7 @@ using UnityEditor;
 
 using SH.Core;
 
-namespace SH.DataFormat.SH3
+namespace SH.GameData.SH3
 {
     public class FileArc
     {

@@ -4,9 +4,9 @@ using System.IO;
 using UnityEngine;
 using UnityEditor;
 
-using SH.DataFormat.SH3;
+using SH.GameData.SH3;
 using SH.Unity.Shared;
-using SH.DataFormat.Shared;
+using SH.GameData.Shared;
 using SH.Core;
 
 namespace SH.Unity.SH3

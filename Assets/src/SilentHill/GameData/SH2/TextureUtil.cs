@@ -5,7 +5,7 @@ using UnityEngine;
 
 using SH.Core;
 
-namespace SH.DataFormat.SH2
+namespace SH.GameData.SH2
 {
 	public static class TextureUtil
 	{

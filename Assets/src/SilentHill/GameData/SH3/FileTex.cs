@@ -5,9 +5,9 @@ using System.Runtime.InteropServices;
 using UnityEngine;
 
 using SH.Core;
-using SH.DataFormat.Shared;
+using SH.GameData.Shared;
 
-namespace SH.DataFormat.SH3
+namespace SH.GameData.SH3
 {
     [Serializable]
     [StructLayout(LayoutKind.Sequential, Pack = 0)]

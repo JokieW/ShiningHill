@@ -2,7 +2,7 @@
 
 using UnityEngine;
 
-namespace SH.DataFormat.Shared
+namespace SH.GameData.Shared
 {
     public static class MeshUtil
 	{

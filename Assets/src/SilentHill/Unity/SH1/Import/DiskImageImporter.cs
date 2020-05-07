@@ -5,7 +5,7 @@ using UnityEditor;
 using UnityEngine;
 
 using SH.Core.Stream;
-using SH.DataFormat.SH1;
+using SH.GameData.SH1;
 using SH.Unity.Shared;
 
 namespace SH.Unity.SH1

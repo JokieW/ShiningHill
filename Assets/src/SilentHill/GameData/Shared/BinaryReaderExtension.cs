@@ -1,6 +1,6 @@
 ﻿using System.IO;
 
-namespace SH.DataFormat.Shared
+namespace SH.GameData.Shared
 {
     public static class BinaryReaderExtension
     {

@@ -3,7 +3,7 @@
 using UnityEditor;
 using UnityEngine;
 
-using SH.DataFormat.SH3;
+using SH.GameData.SH3;
 using SH.Unity.Shared;
 
 namespace SH.Unity.SH3
