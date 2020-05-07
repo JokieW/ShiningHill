@@ -1,0 +1,342 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Runtime.InteropServices;
+
+using UnityEngine;
+
+using SH.Core;
+
+namespace SH.DataFormat.Shared
+{
+    [Serializable]
+    [StructLayout(LayoutKind.Sequential, Pack = 0)]
+    public unsafe struct CollisionHeader
+    {
+        public Vector2 origin;
+        public int floorGroupLength;
+        public int wallGroupLength;
+
+        public int something__GroupLength;
+        public int furniture__GroupLength;
+        public int radialGroupLength;
+        public int padding;
+
+        public CollisionOffsetTable offsetTable;
+
+        public void UpdateFrom(Vector2 origin, int[][][] indicesList, CollisionQuad[][] quads, CollisionCylinder[] cylinders)
+        {
+            this.floorGroupLength = (quads[0].Length + 1) * 0x50;
+            this.wallGroupLength = (quads[1].Length + 1) * 0x50;
+            this.something__GroupLength = (quads[2].Length + 1) * 0x50;
+            this.furniture__GroupLength = (quads[3].Length + 1) * 0x50;
+            this.radialGroupLength = (cylinders.Length + 1) * 0x30;
+            this.padding = 0x00;
+
+            this.offsetTable = new CollisionOffsetTable();
+
+            int fileOffset = 0x0174;
+            for (int i = 0; i < CollisionOffsetTable.IndicesPerGroup; i++)
+            {
+                offsetTable.group0IndicesOffsets[i] = fileOffset;
+                fileOffset += 0x04 + (0x04 * indicesList[0][i].Length);
+            }
+            for (int i = 0; i < CollisionOffsetTable.IndicesPerGroup; i++)
+            {
+                offsetTable.group1IndicesOffsets[i] = fileOffset;
+                fileOffset += 0x04 + (0x04 * indicesList[1][i].Length);
+            }
+            for (int i = 0; i < CollisionOffsetTable.IndicesPerGroup; i++)
+            {
+                offsetTable.group2IndicesOffsets[i] = fileOffset;
+                fileOffset += 0x04 + (0x04 * indicesList[2][i].Length);
+            }
+            for (int i = 0; i < CollisionOffsetTable.IndicesPerGroup; i++)
+            {
+                offsetTable.group3IndicesOffsets[i] = fileOffset;
+                fileOffset += 0x04 + (0x04 * indicesList[3][i].Length);
+            }
+            for (int i = 0; i < CollisionOffsetTable.IndicesPerGroup; i++)
+            {
+                offsetTable.group4IndicesOffsets[i] = fileOffset;
+                fileOffset += 0x04 + (0x04 * indicesList[4][i].Length);
+            }
+
+            if (fileOffset % 0x10 != 0)
+            {
+                fileOffset += 0x10 - (fileOffset % 0x10);
+            }
+
+            offsetTable.group0VertexOffset = fileOffset;
+            fileOffset += 0x50 + (0x50 * quads[0].Length);
+
+            offsetTable.group1VertexOffset = fileOffset;
+            fileOffset += 0x50 + (0x50 * quads[1].Length);
+
+            offsetTable.group2VertexOffset = fileOffset;
+            fileOffset += 0x50 + (0x50 * quads[2].Length);
+
+            offsetTable.group3VertexOffset = fileOffset;
+            fileOffset += 0x50 + (0x50 * quads[3].Length);
+
+            offsetTable.group4VertexOffset = fileOffset;
+            fileOffset += 0x30 + (0x30 * cylinders.Length);
+        }
+    }
+
+    [Serializable]
+    [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 0x154)]
+    public unsafe struct CollisionOffsetTable
+    {
+        public const int OffsetsCount = 0x55;
+        public const int IndicesPerGroup = 0x10;
+        [FieldOffset(0x00)]
+        public fixed int allOffsets[OffsetsCount];
+        [FieldOffset(IndicesPerGroup * 0x00)]
+        public fixed int group0IndicesOffsets[IndicesPerGroup];
+        [FieldOffset(IndicesPerGroup * 0x04)]
+        public fixed int group1IndicesOffsets[IndicesPerGroup];
+        [FieldOffset(IndicesPerGroup * 0x08)]
+        public fixed int group2IndicesOffsets[IndicesPerGroup];
+        [FieldOffset(IndicesPerGroup * 0x0C)]
+        public fixed int group3IndicesOffsets[IndicesPerGroup];
+        [FieldOffset(IndicesPerGroup * 0x10)]
+        public fixed int group4IndicesOffsets[IndicesPerGroup];
+
+        [FieldOffset((IndicesPerGroup * 0x14) + 0x00)]
+        public int group0VertexOffset;
+        [FieldOffset((IndicesPerGroup * 0x14) + 0x04)]
+        public int group1VertexOffset;
+        [FieldOffset((IndicesPerGroup * 0x14) + 0x08)]
+        public int group2VertexOffset;
+        [FieldOffset((IndicesPerGroup * 0x14) + 0x0C)]
+        public int group3VertexOffset;
+
+        [FieldOffset(IndicesPerGroup * 0x15)]
+        public int group4VertexOffset;
+    }
+
+    [Serializable]
+    [StructLayout(LayoutKind.Sequential, Pack = 0)]
+    public struct CollisionQuad
+    {
+        public int field_00;
+        public int field_04; //Always 4?
+        public int field_08;
+        public int padding;
+
+        public Vector4 vertex0;
+        public Vector4 vertex1;
+        public Vector4 vertex2;
+        public Vector4 vertex3;
+
+        public CollisionQuad(int field_00, int field_08, Vector3 v0, Vector3 v1, Vector3 v2, Vector3 v3)
+        {
+            this.field_00 = field_00;
+            this.field_04 = 0x04;
+            this.field_08 = field_08;
+            this.padding = 0x00;
+            this.vertex0 = new Vector4(v0.x, v0.y, v0.z, 1.0f);
+            this.vertex1 = new Vector4(v1.x, v1.y, v1.z, 1.0f);
+            this.vertex2 = new Vector4(v2.x, v2.y, v2.z, 1.0f);
+            this.vertex3 = new Vector4(v3.x, v3.y, v3.z, 1.0f);
+        }
+    }
+
+    [Serializable]
+    [StructLayout(LayoutKind.Sequential, Pack = 0)]
+    public struct CollisionCylinder
+    {
+        public int field_00;
+        public int field_04; //Always 4?
+        public int field_08;
+        public int padding;
+
+        public Vector4 position;
+        public Vector3 height;
+        public float radius;
+    }
+
+
+    public unsafe class MapCollisions
+    {
+        public CollisionHeader header;
+        public int[][][] groupIndicesLists; //[group][subgroup][indices]
+        public CollisionQuad[][] group0123Quads;
+        public CollisionCylinder[] group4Cylinders;
+
+        private MapCollisions()
+        {
+            header = new CollisionHeader();
+            groupIndicesLists = new int[5][][];
+            for (int i = 0; i < 5; i++)
+            {
+                int[][] subgroup = new int[CollisionOffsetTable.IndicesPerGroup][];
+                for (int j = 0; j < CollisionOffsetTable.IndicesPerGroup; j++)
+                {
+                    subgroup[j] = new int[0];
+                }
+                groupIndicesLists[i] = subgroup;
+            }
+
+            group0123Quads = new CollisionQuad[4][];
+            for (int i = 0; i < 4; i++)
+            {
+                group0123Quads[i] = new CollisionQuad[0];
+            }
+
+            group4Cylinders = new CollisionCylinder[0];
+            header.UpdateFrom(Vector2.zero, groupIndicesLists, group0123Quads, group4Cylinders);
+        }
+
+        public MapCollisions(BinaryReader reader)
+        {
+            header = reader.ReadStruct<CollisionHeader>();
+
+            int i = 0;
+            {
+                List<int> indicesBuffer = new List<int>(0x20);
+                groupIndicesLists = new int[5][][];
+                for (int j = 0; j < 5; j++)
+                {
+                    groupIndicesLists[j] = new int[CollisionOffsetTable.IndicesPerGroup][];
+                    for (int k = 0; k < CollisionOffsetTable.IndicesPerGroup; k++)
+                    {
+                        reader.BaseStream.Position = header.offsetTable.allOffsets[i++];
+                        indicesBuffer.Clear();
+                        int index;
+                        while ((index = reader.ReadInt32()) != -1)
+                        {
+                            indicesBuffer.Add(index);
+                        }
+                        groupIndicesLists[j][k] = indicesBuffer.ToArray();
+                    }
+                }
+            }
+
+            {
+                group0123Quads = new CollisionQuad[4][];
+                List<CollisionQuad> quadBuffer = new List<CollisionQuad>(0x20);
+                for (int j = 0; j < 4; j++)
+                {
+                    reader.BaseStream.Position = header.offsetTable.allOffsets[i++];
+                    quadBuffer.Clear();
+                    CollisionQuad quad;
+                    while((quad = reader.ReadStruct<CollisionQuad>()).field_00 != 0 || quad.field_04 != 0 || quad.field_08 != 0)
+                    {
+                        quadBuffer.Add(quad);
+                    }
+                    group0123Quads[j] = quadBuffer.ToArray();
+                }
+            }
+
+            {
+                List<CollisionCylinder> cylinderBuffer = new List<CollisionCylinder>(0x08);
+                reader.BaseStream.Position = header.offsetTable.allOffsets[i++];
+                CollisionCylinder cylinder;
+                while ((cylinder = reader.ReadStruct<CollisionCylinder>()).field_00 != 0 || cylinder.field_04 != 0 || cylinder.field_08 != 0)
+                {
+                    cylinderBuffer.Add(cylinder);
+                }
+                group4Cylinders = cylinderBuffer.ToArray();
+            }
+        }
+
+        public static MapCollisions MakeEmpty()
+        {
+            MapCollisions mc = new MapCollisions();
+            mc.UpdateHeader(Vector2.zero);
+            return mc;
+        }
+
+        public static MapCollisions MakeDebug()
+        {
+            MapCollisions mc = new MapCollisions();
+            CollisionQuad[] floor = new CollisionQuad[1]
+            {
+                new CollisionQuad(1, 80,
+                    new Vector3(-12575.0f, 0.0f, -15000.0f),
+                    new Vector3(-12575.0f, 0.0f, -25000.0f),
+                    new Vector3(-27400.0f, 0.0f, -25000.0f),
+                    new Vector3(-27400.0f, 0.0f, -15000.0f))
+            };
+            int[] floorIndices = new int[1] { 0 };
+            mc.group0123Quads[0] = floor;
+            mc.groupIndicesLists[0][0] = floorIndices;
+
+            CollisionQuad[] walls = new CollisionQuad[4]
+            {
+                new CollisionQuad(1, 0x80,
+                    new Vector3(-12600.0f, 0.0f, -15000.0f),
+                    new Vector3(-12600.0f, -2500.0f, -15000.0f),
+                    new Vector3(-12600.0f, -2500.0f, -25000.0f),
+                    new Vector3(-12600.0f, 0.0f, -25000.0f)),
+                new CollisionQuad(1, 0x80,
+                    new Vector3(-12600.0f, 0.0f, -25000.0f),
+                    new Vector3(-12600.0f, -2500.0f, -25000.0f),
+                    new Vector3(-22600.0f, -2500.0f, -25000.0f),
+                    new Vector3(-22600.0f, 0.0f, -25000.0f)),
+                new CollisionQuad(1, 0x80,
+                    new Vector3(-22600.0f, 0.0f, -25000.0f),
+                    new Vector3(-22600.0f, -2500.0f, -25000.0f),
+                    new Vector3(-22600.0f, -2500.0f, -15000.0f),
+                    new Vector3(-22600.0f, 0.0f, -15000.0f)),
+                new CollisionQuad(1, 0x80,
+                    new Vector3(-22600.0f, 0.0f, -15000.0f),
+                    new Vector3(-22600.0f, -2500.0f, -15000.0f),
+                    new Vector3(-12600.0f, -2500.0f, -15000.0f),
+                    new Vector3(-12600.0f, 0.0f, -15000.0f)),
+            };
+            int[] wallIndices = new int[4] { 0, 1, 2, 3 };
+            mc.group0123Quads[1] = walls;
+            mc.groupIndicesLists[1][0] = wallIndices;
+
+            mc.UpdateHeader(new Vector2(-20000.0f, -20000.0f));
+            return mc;
+        }
+
+        public void UpdateHeader(Vector2 origin)
+        {
+            header.UpdateFrom(origin, groupIndicesLists, group0123Quads, group4Cylinders);
+        }
+
+        public void Write(BinaryWriter writer)
+        {
+            writer.WriteStruct(in header);
+            int i = 0;
+            for (int j = 0; j < 5; j++)
+            {
+                for (int k = 0; k < CollisionOffsetTable.IndicesPerGroup; k++)
+                {
+                    int[] indices = groupIndicesLists[j][k];
+                    writer.BaseStream.Position = header.offsetTable.allOffsets[i++];
+                    for(int l = 0; l < indices.Length; l++)
+                    {
+                        writer.Write(indices[l]);
+                    }
+                    writer.Write(-1);
+                }
+            }
+
+            for (int j = 0; j < 4; j++)
+            {
+                writer.BaseStream.Position = header.offsetTable.allOffsets[i++];
+                CollisionQuad[] quads = group0123Quads[j];
+                for(int k = 0; k < quads.Length; k++)
+                {
+                    writer.WriteStruct(in quads[k]);
+                }
+                writer.WriteStruct<CollisionQuad>(default);
+            }
+
+            {
+                writer.BaseStream.Position = header.offsetTable.allOffsets[i++];
+                for (int j = 0; j < group4Cylinders.Length; j++)
+                {
+                    writer.WriteStruct(in group4Cylinders[j]);
+                }
+                writer.WriteStruct<CollisionCylinder>(default);
+            }
+        }
+    }
+}

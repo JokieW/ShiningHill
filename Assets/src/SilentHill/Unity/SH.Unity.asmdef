@@ -1,0 +1,16 @@
+{
+    "name": "SH.Unity",
+    "references": [
+        "GUID:c750775c125e7974f89eddb5c5613c7e",
+        "GUID:2460c69679518644cb5f94fd4dabd62e"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

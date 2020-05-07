@@ -1,0 +1,15 @@
+{
+    "name": "SH.Runtime",
+    "references": [
+        "GUID:a9442219fcfbe714c932ca921666d74e"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

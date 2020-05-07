@@ -1,4 +1,6 @@
-﻿using ShiningHill;
+﻿using SH.DataFormat.Shared;
+using SH.Native;
+using ShiningHill;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -46,7 +48,7 @@ public class tess : MonoBehaviour
                         uvs.Add(uvss[index]);
                         //colors.Add(colorss[index]);
                     }
-                    return MeshUtils.MakeStripped(pr, normals, uvs, colors);
+                    return MeshUtil.MakeStripped(pr, normals, uvs, colors);
                 }
             }
             finally
