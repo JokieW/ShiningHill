@@ -6,6 +6,7 @@ namespace SH.Unity.SH3
 {
     public class MapGeometryComponent : MonoBehaviour
     {
+        public MapGeometry geometry;
         public MapGeometry.Header header;
         public Matrix4x4[] eventMatrices;
 

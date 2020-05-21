@@ -14,7 +14,7 @@ namespace SH.Core
         /// <returns>
         /// Translation offset.
         /// </returns>
-        public static Vector3 ExtractTranslationFromMatrix(ref Matrix4x4 matrix) {
+        public static Vector3 ExtractTranslationFromMatrix(in Matrix4x4 matrix) {
             Vector3 translate;
             translate.x = matrix.m03;
             translate.y = matrix.m13;
@@ -30,7 +30,7 @@ namespace SH.Core
         /// <returns>
         /// Quaternion representation of rotation transform.
         /// </returns>
-        public static Quaternion ExtractRotationFromMatrix(ref Matrix4x4 matrix) {
+        public static Quaternion ExtractRotationFromMatrix(in Matrix4x4 matrix) {
             Vector3 forward;
             forward.x = matrix.m02;
             forward.y = matrix.m12;
@@ -52,7 +52,7 @@ namespace SH.Core
         /// <returns>
         /// Scale vector.
         /// </returns>
-        public static Vector3 ExtractScaleFromMatrix(ref Matrix4x4 matrix) {
+        public static Vector3 ExtractScaleFromMatrix(in Matrix4x4 matrix) {
             Vector3 scale = new Vector3(
                 matrix.GetColumn(0).magnitude,
                 matrix.GetColumn(1).magnitude,
@@ -73,10 +73,10 @@ namespace SH.Core
         /// <param name="localPosition">Output position.</param>
         /// <param name="localRotation">Output rotation.</param>
         /// <param name="localScale">Output scale.</param>
-        public static void DecomposeMatrix(ref Matrix4x4 matrix, out Vector3 localPosition, out Quaternion localRotation, out Vector3 localScale) {
-            localPosition = ExtractTranslationFromMatrix(ref matrix);
-            localRotation = ExtractRotationFromMatrix(ref matrix);
-            localScale = ExtractScaleFromMatrix(ref matrix);
+        public static void DecomposeMatrix(in Matrix4x4 matrix, out Vector3 localPosition, out Quaternion localRotation, out Vector3 localScale) {
+            localPosition = ExtractTranslationFromMatrix(in matrix);
+            localRotation = ExtractRotationFromMatrix(in matrix);
+            localScale = ExtractScaleFromMatrix(in matrix);
         }
      
         /// <summary>
@@ -85,14 +85,14 @@ namespace SH.Core
         /// <param name="transform">Transform component.</param>
         /// <param name="matrix">Transform matrix. This parameter is passed by reference
         /// to improve performance; no changes will be made to it.</param>
-        public static void SetTransformFromMatrix(Transform transform, ref Matrix4x4 matrix) {
-            transform.localPosition = ExtractTranslationFromMatrix(ref matrix);
-            transform.localRotation = ExtractRotationFromMatrix(ref matrix);
-            transform.localScale = ExtractScaleFromMatrix(ref matrix);
-        }     
-     
+        public static void SetTransformFromMatrix(Transform transform, in Matrix4x4 matrix) {
+            transform.localPosition = ExtractTranslationFromMatrix(in matrix);
+            transform.localRotation = ExtractRotationFromMatrix(in matrix);
+            transform.localScale = ExtractScaleFromMatrix(in matrix);
+        }
+
         // EXTRAS!
-     
+
         /// <summary>
         /// Identity quaternion.
         /// </summary>

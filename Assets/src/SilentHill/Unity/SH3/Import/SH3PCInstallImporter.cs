@@ -95,7 +95,15 @@ namespace SH.Unity.SH3
                     AssetDatabase.CreateAsset(arcarc, proxyDirectory.WithPathAndName("data/", "arc.arc.asset", true));
                     if (unpackRecursive)
                     {
-                        arcarc.Unpack();
+                        try
+                        {
+                            AssetUtil.StartAssetEditing();
+                            arcarc.Unpack();
+                        }
+                        finally
+                        {
+                            AssetUtil.StopAssetEditing();
+                        }
                     }
                     arcArc = arcarc;
                 }

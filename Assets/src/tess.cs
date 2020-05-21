@@ -1,7 +1,6 @@
-﻿using SH.GameData.Shared;
+﻿using SH.Core;
+using SH.GameData.Shared;
 using SH.Native;
-using ShiningHill;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -12,6 +11,40 @@ public class tess : MonoBehaviour
     {
         Output = ConvertMesh(mesh);
         GetComponent<MeshFilter>().sharedMesh = Output;
+    }
+
+    [ContextMenu("doit2")]
+    public void doit2()
+    {
+        Matrix4x4 m = Matrix4x4.identity;
+        m[0] = 0.0f;
+        m[1] = -0.73f;
+        m[2] = 0.68f;
+        m[3] = 0.0f;
+        m[4] = 0.0f;
+        m[5] = 0.68f;
+        m[6] = 0.73f;
+        m[7] = 0.0f;
+        m[8] = -1.0f;
+        m[9] = 0.0f;
+        m[10] = 0.0f;
+        m[11] = 0.0f;
+        m[12] = 0.0f;
+        m[13] = 0.0f;
+        m[14] = -57.20f;
+        m[15] = 1.0f;
+        Vector3 pos = Matrix4x4Util.ExtractTranslationFromMatrix(in m);
+        Quaternion rot = Matrix4x4Util.ExtractRotationFromMatrix(in m);
+        Vector3 scale = Matrix4x4Util.ExtractScaleFromMatrix(in m);
+        transform.localPosition = pos;
+        transform.localRotation = rot;
+        transform.localScale = scale;
+    }
+
+    [ContextMenu("doit3")]
+    public void doit3()
+    {
+        Debug.Log(transform.localToWorldMatrix);
     }
 
     public unsafe static Mesh ConvertMesh(Mesh input)

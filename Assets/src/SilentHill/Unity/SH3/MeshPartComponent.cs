@@ -7,5 +7,6 @@ namespace SH.Unity.SH3
 	public class MeshPartComponent : MonoBehaviour 
 	{
         public MapGeometry.MeshPart.Header header;
-	}
+        public MapGeometry.MeshPart.ExtraData[] extraData;
+    }
 }

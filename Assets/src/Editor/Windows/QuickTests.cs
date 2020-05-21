@@ -1,28 +1,25 @@
 ﻿using System;
 using System.IO;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 
 using UnityEngine;
 using UnityEditor;
-using Object = UnityEngine.Object;
-using SH.GameData.SH3;
-using SH.Unity.SH3;
-using SH.GameData.Shared;
-using SH.GameData.SH1;
-using SH.Core.Stream;
 
-namespace ShiningHill
+using SH.Core.Stream;
+using SH.GameData.SH1;
+using SH.GameData.SH3;
+using SH.GameData.Shared;
+using SH.Unity.SH3;
+
+namespace SH.Editor
 {
-    public class ArcExporter : EditorWindow
+    public class QuickTests : EditorWindow
     {
         //static EditorWindow _currentWindow;
 
-        [MenuItem("ShiningHill/ArcExporter")]
+        [MenuItem("ShiningHill/Quick Tests")]
         public static void ShowWindow()
         {
-            /*_currentWindow = */EditorWindow.GetWindow(typeof(ArcExporter));
+            /*_currentWindow = */EditorWindow.GetWindow(typeof(QuickTests));
         }
 
         public static Mesh mesh;
@@ -69,11 +66,11 @@ namespace ShiningHill
             texture = (Texture2D)EditorGUILayout.ObjectField(texture, typeof(Texture2D), true);
             if (GUILayout.Button("test map"))
             {
-                MapGeometry m;
+                MapGeometry m = new MapGeometry(); ;
                 using (FileStream file = new FileStream(@"C:\Silent Hill 3 - Copy\arc\bgmr\data\tmp\mrff.map", FileMode.Open, FileAccess.Read))
                 using (BinaryReader reader = new BinaryReader(file))
                 {
-                    m = new MapGeometry(reader);
+                    m.ReadFile(reader);
                 }
 
                 m.DoHack(mesh, texture);
@@ -81,7 +78,7 @@ namespace ShiningHill
                 using (FileStream file = new FileStream(@"C:\Silent Hill 3\arc\bgmr\data\tmp\mrff.map", FileMode.Create, FileAccess.Write))
                 using (BinaryWriter writer = new BinaryWriter(file))
                 {
-                    m.Write(writer);
+                    m.WriteFile(writer);
                 }
             }
             if (GUILayout.Button("doit"))

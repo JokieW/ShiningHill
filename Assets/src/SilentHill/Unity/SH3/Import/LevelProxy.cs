@@ -22,7 +22,7 @@ namespace SH.Unity.SH3
             {
                 try
                 {
-                    AssetUtil.StartAssetEditing();
+                    //AssetUtil.StartAssetEditing();
                     for (int i = 0; i < targets.Length; i++)
                     {
                         LevelProxy proxy = (LevelProxy)targets[i];
@@ -31,7 +31,7 @@ namespace SH.Unity.SH3
                 }
                 finally
                 {
-                    AssetUtil.StopAssetEditing();
+                    //AssetUtil.StopAssetEditing();
                 }
             }
 
@@ -57,47 +57,72 @@ namespace SH.Unity.SH3
         public UnityEngine.Object GBtex;
         public UnityEngine.Object GBcam;
         public UnityEngine.Object GBfcl;
+        public UnityEngine.Object nwfcl;
 
         public MaterialRolodex GBTextures;
 
         public void Unpack()
         {
             UnityEngine.Profiling.Profiler.BeginSample("UnpackLevel");
+
+            bool hasGlobalTR = false;
+            UnpackPath globalTR = default;
             Dictionary<string, GridProxy> newGrids = new Dictionary<string, GridProxy>();
             for (int i = 0; i < parentArc.files.Length; i++)
             {
                 UnpackPath filepath = UnpackPath.GetPath(parentArc.files[i]);
                 if (filepath.nameWithoutExtension.Substring(0, 2) == levelName)
                 {
-                    string gridName = filepath.name.Substring(2, 2);
-                    string extension = filepath.extension;
-                    if (gridName == "GB")
+                    if (filepath.name == "cc01TR.tex")
                     {
-                        if (extension == ".tex") GBtex = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(filepath);
-                        else if (extension == ".cam") GBcam = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(filepath);
-                        else if (extension == ".fcl") GBfcl = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(filepath);
+                        hasGlobalTR = true;
+                        globalTR = filepath;
                     }
                     else
                     {
-                        if (filepath.name.EndsWith("TR.tex") || filepath.nameWithoutExtension.Length == 4)
-                        {
-                            GridProxy grid;
-                            if (!newGrids.TryGetValue(gridName, out grid))
-                            {
-                                grid = GridProxy.CreateInstance<GridProxy>();
-                                grid.level = this;
-                                grid.gridName = gridName;
-                                newGrids.Add(gridName, grid);
-                            }
 
-                            if (extension == ".map") grid.map = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(filepath);
-                            else if (extension == ".cam") grid.cam = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(filepath);
-                            else if (extension == ".cld") grid.cld = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(filepath);
-                            else if (extension == ".kg2") grid.kg2 = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(filepath);
-                            else if (extension == ".ded") grid.ded = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(filepath);
-                            else if (extension == ".tex") grid.TRtex = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(filepath);
+                        string gridName = filepath.name.Substring(2, 2);
+                        string extension = filepath.extension;
+                        if (gridName == "GB")
+                        {
+                            if (extension == ".tex") GBtex = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(filepath);
+                            else if (extension == ".cam") GBcam = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(filepath);
+                            else if (extension == ".fcl") GBfcl = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(filepath);
+                        }
+                        else if (gridName == "nw")
+                        {
+                            if (extension == ".fcl") nwfcl = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(filepath);
+                        }
+                        else
+                        {
+                            if (filepath.name.EndsWith("TR.tex") || filepath.nameWithoutExtension.Length == 4)
+                            {
+                                GridProxy grid;
+                                if (!newGrids.TryGetValue(gridName, out grid))
+                                {
+                                    grid = GridProxy.CreateInstance<GridProxy>();
+                                    grid.level = this;
+                                    grid.gridName = gridName;
+                                    newGrids.Add(gridName, grid);
+                                }
+
+                                if (extension == ".map") grid.map = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(filepath);
+                                else if (extension == ".cam") grid.cam = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(filepath);
+                                else if (extension == ".cld") grid.cld = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(filepath);
+                                else if (extension == ".kg2") grid.kg2 = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(filepath);
+                                else if (extension == ".ded") grid.ded = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(filepath);
+                                else if (extension == ".tex") grid.TRtex = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(filepath);
+                            }
                         }
                     }
+                }
+            }
+
+            if(hasGlobalTR)
+            {
+                foreach(KeyValuePair<string, GridProxy> kvp in newGrids)
+                {
+                    kvp.Value.TRtex = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(globalTR);
                 }
             }
 
@@ -107,12 +132,12 @@ namespace SH.Unity.SH3
                 using (FileStream file = new FileStream(UnpackPath.GetPath(GBtex), FileMode.Open, FileAccess.ReadWrite))
                 using (BinaryReader reader = new BinaryReader(file))
                 {
-                    TextureGroup.ReadTextureGroup(reader, out trGroup);
+                    trGroup = TextureGroup.ReadTextureGroup(reader);
                 }
                 GBTextures = ScriptableObject.CreateInstance<MaterialRolodex>();
                 UnpackPath toPath = UnpackPath.GetDirectory(this).WithDirectoryAndName(UnpackDirectory.Unity, levelName + "GB_mats.asset", true);
                 AssetDatabase.CreateAsset(GBTextures, toPath);
-                GBTextures.AddTextures(TextureUtil.ReadTex32(levelName + "GB_tex", in trGroup));
+                GBTextures.AddTextures(MaterialRolodex.ReadTex32(levelName + "GB_tex", in trGroup));
             }
 
             bool wasAssetEditing = AssetUtil.IsAssetEditing();

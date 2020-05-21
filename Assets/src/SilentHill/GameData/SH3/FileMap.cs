@@ -14,60 +14,61 @@ namespace SH.GameData.SH3
     [Serializable]
     public class MapGeometry
     {
-        public Header mainHeader;
-        public Skybox__[] skyboxes;
-        public MeshGroup[] meshGroups;
-        public Matrix4x4[] eventMatrices;
-        public TextureGroup textureGroup;
+        public Header mainHeader; //at root
+        public ObjectTransform[] transforms; //next line after mainHeader, pointed at by firstObjectTransformOffset
+        public MeshGroup[] meshGroups; //next line after transforms, ordered meshPartGBTexOffset -> meshPartTRTexOffset -> meshPartLocalTexOffset
+        public Matrix4x4[] interestPoints; //optional, next line after meshgroups, pointed at by interestPointsOffset
+        public LightDecal lightDecal; //optional, next line after interestPoints, pointed at by 
+        public TextureGroup textureGroup; //at next xxxxxx00 or xxxxxx80 line after lightdecals, pointed at by textureGroupOffset
 
         [Serializable]
         [StructLayout(LayoutKind.Sequential, Pack = 0)]
         public struct Header
         {
-            public int int_00; // -1 0xFFFFFFFF
-            public int field_04;
-            public int field_08;
-            public int mainHeaderSize;
+            [Hex] public int magicByte; // -1 0xFFFFFFFF
+            [Hex] public int field_04;
+            [Hex] public int field_08;
+            [Hex] public int mainHeaderSize;
 
-            public int textureGroupOffset;
-            public int field_14;
-            public int mainHeaderSize2__;
-            public int firstMeshGroupOffset;
+            [Hex] public int textureGroupOffset;
+            [Hex] public int field_14;
+            [Hex] public int firstObjectTransformOffset;
+            [Hex] public int meshPartGBTexOffset;
 
-            public int field_20;
-            public int sceneStartHeaderOffset__;
-            public int field_28;
-            public int field_2C;
+            [Hex] public int meshPartTRTexOffset;
+            [Hex] public int meshPartLocalTexOffset;
+            [Hex] public int field_28;
+            [Hex] public int field_2C;
 
-            public int textureGroupOffset2__;
-            public int eventMatricesOffset;
-            public int field_38;
-            public int field_3C;
+            [Hex] public int textureGroupOffset2__;
+            [Hex] public int interestPointsOffset;
+            [Hex] public int lightDecalsOffset;
+            [Hex] public int field_3C;
 
-            public short totalTextures;
-            public short localTextureBaseIndex;
-            public short localTextureCount;
-            public short localTextureBaseIndexModifier;
-            public int field_48;
-            public int field_4C;
+            public short meshPartCount;
+            public short meshPartGBTexCount;
+            public short meshPartLocalTexCount;
+            public short meshPartTRTexCount;
+            [Hex] public int field_48;
+            [Hex] public int field_4C;
         }
 
 
         [Serializable]
         [StructLayout(LayoutKind.Sequential, Pack = 0)]
-        public struct Skybox__
+        public struct ObjectTransform
         {
-            public int nextSkyboxOffset; //0 if no more
-            public int headerLength; //32 for skybox
-            public int skyboxLength;
-            public int field_0C;
+            [Hex] public int nextObjectTransformOffset; //0 if no more
+            [Hex] public int headerLength;
+            [Hex] public int objectTransformLength;
+            [Hex] public int field_0C;
 
-            public int field_10;
-            public int field_14;
-            public int field_18;
-            public int field_1C;
+            public int objectType;
+            [Hex] public int partID;
+            [Hex] public int field_18;
+            [Hex] public int field_1C;
 
-            public Matrix4x4 matrix;
+            public Matrix4x4 transform;
             public unsafe fixed float boundingBox[4 * 8];
 
             public unsafe Vector4[] GetBoundingBox()
@@ -81,9 +82,8 @@ namespace SH.GameData.SH3
             }
         }
 
-
-
-        public struct MeshGroup
+        [Serializable]
+        public class MeshGroup
         {
             public Header header;
             public SubMeshGroup[] subs;
@@ -92,24 +92,25 @@ namespace SH.GameData.SH3
             [StructLayout(LayoutKind.Sequential, Pack = 0)]
             public struct Header
             {
-                public int nextGroupOffset; //0 when done
-                public int headerLength;
-                public int totalLength; //from offset of MeshGroup, to nextGroupOffset
-                public int field_0C;
+                [Hex] public int nextGroupOffset; //0 when done
+                [Hex] public int headerLength;
+                [Hex] public int totalLength; //from offset of MeshGroup, to nextGroupOffset
+                [Hex] public int field_0C;
 
                 public int textureGroup; //3 local, 2 TR, 1 GB
                 public int textureIndex;
                 public int subMeshGroupCount;
-                public int field_1C;
+                [Hex] public int field_1C;
 
-                public int pad_20;
-                public int pad_24;
-                public int pad_28;
-                public int pad_2C;
+                [Hex] public int pad_20;
+                [Hex] public int pad_24;
+                [Hex] public int pad_28;
+                [Hex] public int pad_2C;
             }
         }
 
-        public struct SubMeshGroup
+        [Serializable]
+        public class SubMeshGroup
         {
             public Header header;
             public SubSubMeshGroup[] subsubs;
@@ -118,26 +119,27 @@ namespace SH.GameData.SH3
             [StructLayout(LayoutKind.Sequential, Pack = 0)]
             public struct Header
             {
-                public int nextSubMeshGroupOffset;
-                public int headerLength;
-                public int totalLength;
-                public int field_0C;
+                [Hex] public int nextSubMeshGroupOffset;
+                [Hex] public int headerLength;
+                [Hex] public int totalLength;
+                [Hex] public int field_0C;
 
                 public short subMeshIndex;
-                public short subSubMeshCount__;
-                public short field_14;
-                public short transparencyType; //0 opaque, 1 transparent, 3 cutout, 8 unknown
-                public int field_18;
-                public int field_1C;
+                public short subSubMeshCount;
+                [Hex] public short field_14;
+                [Hex] public short transparencyType; //0 opaque, 1 transparent, 3 cutout, 8 unknown
+                [Hex] public int field_18;
+                [Hex] public int field_1C;
 
-                public int pad_20;
-                public int pad_24;
-                public int pad_28;
-                public int pad_2C;
+                [Hex] public int pad_20;
+                [Hex] public int pad_24;
+                [Hex] public int pad_28;
+                [Hex] public int pad_2C;
             }
         }
 
-        public struct SubSubMeshGroup
+        [Serializable]
+        public class SubSubMeshGroup
         {
             public Header header;
             public MeshPart[] parts;
@@ -146,15 +148,15 @@ namespace SH.GameData.SH3
             [StructLayout(LayoutKind.Sequential, Pack = 0)]
             public struct Header
             {
-                public int nextSubSubMeshGroupOffset;
-                public int headerLength;
-                public int totalLength;
-                public int field_0C;
+                [Hex] public int nextSubSubMeshGroupOffset;
+                [Hex] public int headerLength;
+                [Hex] public int totalLength;
+                [Hex] public int field_0C;
 
-                public int illuminationType; //9 ambient?, 8 self-illum, 4 unknown (i.e. bu1f), 0 no illum?, 265 trnasparent mirrors
-                public int field_14;
-                public int field_18;
-                public int field_1C;
+                [Hex] public int illuminationType; //9 ambient?, 8 self-illum, 4 unknown (i.e. bu1f), 0 no illum?, 265 trnasparent mirrors
+                [Hex] public int field_14;
+                [Hex] public int reserved1; //Used at runtime to store data
+                [Hex] public int reserved2; //Used at runtime to store data
 
                 //example of them changing 
                 //in mrfe/mrf2 books behind glass
@@ -167,34 +169,36 @@ namespace SH.GameData.SH3
             }
         }
 
-        public struct MeshPart
+        [Serializable]
+        public class MeshPart
         {
             public Header header;
             public VertexInfo[] vertices;
+            public ExtraData[] extraData;
 
             [Serializable]
             [StructLayout(LayoutKind.Sequential, Pack = 0)]
             public struct Header
             {
-                public int nextMeshPartOffset;
-                public int headerLength;
-                public int totalLength;
-                public int field_0C;
+                [Hex] public int nextMeshPartOffset;
+                [Hex] public int headerLength;
+                [Hex] public int totalLength;
+                [Hex] public int field_0C;
 
                 public int vertexCount;
                 public int objectType; //1 = static, 2 = can be or not there, 3 = can move
-                public int occlusionGroup;
-                public int meshFlags;
+                [Hex] public int partID;
+                [Hex] public int meshFlags;
 
-                public float float_20;
-                public float float_24;
-                public float float_28;
-                public float float_2C;
+                [Hex] public int unknownData; //most of the time 0, have seen 180 and 1c0 in cuf3
+                [Hex] public int field_24;
+                [Hex] public int field_28;
+                [Hex] public int field_2C;
 
-                public float float_30;
-                public float float_34;
-                public float float_38;
-                public float float_3C;
+                [Hex] public int pad_30;
+                [Hex] public int pad_34;
+                [Hex] public int pad_38;
+                [Hex] public int pad_3C;
             }
 
             [Serializable]
@@ -215,6 +219,95 @@ namespace SH.GameData.SH3
                 }
             }
 
+
+            [Serializable]
+            [StructLayout(LayoutKind.Sequential, Pack = 0)]
+            public struct ExtraData
+            {
+                [Hex] public int field_00;
+                [Hex] public int field_04;
+                [Hex] public int field_08;
+                [Hex] public int field_0C;
+
+                [Hex] public int field_10;
+                [Hex] public int field_14;
+                [Hex] public int field_18;
+                [Hex] public int field_1C;
+
+                [Hex] public int field_30;
+                [Hex] public int field_34;
+                [Hex] public int field_38;
+                [Hex] public int field_3C;
+            }
+        }
+
+        [Serializable]
+        public class LightDecal
+        {
+            public Header header;
+            public Entry[] entries;
+
+            [Serializable]
+            [StructLayout(LayoutKind.Sequential, Pack = 0)]
+            public struct Header
+            {
+                [Hex] public int firstEntryOffset;
+                [Hex] public int field_04;
+                [Hex] public int field_08;
+                [Hex] public int field_0C;
+
+                [Hex] public int pad_10;
+                [Hex] public int pad_14;
+                [Hex] public int pad_18;
+                [Hex] public int pad_1C;
+            }
+
+            [Serializable]
+            [StructLayout(LayoutKind.Sequential, Pack = 0)]
+            public struct Entry
+            {
+                public Header header;
+                public Vector4[] instances;
+                public VertexData[] instanceData;
+
+                [Serializable]
+                [StructLayout(LayoutKind.Sequential, Pack = 0)]
+                public struct Header
+                {
+                    public Matrix4x4 transform;
+
+                    public short positionsCount;
+                    public short dataCount;
+                    [Hex] public short field_44;
+                    [Hex] public short field_46;
+                    [Hex] public int field_48;
+                    [Hex] public int field_4C;
+
+                    [Hex] public int offsetToPositions;
+                    [Hex] public int offsetToData;
+                    [Hex] public int offsetToNextEntry;
+                    [Hex] public int field_5C;
+
+                    [Hex] public int pad_60;
+                    [Hex] public int pad_64;
+                    [Hex] public int pad_68;
+                    [Hex] public int pad_6C;
+                }
+
+                [Serializable]
+                [StructLayout(LayoutKind.Sequential, Pack = 0)]
+                public struct VertexData
+                {
+                    public Vector4 vertexOffset;
+
+                    public float u;
+                    public float v;
+                    public float uvDivider;
+                    public float pad_1C;
+
+                    public Color vertexColor; // 0.0f to 128.0f
+                }
+            }
         }
 
         public unsafe void DoHack(Mesh mesh, Texture2D texture)
@@ -290,20 +383,20 @@ namespace SH.GameData.SH3
 
             {
                 TextureGroup.Texture tex = textureGroup.textures[0];
-                tex.pixels = texture.GetPixels32();
+                tex.pixels = texture.GetRawTextureData();
                 textureGroup.textures = new TextureGroup.Texture[] { tex };
             }
 
             {
                 int currentOffset = 0;
                 currentOffset += Marshal.SizeOf<Header>();
-                for (int i = 0; i < skyboxes.Length; i++)
+                for (int i = 0; i < transforms.Length; i++)
                 {
-                    currentOffset += Marshal.SizeOf<Skybox__>();
+                    currentOffset += Marshal.SizeOf<ObjectTransform>();
                 }
 
-                mainHeader.sceneStartHeaderOffset__ = currentOffset;
-                mainHeader.firstMeshGroupOffset = currentOffset;
+                mainHeader.meshPartLocalTexOffset = currentOffset;
+                mainHeader.meshPartGBTexOffset = currentOffset;
                 for (int i = 0; i < meshGroups.Length; i++)
                 {
                     ref MeshGroup group = ref meshGroups[i];
@@ -347,13 +440,13 @@ namespace SH.GameData.SH3
 
                 Shared.Util.AlignOffsetToNext(ref currentOffset);
 
-                mainHeader.eventMatricesOffset = currentOffset;
-                currentOffset += (Marshal.SizeOf<Matrix4x4>() * (eventMatrices.Length + 1)) + 0x20;
+                mainHeader.interestPointsOffset = currentOffset;
+                currentOffset += (Marshal.SizeOf<Matrix4x4>() * (interestPoints.Length + 1)) + 0x20;
                 mainHeader.textureGroupOffset = currentOffset;
                 mainHeader.textureGroupOffset2__ = currentOffset;
-                mainHeader.totalTextures = 1;
-                mainHeader.localTextureBaseIndex = 0;
-                mainHeader.localTextureCount = 1;
+                mainHeader.meshPartCount = 1;
+                mainHeader.meshPartGBTexCount = 0;
+                mainHeader.meshPartLocalTexCount = 1;
 
                 textureGroup.header.textureCount = 1;
                 textureGroup.header.totalLength = Marshal.SizeOf<TextureGroup.Header>();
@@ -372,123 +465,235 @@ namespace SH.GameData.SH3
             }
         }
 
-        public MapGeometry(BinaryReader reader)
+        private static ObjectTransform[] ReadObjectTransforms(BinaryReader reader)
         {
-            UnityEngine.Profiling.Profiler.BeginSample("New MapFile");
-            mainHeader = reader.ReadStruct<Header>();
+            UnityEngine.Profiling.Profiler.BeginSample("ReadObjectTransforms");
 
+            CollectionPool.Request(out List<ObjectTransform> objectTransforms);
+            ObjectTransform objectTransform;
+            do
             {
-                UnityEngine.Profiling.Profiler.BeginSample("Skyboxes");
-                List<Skybox__> skyboxes = new List<Skybox__>(1);
-                Skybox__ skybox;
-                do
-                {
-                    skybox = reader.ReadStruct<Skybox__>();
-                    skyboxes.Add(skybox);
-                } while (skybox.nextSkyboxOffset != 0);
-                this.skyboxes = skyboxes.ToArray();
-                UnityEngine.Profiling.Profiler.EndSample();
-            }
+                objectTransform = reader.ReadStruct<ObjectTransform>();
+                objectTransforms.Add(objectTransform);
+            } while (objectTransform.nextObjectTransformOffset != 0);
 
-            {
-                List<MeshGroup> meshgroups = new List<MeshGroup>();
-                MeshGroup meshgroup;
-                do
-                {
-                    UnityEngine.Profiling.Profiler.BeginSample("meshgroup");
-                    meshgroup = new MeshGroup();
-                    meshgroup.header = reader.ReadStruct<MeshGroup.Header>();
+            ObjectTransform[] result = objectTransforms.ToArray();
+            CollectionPool.Return(ref objectTransforms);
 
-                    List<SubMeshGroup> submeshgroups = new List<SubMeshGroup>();
-                    SubMeshGroup submeshgroup;
-                    do
-                    {
-                        UnityEngine.Profiling.Profiler.BeginSample("submeshgroup");
-                        submeshgroup = new SubMeshGroup();
-                        submeshgroup.header = reader.ReadStruct<SubMeshGroup.Header>();
-
-                        List<SubSubMeshGroup> subsubmeshgroups = new List<SubSubMeshGroup>();
-                        SubSubMeshGroup subsubmeshgroup;
-                        do
-                        {
-                            UnityEngine.Profiling.Profiler.BeginSample("subsubmeshgroup");
-                            subsubmeshgroup = new SubSubMeshGroup();
-                            subsubmeshgroup.header = reader.ReadStruct<SubSubMeshGroup.Header>();
-
-                            List<MeshPart> meshparts = new List<MeshPart>();
-                            MeshPart meshpart;
-                            do
-                            {
-                                UnityEngine.Profiling.Profiler.BeginSample("meshpart");
-                                try
-                                {
-                                    meshpart = new MeshPart();
-                                    UnityEngine.Profiling.Profiler.BeginSample("reader.ReadStruct<MeshPart.Header>");
-                                    meshpart.header = reader.ReadStruct<MeshPart.Header>();
-                                    UnityEngine.Profiling.Profiler.EndSample();
-                                    UnityEngine.Profiling.Profiler.BeginSample("new MeshPart.VertexInfo");
-                                    meshpart.vertices = new MeshPart.VertexInfo[meshpart.header.vertexCount];
-                                    UnityEngine.Profiling.Profiler.EndSample();
-                                    UnityEngine.Profiling.Profiler.BeginSample("for (int i");
-                                    reader.ReadStruct<MeshPart.VertexInfo>(meshpart.vertices);
-                                    UnityEngine.Profiling.Profiler.EndSample();
-
-                                    UnityEngine.Profiling.Profiler.BeginSample("Add(meshpart)");
-                                    meshparts.Add(meshpart);
-                                    UnityEngine.Profiling.Profiler.EndSample();
-                                }
-                                catch (Exception e)
-                                {
-                                    throw;
-                                }
-
-                                UnityEngine.Profiling.Profiler.EndSample();
-                            } while (meshpart.header.nextMeshPartOffset != 0);
-                            subsubmeshgroup.parts = meshparts.ToArray();
-                            subsubmeshgroups.Add(subsubmeshgroup);
-
-                            UnityEngine.Profiling.Profiler.EndSample();
-                        } while (subsubmeshgroup.header.nextSubSubMeshGroupOffset != 0);
-                        submeshgroup.subsubs = subsubmeshgroups.ToArray();
-                        submeshgroups.Add(submeshgroup);
-
-                        UnityEngine.Profiling.Profiler.EndSample();
-                    } while (submeshgroup.header.nextSubMeshGroupOffset != 0);
-                    meshgroup.subs = submeshgroups.ToArray();
-                    meshgroups.Add(meshgroup);
-
-                    UnityEngine.Profiling.Profiler.EndSample();
-                } while (meshgroup.header.nextGroupOffset != 0);
-                meshGroups = meshgroups.ToArray();
-            }
-
-            reader.BaseStream.Position = mainHeader.eventMatricesOffset;
-            {
-                UnityEngine.Profiling.Profiler.BeginSample("matrices");
-                List<Matrix4x4> matrices = new List<Matrix4x4>();
-                Matrix4x4 matrix = default;
-                while ((matrix = reader.ReadStruct<Matrix4x4>()) != default)
-                {
-                    matrices.Add(matrix);
-                }
-                eventMatrices = matrices.ToArray();
-                UnityEngine.Profiling.Profiler.EndSample();
-            }
-
-            UnityEngine.Profiling.Profiler.BeginSample("ReadTextureGroup");
-            reader.BaseStream.Position = mainHeader.textureGroupOffset;
-            TextureGroup.ReadTextureGroup(reader, out textureGroup);
             UnityEngine.Profiling.Profiler.EndSample();
+            return result;
+        }
+
+        private static MeshGroup[] ReadMeshGroups(BinaryReader reader)
+        {
+            UnityEngine.Profiling.Profiler.BeginSample("ReadMeshGroup");
+
+            CollectionPool.Request(out List<MeshGroup> meshgroups);
+            MeshGroup meshgroup;
+            do
+            {
+                meshgroup = new MeshGroup();
+                meshgroup.header = reader.ReadStruct<MeshGroup.Header>();
+                meshgroup.subs = ReadSubMeshGroups(reader);
+
+                meshgroups.Add(meshgroup);
+                reader.BaseStream.Position = meshgroup.header.nextGroupOffset;
+            } while (meshgroup.header.nextGroupOffset != 0);
+
+            MeshGroup[] result = meshgroups.ToArray();
+            CollectionPool.Return(ref meshgroups);
+
+            UnityEngine.Profiling.Profiler.EndSample();
+            return result;
+        }
+
+        private static SubMeshGroup[] ReadSubMeshGroups(BinaryReader reader)
+        {
+            UnityEngine.Profiling.Profiler.BeginSample("ReadSubMeshGroup");
+
+            CollectionPool.Request(out List<SubMeshGroup> submeshgroups);
+            SubMeshGroup submeshgroup;
+            do
+            {
+                submeshgroup = new SubMeshGroup();
+                submeshgroup.header = reader.ReadStruct<SubMeshGroup.Header>();
+                submeshgroup.subsubs = ReadSubSubMeshGroups(reader);
+
+                submeshgroups.Add(submeshgroup);
+                reader.BaseStream.Position = submeshgroup.header.nextSubMeshGroupOffset;
+            } while (submeshgroup.header.nextSubMeshGroupOffset != 0);
+
+            SubMeshGroup[] result = submeshgroups.ToArray();
+            CollectionPool.Return(ref submeshgroups);
+
+            UnityEngine.Profiling.Profiler.EndSample();
+            return result;
+        }
+
+        private static SubSubMeshGroup[] ReadSubSubMeshGroups(BinaryReader reader)
+        {
+            UnityEngine.Profiling.Profiler.BeginSample("ReadSubSubMeshGroup");
+
+            CollectionPool.Request(out List<SubSubMeshGroup> subsubmeshgroups);
+            SubSubMeshGroup subsubmeshgroup;
+            do
+            {
+                subsubmeshgroup = new SubSubMeshGroup();
+                subsubmeshgroup.header = reader.ReadStruct<SubSubMeshGroup.Header>();
+                subsubmeshgroup.parts = ReadMeshParts(reader);
+
+                subsubmeshgroups.Add(subsubmeshgroup);
+                reader.BaseStream.Position = subsubmeshgroup.header.nextSubSubMeshGroupOffset;
+            } while (subsubmeshgroup.header.nextSubSubMeshGroupOffset != 0);
+
+            SubSubMeshGroup[] result = subsubmeshgroups.ToArray();
+            CollectionPool.Return(ref subsubmeshgroups);
+
+            UnityEngine.Profiling.Profiler.EndSample();
+            return result;
+        }
+
+        private static MeshPart[] ReadMeshParts(BinaryReader reader)
+        {
+            UnityEngine.Profiling.Profiler.BeginSample("ReadMeshPart");
+
+            CollectionPool.Request(out List<MeshPart> meshparts);
+            MeshPart meshpart;
+            do
+            {
+                meshpart = new MeshPart();
+                meshpart.header = reader.ReadStruct<MeshPart.Header>();
+                meshpart.vertices = new MeshPart.VertexInfo[meshpart.header.vertexCount];
+                reader.ReadStruct<MeshPart.VertexInfo>(meshpart.vertices);
+
+                if (meshpart.header.unknownData != 0)
+                {
+                    meshpart.extraData = new MeshPart.ExtraData[8]; //No idea of the proper way to count
+                    reader.ReadStruct<MeshPart.ExtraData>(meshpart.extraData);
+                }
+
+                meshparts.Add(meshpart);
+                reader.BaseStream.Position = meshpart.header.nextMeshPartOffset;
+            } while (meshpart.header.nextMeshPartOffset != 0);
+
+            MeshPart[] result = meshparts.ToArray();
+            CollectionPool.Return(ref meshparts);
+
+            UnityEngine.Profiling.Profiler.EndSample();
+            return result;
+        }
+
+        private static Matrix4x4[] ReadInterestPoints(BinaryReader reader, in MapGeometry.Header header)
+        {
+            UnityEngine.Profiling.Profiler.BeginSample("ReadInterestPoints");
+
+            long rangeEnd = reader.BaseStream.Length;
+            if(header.lightDecalsOffset != 0)
+            {
+                rangeEnd = header.lightDecalsOffset;
+            }
+            else if(header.textureGroupOffset != 0)
+            {
+                rangeEnd = header.textureGroupOffset;
+            }
+
+            int count = (int)((rangeEnd - reader.BaseStream.Position) / (sizeof(float) * 16));
+
+            Matrix4x4[] matrices = new Matrix4x4[count];
+            for (int i = 0; i < matrices.Length; i++)
+            {
+                matrices[i] = reader.ReadStruct<Matrix4x4>();
+            }
+
+            UnityEngine.Profiling.Profiler.EndSample();
+            return matrices;
+        }
+
+        private static LightDecal ReadLightData(BinaryReader reader)
+        {
+            UnityEngine.Profiling.Profiler.BeginSample("ReadLightData");
+
+            LightDecal lightData = new LightDecal();
+            lightData.header = reader.ReadStruct<LightDecal.Header>();
+            
+            if(lightData.header.firstEntryOffset != 0)
+            {
+                CollectionPool.Request(out List<LightDecal.Entry> entries);
+                reader.BaseStream.Position = lightData.header.firstEntryOffset;
+
+                LightDecal.Entry entry;
+                do
+                {
+                    entry = new LightDecal.Entry();
+                    entry.header = reader.ReadStruct<LightDecal.Entry.Header>();
+
+                    if (entry.header.offsetToPositions != 0)
+                    {
+                        entry.instances = new Vector4[entry.header.positionsCount];
+                        reader.BaseStream.Position = entry.header.offsetToPositions;
+                        for (int i = 0; i < entry.header.positionsCount; i++)
+                        {
+                            entry.instances[i] = reader.ReadVector4();
+                        }
+                    }
+
+                    if (entry.header.offsetToData != 0)
+                    {
+                        entry.instanceData = new LightDecal.Entry.VertexData[entry.header.dataCount];
+                        reader.BaseStream.Position = entry.header.offsetToData;
+                        for (int i = 0; i < entry.header.dataCount; i++)
+                        {
+                            entry.instanceData[i] = reader.ReadStruct<LightDecal.Entry.VertexData>();
+                        }
+                    }
+
+                    entries.Add(entry);
+                    reader.BaseStream.Position = entry.header.offsetToNextEntry;
+                } while (entry.header.offsetToNextEntry != 0);
+
+                lightData.entries = entries.ToArray();
+                CollectionPool.Return(ref entries);
+            }
+
+            UnityEngine.Profiling.Profiler.EndSample();
+            return lightData;
+        }
+
+        public void ReadFile(BinaryReader reader)
+        {
+            UnityEngine.Profiling.Profiler.BeginSample("ReadFile");
+
+            mainHeader = reader.ReadStruct<Header>();
+            transforms = ReadObjectTransforms(reader);
+            meshGroups = ReadMeshGroups(reader);
+
+            if (mainHeader.interestPointsOffset != 0)
+            {
+                reader.BaseStream.Position = mainHeader.interestPointsOffset;
+                interestPoints = ReadInterestPoints(reader, mainHeader);
+            }
+
+            if (mainHeader.lightDecalsOffset != 0)
+            {
+                reader.BaseStream.Position = mainHeader.lightDecalsOffset;
+                lightDecal = ReadLightData(reader);
+            }
+
+            if (mainHeader.textureGroupOffset != 0)
+            {
+                reader.BaseStream.Position = mainHeader.textureGroupOffset;
+                textureGroup = TextureGroup.ReadTextureGroup(reader);
+            }
             UnityEngine.Profiling.Profiler.EndSample();
         }
 
-        public void Write(BinaryWriter writer)
+        public void WriteFile(BinaryWriter writer)
         {
             writer.WriteStruct(in mainHeader);
 
-            for (int i = 0; i < skyboxes.Length; i++)
+            for (int i = 0; i < transforms.Length; i++)
             {
-                writer.WriteStruct(in skyboxes[i]);
+                writer.WriteStruct(in transforms[i]);
             }
 
             for (int i = 0; i != meshGroups.Length; i++)
@@ -516,10 +721,10 @@ namespace SH.GameData.SH3
                 }
             }
 
-            writer.BaseStream.Position = mainHeader.eventMatricesOffset;
-            for (int i = 0; i < eventMatrices.Length; i++)
+            writer.BaseStream.Position = mainHeader.interestPointsOffset;
+            for (int i = 0; i < interestPoints.Length; i++)
             {
-                writer.WriteStruct(eventMatrices[i]);
+                writer.WriteStruct(interestPoints[i]);
             }
 
             writer.BaseStream.Position = mainHeader.textureGroupOffset;
@@ -539,5 +744,4 @@ namespace SH.GameData.SH3
             }
         }
     }
-
 }

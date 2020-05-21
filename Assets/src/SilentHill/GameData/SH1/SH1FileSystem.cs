@@ -1,9 +1,9 @@
 ﻿using System;
-using System.IO;
 using System.Collections.Generic;
+
 using SH.Core.Stream;
 
-namespace SH1.DataFormat.SH1
+namespace SH.GameData.SH1
 {
     public class SH1FileSystem : IDisposable
     {

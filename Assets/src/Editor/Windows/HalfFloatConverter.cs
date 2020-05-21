@@ -1,11 +1,10 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using System.Text.RegularExpressions;
+
 using UnityEditor;
-using System.Text.RegularExpressions;
+
 using SH.GameData.Shared;
 
-namespace ShiningHill
+namespace SH.Editor
 {
     public class HalfFloatConverter : EditorWindow
     {

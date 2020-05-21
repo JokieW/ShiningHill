@@ -28,6 +28,7 @@ namespace SH.Unity.SH3
                     for (int i = 0; i < targets.Length; i++)
                     {
                         GridProxy proxy = (GridProxy)targets[i];
+                        proxy.Unpack();
                     }
                 }
                 finally
@@ -134,22 +135,35 @@ namespace SH.Unity.SH3
         public void Unpack()
         {
             UnityEngine.Profiling.Profiler.BeginSample("UnpackGrid");
-            MapGeometry mapFile = GetMapFile(this);
-            UnpackMaterialRolodexes(this, mapFile);
-            GameObject map = UnpackMap(this, mapFile);
+
+            GameObject mapGO = null;
+
+            if (TRtex != null)
+            {
+                UnpackTRTextures(this);
+            }
+
+            if (map != null)
+            {
+                MapGeometry mapFile = GetMapFile(this);
+                UnpackLocalTextures(this, mapFile.textureGroup);
+                mapGO = UnpackMap(this, mapFile);
+            }
 
             UnityEngine.Profiling.Profiler.BeginSample("MakePrefab");
             try
             {
-                MakePrefab(map);
+                MakePrefab(mapGO);
             }
             catch
             {
-                GameObject.DestroyImmediate(map);
+                GameObject.DestroyImmediate(mapGO);
+
                 UnityEngine.Profiling.Profiler.EndSample();
                 UnityEngine.Profiling.Profiler.EndSample();
                 throw;
             }
+
             UnityEngine.Profiling.Profiler.EndSample();
             EditorUtility.SetDirty(this);
             UnityEngine.Profiling.Profiler.EndSample();
@@ -163,47 +177,43 @@ namespace SH.Unity.SH3
         private static MapGeometry GetMapFile(GridProxy grid)
         {
             UnityEngine.Profiling.Profiler.BeginSample("GetMapFile");
-            if (grid.map == null)
-            {
-                UnityEngine.Profiling.Profiler.EndSample();
-                return null;
-            }
 
-            MapGeometry mapFile = null;
+            MapGeometry mapFile = new MapGeometry();
             using (FileStream file = new FileStream(UnpackPath.GetPath(grid.map), FileMode.Open, FileAccess.ReadWrite))
             using (BinaryReader reader = new BinaryReader(file))
             {
-                mapFile = new MapGeometry(reader);
+                mapFile.ReadFile(reader);
             }
+
             UnityEngine.Profiling.Profiler.EndSample();
             return mapFile;
         }
 
-        private static void UnpackMaterialRolodexes(GridProxy grid, MapGeometry mapFile)
+        private static void UnpackLocalTextures(GridProxy grid, in TextureGroup localTextures)
         {
-            UnityEngine.Profiling.Profiler.BeginSample("GetMapFile");
-            grid.localTextures = MaterialRolodex.CreateInstance<MaterialRolodex>();
-            UnityEngine.Profiling.Profiler.BeginSample("CreateAsset1");
-            AssetDatabase.CreateAsset(grid.localTextures, UnpackPath.GetDirectory(grid).WithDirectoryAndName(UnpackDirectory.Unity, grid.fullName + "_mats.asset", true));
-            UnityEngine.Profiling.Profiler.EndSample();
-            UnityEngine.Profiling.Profiler.BeginSample("AddTextures");
-            grid.localTextures.AddTextures(TextureUtil.ReadTex32(grid.fullName + "_tex_", in mapFile.textureGroup));
-            UnityEngine.Profiling.Profiler.EndSample();
+            UnityEngine.Profiling.Profiler.BeginSample("UnpackLocalTextures");
 
-            if (grid.TRtex != null)
+            grid.localTextures = MaterialRolodex.CreateInstance<MaterialRolodex>();
+            AssetDatabase.CreateAsset(grid.localTextures, UnpackPath.GetDirectory(grid).WithDirectoryAndName(UnpackDirectory.Unity, grid.fullName + "_mats.asset", true));
+            grid.localTextures.AddTextures(MaterialRolodex.ReadTex32(grid.fullName + "_tex_", in localTextures));
+
+            UnityEngine.Profiling.Profiler.EndSample();
+        }
+
+        private static void UnpackTRTextures(GridProxy grid)
+        {
+            UnityEngine.Profiling.Profiler.BeginSample("UnpackTRTextures");
+
+            TextureGroup trGroup;
+            using (FileStream file = new FileStream(UnpackPath.GetPath(grid.TRtex), FileMode.Open, FileAccess.ReadWrite))
+            using (BinaryReader reader = new BinaryReader(file))
             {
-                UnityEngine.Profiling.Profiler.BeginSample("_TRtex");
-                TextureGroup trGroup;
-                using (FileStream file = new FileStream(UnpackPath.GetPath(grid.TRtex), FileMode.Open, FileAccess.ReadWrite))
-                using (BinaryReader reader = new BinaryReader(file))
-                {
-                    TextureGroup.ReadTextureGroup(reader, out trGroup);
-                }
-                grid.TRTextures = MaterialRolodex.CreateInstance<MaterialRolodex>();
-                AssetDatabase.CreateAsset(grid.TRTextures, UnpackPath.GetDirectory(grid).WithDirectoryAndName(UnpackDirectory.Unity, grid.fullName + "TR_mats.asset", true));
-                grid.TRTextures.AddTextures(TextureUtil.ReadTex32(grid.fullName + "TR_tex_", in trGroup));
-                UnityEngine.Profiling.Profiler.EndSample();
+                trGroup = TextureGroup.ReadTextureGroup(reader);
             }
+            grid.TRTextures = MaterialRolodex.CreateInstance<MaterialRolodex>();
+            AssetDatabase.CreateAsset(grid.TRTextures, UnpackPath.GetDirectory(grid).WithDirectoryAndName(UnpackDirectory.Unity, grid.fullName + "TR_mats.asset", true));
+            grid.TRTextures.AddTextures(MaterialRolodex.ReadTex32(grid.fullName + "TR_tex_", in trGroup));
+
             UnityEngine.Profiling.Profiler.EndSample();
         }
 
@@ -214,29 +224,40 @@ namespace SH.Unity.SH3
             mapGo.isStatic = true;
             try
             {
+                for (int i = 0; i < mapFile.transforms.Length; i++)
                 {
-                    MapGeometryComponent m = mapGo.AddComponent<MapGeometryComponent>();
-                    m.header = mapFile.mainHeader;
-                    m.eventMatrices = mapFile.eventMatrices;
+                    ref readonly MapGeometry.ObjectTransform objectTransform = ref mapFile.transforms[i];
+                    if (objectTransform.objectType == 1 && objectTransform.partID == 0)
+                    {
+                        Matrix4x4Util.SetTransformFromMatrix(mapGo.transform, in objectTransform.transform);
+                        break;
+                    }
                 }
 
-                UnityEngine.Profiling.Profiler.BeginSample("Do skyboxes");
-                //Do skyboxes
-                for (int i = 0; i < mapFile.skyboxes.Length; i++)
                 {
-                    ref readonly MapGeometry.Skybox__ skybox = ref mapFile.skyboxes[i];
-                    GameObject skyGo = null;
+                    MapGeometryComponent m = mapGo.AddComponent<MapGeometryComponent>();
+                    m.geometry = mapFile;
+                    m.header = mapFile.mainHeader;
+                    m.eventMatrices = mapFile.interestPoints;
+                }
+
+                UnityEngine.Profiling.Profiler.BeginSample("Do Object Transforms");
+                //Do Object Transforms
+                for (int i = 0; i < mapFile.transforms.Length; i++)
+                {
+                    ref readonly MapGeometry.ObjectTransform objectTransform = ref mapFile.transforms[i];
+                    GameObject objectTransformGo = null;
                     try
                     {
-                        skyGo = new GameObject("Skybox");
-                        SkyboxComponent sky = skyGo.AddComponent<SkyboxComponent>();
-                        sky.header = skybox;
-                        sky.boundingBox = skybox.GetBoundingBox();
-                        skyGo.transform.SetParent(mapGo.transform);
+                        objectTransformGo = new GameObject("ObjectTransform");
+                        ObjectTransformComponent sky = objectTransformGo.AddComponent<ObjectTransformComponent>();
+                        sky.header = objectTransform;
+                        sky.boundingBox = objectTransform.GetBoundingBox();
+                        objectTransformGo.transform.SetParent(mapGo.transform);
                     }
                     catch
                     {
-                        DestroyImmediate(skyGo);
+                        DestroyImmediate(objectTransformGo);
                         throw;
                     }
                 }
@@ -254,7 +275,7 @@ namespace SH.Unity.SH3
                 UnityEngine.Profiling.Profiler.BeginSample("Do Meshes");
                 for (int i = 0; i < mapFile.meshGroups.Length; i++)
                 {
-                    ref readonly MapGeometry.MeshGroup meshGroupStruct = ref mapFile.meshGroups[i];
+                    MapGeometry.MeshGroup meshGroupStruct = mapFile.meshGroups[i];
 
                     GameObject meshGroupGo = new GameObject("Mesh Group");
                     {
@@ -268,42 +289,57 @@ namespace SH.Unity.SH3
                     UnityEngine.Profiling.Profiler.BeginSample("Do sub meshes");
                     for (int j = 0; j < meshGroupStruct.subs.Length; j++)
                     {
-                        ref readonly MapGeometry.SubMeshGroup subMeshGroupStruct = ref meshGroupStruct.subs[j];
+                        MapGeometry.SubMeshGroup subMeshGroupStruct = meshGroupStruct.subs[j];
 
                         GameObject subMeshGroupGo = new GameObject("SubMesh Group");
                         {
                             SubMeshGroupComponent subMeshGroup = subMeshGroupGo.AddComponent<SubMeshGroupComponent>();
                             subMeshGroup.header = subMeshGroupStruct.header;
                             subMeshGroupGo.isStatic = true;
-                            subMeshGroupGo.transform.SetParent(meshGroupGo.transform);
+                            subMeshGroupGo.transform.SetParent(meshGroupGo.transform, false);
                         }
 
                         //Do sub sub meshes
                         UnityEngine.Profiling.Profiler.BeginSample("Do sub sub meshes");
                         for (int k = 0; k < subMeshGroupStruct.subsubs.Length; k++)
                         {
-                            ref readonly MapGeometry.SubSubMeshGroup subSubMeshGroupStruct = ref subMeshGroupStruct.subsubs[k];
+                            MapGeometry.SubSubMeshGroup subSubMeshGroupStruct = subMeshGroupStruct.subsubs[k];
 
                             GameObject subSubMeshGroupGo = new GameObject("SubSubMesh Group");
                             {
                                 SubSubMeshGroupComponent subSubMeshGroup = subSubMeshGroupGo.AddComponent<SubSubMeshGroupComponent>();
                                 subSubMeshGroup.header = subSubMeshGroupStruct.header;
                                 subSubMeshGroupGo.isStatic = true;
-                                subSubMeshGroupGo.transform.SetParent(subMeshGroupGo.transform);
+                                subSubMeshGroupGo.transform.SetParent(subMeshGroupGo.transform, false);
                             }
 
                             //Do mesh parts
                             UnityEngine.Profiling.Profiler.BeginSample("Do mesh parts");
                             for (int l = 0; l < subSubMeshGroupStruct.parts.Length; l++)
                             {
-                                ref readonly MapGeometry.MeshPart meshPartStruct = ref subSubMeshGroupStruct.parts[l];
+                                MapGeometry.MeshPart meshPartStruct = subSubMeshGroupStruct.parts[l];
 
                                 GameObject meshPartGO = new GameObject("Mesh Part");
                                 {
                                     MeshPartComponent meshPart = meshPartGO.AddComponent<MeshPartComponent>();
                                     meshPart.header = meshPartStruct.header;
+                                    meshPart.extraData = meshPartStruct.extraData;
                                     meshPartGO.isStatic = meshPartStruct.header.objectType != 3;
-                                    meshPartGO.transform.SetParent(subSubMeshGroupGo.transform);
+                                    meshPartGO.transform.SetParent(subSubMeshGroupGo.transform, false);
+
+                                    if (meshPartStruct.header.objectType == 3)
+                                    {
+                                        for (int m = 0; m < mapFile.transforms.Length; m++)
+                                        {
+                                            ref readonly MapGeometry.ObjectTransform objectTransform = ref mapFile.transforms[m];
+                                            if(objectTransform.objectType == 3 && objectTransform.partID == meshPartStruct.header.partID)
+                                            {
+                                                meshPartGO.transform.position = Matrix4x4Util.ExtractTranslationFromMatrix(in objectTransform.transform);
+                                                meshPartGO.transform.rotation = Matrix4x4Util.ExtractRotationFromMatrix(in objectTransform.transform);
+                                                meshPartGO.transform.localScale = Matrix4x4Util.ExtractScaleFromMatrix(in objectTransform.transform);
+                                            }
+                                        }
+                                    }
                                 }
 
                                 UnityEngine.Profiling.Profiler.BeginSample("new List");
@@ -344,16 +380,17 @@ namespace SH.Unity.SH3
                                 UnityEngine.Profiling.Profiler.EndSample();
                                 meshPartGO.AddComponent<MeshFilter>().sharedMesh = mesh;
 
-                                int baseIndex = 0;
-                                if (meshGroupStruct.header.textureGroup == 3)
-                                {
-                                    baseIndex = mapFile.mainHeader.localTextureBaseIndex + mapFile.mainHeader.localTextureBaseIndexModifier;
-                                }
-
                                 UnityEngine.Profiling.Profiler.BeginSample("SH3MaterialRolodex");
                                 MaterialRolodex rolodex = grid.GetTextureGroup(meshGroupStruct.header.textureGroup);
+
                                 MeshRenderer renderer = meshPartGO.AddComponent<MeshRenderer>();
-                                renderer.sharedMaterial = rolodex.GetWithSH3Index(meshGroupStruct.header.textureIndex, baseIndex, MaterialRolodex.SH3MaterialToType(subMeshGroupStruct, subSubMeshGroupStruct));
+                                int textureIndex = meshGroupStruct.header.textureIndex;
+                                if (meshGroupStruct.header.textureGroup == 3)
+                                {
+                                    textureIndex -= mapFile.mainHeader.meshPartGBTexCount + mapFile.mainHeader.meshPartTRTexCount;
+                                }
+                                renderer.sharedMaterial = rolodex.GetWithSH3Index(textureIndex, MaterialRolodex.SH3MaterialToType(subMeshGroupStruct, subSubMeshGroupStruct));
+
                                 renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                                 UnityEngine.Profiling.Profiler.EndSample();
 
@@ -370,11 +407,10 @@ namespace SH.Unity.SH3
             catch
             {
                 GameObject.DestroyImmediate(mapGo);
+
                 UnityEngine.Profiling.Profiler.EndSample();
                 throw;
             }
-
-            Matrix4x4Util.SetTransformFromMatrix(mapGo.transform, ref mapGo.GetComponentInChildren<SkyboxComponent>().header.matrix);
 
             UnityEngine.Profiling.Profiler.EndSample();
             return mapGo;

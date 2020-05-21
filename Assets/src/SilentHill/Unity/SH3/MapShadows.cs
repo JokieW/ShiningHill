@@ -44,7 +44,7 @@ namespace SH.Unity.SH3
                         /*Vector3 mainPivot = */reader.ReadShortVector3();
                         /*short casterGroup = */reader.ReadInt16();
                         Matrix4x4 mainMatrix = reader.ReadMatrix4x4();
-                        Vector3 debugPosition = Matrix4x4Util.ExtractTranslationFromMatrix(ref mainMatrix);
+                        Vector3 debugPosition = Matrix4x4Util.ExtractTranslationFromMatrix(in mainMatrix);
                         Vector3 currentNormal = Vector3.zero;
 
                         //reading shapes

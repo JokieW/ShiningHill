@@ -23,8 +23,8 @@ namespace SH.Unity.SH3
                     for (int i = 0; i < targets.Length; i++)
                     {
                         ArcProxy proxy = (ArcProxy)targets[i];
-                        proxy.arcarc.GetRoot(out FileArc.Root root);
-                        root.GetFolder(proxy.arcName, out FileArc.Root.Folder folder);
+                        proxy.arcarc.GetRoot(out FileArcArc.Root root);
+                        root.GetFolder(proxy.arcName, out FileArcArc.Root.Folder folder);
                         proxy.Unpack(in folder, true);
                     }
                 }
@@ -41,7 +41,7 @@ namespace SH.Unity.SH3
                 {
                     ArcProxy proxy = (ArcProxy)targets[i];
                     UnpackPath basePath = proxy.GetDatalessPath();
-                    FileArc.MakeArcArcInfo(basePath, proxy.GetMap(), out FileArc.Root.Folder folder);
+                    FileArcArc.MakeArcArcInfo(basePath, proxy.GetMap(), out FileArcArc.Root.Folder folder);
                     proxy.Pack(in folder);
                 }
             }
@@ -75,7 +75,7 @@ namespace SH.Unity.SH3
             return (arcName, filesMap);
         }
 
-        public void ImportAssets(in FileArc.Root.Folder extractedFolder)
+        public void ImportAssets(in FileArcArc.Root.Folder extractedFolder)
         {
             UnpackPath rootPath = UnpackPath.GetDirectory(arc).WithPath("");
             files = new UnityEngine.Object[extractedFolder.files.Length];
@@ -98,7 +98,7 @@ namespace SH.Unity.SH3
             }
         }
 
-        public void Unpack(in FileArc.Root.Folder extractedFolder, bool doAssetImport)
+        public void Unpack(in FileArcArc.Root.Folder extractedFolder, bool doAssetImport)
         {
             UnityEngine.Profiling.Profiler.BeginSample("UnpackArc");
             UnpackPath rootPath = UnpackPath.GetDirectory(arc).WithPath("");
@@ -111,7 +111,7 @@ namespace SH.Unity.SH3
             UnityEngine.Profiling.Profiler.EndSample();
         }
 
-        public void Pack(in FileArc.Root.Folder folder)
+        public void Pack(in FileArcArc.Root.Folder folder)
         {
             FileArc.PackArc(in folder, GetDatalessPath(), UnpackPath.GetPath(arc));
         }

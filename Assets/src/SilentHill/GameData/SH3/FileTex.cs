@@ -10,8 +10,7 @@ using SH.GameData.Shared;
 namespace SH.GameData.SH3
 {
     [Serializable]
-    [StructLayout(LayoutKind.Sequential, Pack = 0)]
-    public struct TextureGroup
+    public class TextureGroup
     {
         public Header header;
         public Texture[] textures;
@@ -36,7 +35,7 @@ namespace SH.GameData.SH3
         public struct Texture
         {
             public Header header;
-            public Color32[] pixels;
+            public byte[] pixels;
 
             [Serializable]
             [StructLayout(LayoutKind.Sequential, Pack = 0)]
@@ -62,75 +61,46 @@ namespace SH.GameData.SH3
             }
         }
 
-        public static void ReadTextureGroup(BinaryReader reader, out TextureGroup group)
+        public static TextureGroup ReadTextureGroup(BinaryReader reader)
         {
-            UnityEngine.Profiling.Profiler.BeginSample("ReadTextureGroup");
-            UnityEngine.Profiling.Profiler.BeginSample("new TextureGroup");
-            group = new TextureGroup();
+            TextureGroup group = new TextureGroup();
             UnityEngine.Profiling.Profiler.EndSample();
-            UnityEngine.Profiling.Profiler.BeginSample("reader.ReadStruct<TextureGroup.Header>");
             group.header = reader.ReadStruct<TextureGroup.Header>();
-            UnityEngine.Profiling.Profiler.EndSample();
-            UnityEngine.Profiling.Profiler.BeginSample("new TextureGroup.Texture");
             group.textures = new TextureGroup.Texture[group.header.textureCount];
-            UnityEngine.Profiling.Profiler.EndSample();
 
-            UnityEngine.Profiling.Profiler.BeginSample("fori");
             for (int i = 0; i < group.header.textureCount; i++)
             {
-                UnityEngine.Profiling.Profiler.BeginSample("new TextureGroup.Texture");
                 TextureGroup.Texture tex = new TextureGroup.Texture();
-                UnityEngine.Profiling.Profiler.EndSample();
-                UnityEngine.Profiling.Profiler.BeginSample("ReadStruct<TextureGroup.Texture.Header>");
                 tex.header = reader.ReadStruct<TextureGroup.Texture.Header>();
-                UnityEngine.Profiling.Profiler.EndSample();
-                UnityEngine.Profiling.Profiler.BeginSample("reader.SkipBytes");
                 reader.SkipBytes(tex.header.bufferSizeAfterHeader);
-                UnityEngine.Profiling.Profiler.EndSample();
 
                 int bits = tex.header.bitsPerPixel;
                 if (bits == 32 || bits == 24)
                 {
-                    UnityEngine.Profiling.Profiler.BeginSample("forj3224");
+                    tex.pixels = new byte[tex.header.pixelsLength];
+                    reader.Read(tex.pixels, 0, tex.header.pixelsLength);
 
-                    tex.pixels = new Color32[tex.header.pixelsLength / 0x04];
-
-                    UnityEngine.Profiling.Profiler.BeginSample("ReadStruct<MapFile.ColorBGRA>");
-                    UnityEngine.Profiling.Profiler.BeginSample("new");
-                    ColorBGRA[] buffer = new ColorBGRA[tex.pixels.Length];
-                    UnityEngine.Profiling.Profiler.EndSample();
-                    UnityEngine.Profiling.Profiler.BeginSample("read");
-                    reader.ReadStruct<ColorBGRA>(buffer);
-                    UnityEngine.Profiling.Profiler.EndSample();
-                    UnityEngine.Profiling.Profiler.EndSample();
-
-                    UnityEngine.Profiling.Profiler.BeginSample("<MapFile.ColorBGRA> convert");
-                    for (int j = 0; j != tex.pixels.Length; j++)
+                    int increment = bits == 24 ? 3 : 4;
+                    for (int j = 0, lenj = tex.pixels.Length; j < lenj; j += increment)
                     {
-                        ColorBGRA bgra = buffer[j];
-                        tex.pixels[j] = new Color32(bgra.red, bgra.green, bgra.blue, bgra.alpha);
+                        byte b = tex.pixels[j + 2];
+                        tex.pixels[j + 2] = tex.pixels[j];
+                        tex.pixels[j] = b;
                     }
-                    UnityEngine.Profiling.Profiler.EndSample();
-
-                    UnityEngine.Profiling.Profiler.EndSample();
                 }
                 else if (bits == 16)
                 {
-                    UnityEngine.Profiling.Profiler.BeginSample("forj16");
-                    tex.pixels = new Color32[tex.header.pixelsLength / 0x02];
-                    for (int j = 0; j != tex.pixels.Length; j++)
+                    tex.pixels = new byte[tex.header.pixelsLength * 2];
+                    for (int j = 0, k = 0, lenj = tex.header.pixelsLength / 2; j != lenj; j++, k += 4)
                     {
-                        UnityEngine.Profiling.Profiler.BeginSample("ReadStruct<MapFile.ColorRGBA5551>");
-                        tex.pixels[j] = reader.ReadStruct<ColorRGBA5551>();
-                        UnityEngine.Profiling.Profiler.EndSample();
+                        ColorRGBA5551 c = reader.ReadStruct<ColorRGBA5551>();
+                        c.Unpack(out tex.pixels[k], out tex.pixels[k + 1], out tex.pixels[k + 2], out tex.pixels[k + 3]);
                     }
-                    UnityEngine.Profiling.Profiler.EndSample();
                 }
 
                 group.textures[i] = tex;
             }
-            UnityEngine.Profiling.Profiler.EndSample();
-            UnityEngine.Profiling.Profiler.EndSample();
+            return group;
         }
     }
 }

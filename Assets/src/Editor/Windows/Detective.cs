@@ -1,15 +1,13 @@
-﻿using System;
-using System.IO;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.IO;
 
 using UnityEngine;
 using UnityEditor;
-using Object = UnityEngine.Object;
+
 using SH.GameData.SH3;
 
-namespace ShiningHill
+using Object = UnityEngine.Object;
+
+namespace SH.Editor
 {
     public class Detective : EditorWindow
     {

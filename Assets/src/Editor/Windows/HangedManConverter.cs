@@ -1,10 +1,7 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
-using System.Text.RegularExpressions;
 
-namespace ShiningHill
+namespace SH.Editor
 {
     public class HangedManConverter : EditorWindow
     {

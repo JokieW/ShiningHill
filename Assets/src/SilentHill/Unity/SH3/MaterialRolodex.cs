@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+
+using UnityEngine;
 
 using SH.GameData.SH3;
 using SH.Unity.Shared;
@@ -7,18 +9,11 @@ namespace SH.Unity.SH3
 {
     public class MaterialRolodex : MaterialRolodexBase
     {
-        public Material GetWithSH3Index(int index, int baseIndex, MaterialType matType)
+        public Material GetWithSH3Index(int index, MaterialType matType)
         {
-            TexMatsPair pair;
-            if (index < 0)
-            {
-                pair = texMatPairs[texMatPairs.Count + index];
-            }
-            else
-            {
-                pair = texMatPairs[index - baseIndex];
-            }
-            return pair.GetOrCreate(matType, this);
+            if (index < 0) { index += texMatPairs.Count; }
+            if (index >= texMatPairs.Count) { index -= texMatPairs.Count; }
+            return texMatPairs[index].GetOrCreate(matType, this);
         }
 
         public static MaterialType SH3MaterialToType(in MapGeometry.SubMeshGroup subMeshGroup, in MapGeometry.SubSubMeshGroup subSubMeshGroup)
@@ -39,6 +34,28 @@ namespace SH.Unity.SH3
             {
                 return MaterialType.Diffuse;
             }
+        }
+
+        public static Texture2D[] ReadTex32(string groupName, in TextureGroup textureGroup)
+        {
+            List<Texture2D> textures = new List<Texture2D>(textureGroup.textures.Length);
+
+            for (int i = 0; i < textureGroup.textures.Length; i++)
+            {
+                ref readonly TextureGroup.Texture texstruct = ref textureGroup.textures[i];
+
+                TextureFormat format = (texstruct.header.bitsPerPixel == 24 ? TextureFormat.RGB24 : TextureFormat.RGBA32);
+                Texture2D tex = new Texture2D(texstruct.header.textureWidth, texstruct.header.textureHeight, format, false);
+                tex.SetPixelData(texstruct.pixels, 0);
+                tex.Apply();
+
+                tex.alphaIsTransparency = true;
+                tex.name = groupName + i;
+
+                textures.Add(tex);
+            }
+
+            return textures.ToArray();
         }
 
         protected override Material CreateDiffuse(Texture tex)

@@ -45,14 +45,14 @@ namespace SH.Unity.SH3
         public List<ArcProxy> arcs;
         public bool unpackRecursive = true;
 
-        public void GetRoot(out FileArc.Root root)
+        public void GetRoot(out FileArcArc.Root root)
         {
-            FileArc.UnpackArcArc(UnpackPath.GetPath(arcArc), out root);
+            FileArcArc.UnpackArcArc(UnpackPath.GetPath(arcArc), out root);
         }
 
         public void Unpack()
         {
-            GetRoot(out FileArc.Root root);
+            GetRoot(out FileArcArc.Root root);
 
             arcs = new List<ArcProxy>();
             UnpackPath basepath = UnpackPath.GetDirectory(arcArc);
@@ -60,7 +60,7 @@ namespace SH.Unity.SH3
             {
                 for (int i = 0; i < root.folders.Length; i++)
                 {
-                    ref readonly FileArc.Root.Folder folder = ref root.folders[i];
+                    ref readonly FileArcArc.Root.Folder folder = ref root.folders[i];
                     if (EditorUtility.DisplayCancelableProgressBar("Unpacking Arc.Arc...", folder.entry.name, (float)i / (float)root.folders.Length)) return;
 
                     UnpackPath arcpath = basepath.WithName(folder.entry.name + ".arc");
@@ -83,7 +83,7 @@ namespace SH.Unity.SH3
                 for (int i = 0; i < arcs.Count; i++)
                 {
                     ArcProxy arc = arcs[i];
-                    root.GetFolder(arc.arcName, out FileArc.Root.Folder folder);
+                    root.GetFolder(arc.arcName, out FileArcArc.Root.Folder folder);
                     arcs[i].Unpack(folder, false);
                 }
 
@@ -91,7 +91,7 @@ namespace SH.Unity.SH3
                 for (int i = 0; i < arcs.Count; i++)
                 {
                     ArcProxy arc = arcs[i];
-                    root.GetFolder(arc.arcName, out FileArc.Root.Folder folder);
+                    root.GetFolder(arc.arcName, out FileArcArc.Root.Folder folder);
                     arcs[i].ImportAssets(folder);
                 }
             }
@@ -106,14 +106,14 @@ namespace SH.Unity.SH3
                 map[i] = arcs[i].GetMap();
             }
 
-            FileArc.MakeArcArcInfo(UnpackPath.GetDirectory(arcArc).WithPath(""), map, out FileArc.Root root);
+            FileArcArc.MakeArcArcInfo(UnpackPath.GetDirectory(arcArc).WithPath(""), map, out FileArcArc.Root root);
             for (int i = 0; i < arcs.Count; i++)
             {
                 ArcProxy arc = arcs[i];
-                root.GetFolder(arc.arcName, out FileArc.Root.Folder folder);
+                root.GetFolder(arc.arcName, out FileArcArc.Root.Folder folder);
                 arc.Pack(in folder);
             }
-            FileArc.PackArcArc(UnpackPath.GetPath(arcArc), in root);
+            FileArcArc.PackArcArc(UnpackPath.GetPath(arcArc), in root);
         }
     }
 }

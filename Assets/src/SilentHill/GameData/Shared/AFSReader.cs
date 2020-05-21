@@ -6,7 +6,7 @@ using System.IO;
 using UnityEditor;
 using UnityEngine;
 
-namespace ShiningHill
+namespace SH.GameData.Shared
 {
     public class AFSReader
     {
