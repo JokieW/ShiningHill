@@ -6,6 +6,6 @@ namespace SH.Unity.SH3
 {
 	public class SubSubMeshGroupComponent : MonoBehaviour 
 	{
-        public MapGeometry.SubSubMeshGroup.Header header;
+        public FileMap.SubSubMeshGroup.Header header;
 	}
 }

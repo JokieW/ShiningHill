@@ -6,6 +6,6 @@ namespace SH.Unity.SH3
 {
     public class MeshGroupComponent : MonoBehaviour
     {
-        public MapGeometry.MeshGroup.Header header;
+        public FileMap.MeshGroup.Header header;
     }
 }

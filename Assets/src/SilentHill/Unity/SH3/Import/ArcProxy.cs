@@ -55,7 +55,6 @@ namespace SH.Unity.SH3
         public ArcArcProxy arcarc;
         public UnityEngine.Object arc;
         public string arcName;
-        public bool unpackRecursive = true;
 
         public LevelProxy level;
         public UnityEngine.Object[] files;

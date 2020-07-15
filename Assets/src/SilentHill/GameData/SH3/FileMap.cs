@@ -12,13 +12,13 @@ using SH.Native;
 namespace SH.GameData.SH3
 {
     [Serializable]
-    public class MapGeometry
+    public class FileMap
     {
         public Header mainHeader; //at root
         public ObjectTransform[] transforms; //next line after mainHeader, pointed at by firstObjectTransformOffset
         public MeshGroup[] meshGroups; //next line after transforms, ordered meshPartGBTexOffset -> meshPartTRTexOffset -> meshPartLocalTexOffset
         public Matrix4x4[] interestPoints; //optional, next line after meshgroups, pointed at by interestPointsOffset
-        public LightDecal lightDecal; //optional, next line after interestPoints, pointed at by 
+        public LightDecal lightDecal; //optional, next line after interestPoints, pointed at by lightDecalsOffset
         public TextureGroup textureGroup; //at next xxxxxx00 or xxxxxx80 line after lightdecals, pointed at by textureGroupOffset
 
         [Serializable]
@@ -583,7 +583,7 @@ namespace SH.GameData.SH3
             return result;
         }
 
-        private static Matrix4x4[] ReadInterestPoints(BinaryReader reader, in MapGeometry.Header header)
+        private static Matrix4x4[] ReadInterestPoints(BinaryReader reader, in FileMap.Header header)
         {
             UnityEngine.Profiling.Profiler.BeginSample("ReadInterestPoints");
 

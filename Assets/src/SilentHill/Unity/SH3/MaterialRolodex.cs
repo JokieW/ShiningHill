@@ -16,7 +16,7 @@ namespace SH.Unity.SH3
             return texMatPairs[index].GetOrCreate(matType, this);
         }
 
-        public static MaterialType SH3MaterialToType(in MapGeometry.SubMeshGroup subMeshGroup, in MapGeometry.SubSubMeshGroup subSubMeshGroup)
+        public static MaterialType SH3MaterialToType(in FileMap.SubMeshGroup subMeshGroup, in FileMap.SubSubMeshGroup subSubMeshGroup)
         {
             if (subMeshGroup.header.transparencyType == 1)
             {

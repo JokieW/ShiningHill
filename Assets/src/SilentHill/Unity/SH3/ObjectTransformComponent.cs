@@ -6,7 +6,7 @@ namespace SH.Unity.SH3
 {
 	public class ObjectTransformComponent : MonoBehaviour 
 	{
-        public MapGeometry.ObjectTransform header;
+        public FileMap.ObjectTransform header;
         public Vector4[] boundingBox;
     }
 }

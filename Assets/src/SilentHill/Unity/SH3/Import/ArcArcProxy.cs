@@ -43,7 +43,6 @@ namespace SH.Unity.SH3
     {
         public UnityEngine.Object arcArc;
         public List<ArcProxy> arcs;
-        public bool unpackRecursive = true;
 
         public void GetRoot(out FileArcArc.Root root)
         {

@@ -8,6 +8,7 @@ using SH.GameData.SH3;
 using SH.Unity.Shared;
 using SH.GameData.Shared;
 using SH.Core;
+using UnityEngine.Analytics;
 
 namespace SH.Unity.SH3
 {
@@ -88,10 +89,10 @@ namespace SH.Unity.SH3
 
         public void MakePrefab()
         {
-            MakePrefab(null);
+            MakePrefab(null, null);
         }
 
-        public void MakePrefab(GameObject map)
+        public void MakePrefab(GameObject map, GameObject col)
         {
             UnpackPath dest = UnpackPath.GetDirectory(this).AddToPath("scene/").WithDirectoryAndName(UnpackDirectory.Unity, fullName + ".prefab", true);
 
@@ -104,7 +105,13 @@ namespace SH.Unity.SH3
                     if (map != null && child.name == "Geometry")
                     {
                         GameObject.DestroyImmediate(child.gameObject);
-                        break;
+                        continue;
+                    }
+
+                    if (col != null && child.name == "Collisions")
+                    {
+                        GameObject.DestroyImmediate(child.gameObject);
+                        continue;
                     }
                 }
             }
@@ -117,6 +124,11 @@ namespace SH.Unity.SH3
             if (map != null)
             {
                 map.transform.SetParent(prefabinstance.transform, true);
+            }
+
+            if (col != null)
+            {
+                col.transform.SetParent(prefabinstance.transform, true);
             }
 
             if (dest.FileExists())
@@ -137,6 +149,7 @@ namespace SH.Unity.SH3
             UnityEngine.Profiling.Profiler.BeginSample("UnpackGrid");
 
             GameObject mapGO = null;
+            GameObject colGO = null;
 
             if (TRtex != null)
             {
@@ -145,19 +158,26 @@ namespace SH.Unity.SH3
 
             if (map != null)
             {
-                MapGeometry mapFile = GetMapFile(this);
+                FileMap mapFile = GetMapFile(this);
                 UnpackLocalTextures(this, mapFile.textureGroup);
                 mapGO = UnpackMap(this, mapFile);
+            }
+
+            if (cld != null)
+            {
+                FileCollisions collisionFile = GetCollisionFile(this);
+                colGO = UnpackCollisions(this, collisionFile);
             }
 
             UnityEngine.Profiling.Profiler.BeginSample("MakePrefab");
             try
             {
-                MakePrefab(mapGO);
+                MakePrefab(mapGO, colGO);
             }
             catch
             {
                 GameObject.DestroyImmediate(mapGO);
+                GameObject.DestroyImmediate(colGO);
 
                 UnityEngine.Profiling.Profiler.EndSample();
                 UnityEngine.Profiling.Profiler.EndSample();
@@ -174,11 +194,26 @@ namespace SH.Unity.SH3
 
         }
 
-        private static MapGeometry GetMapFile(GridProxy grid)
+        private static FileCollisions GetCollisionFile(GridProxy grid)
+        {
+            UnityEngine.Profiling.Profiler.BeginSample("GetCollisionFile");
+
+            FileCollisions collisionFile = null;
+            using (FileStream file = new FileStream(UnpackPath.GetPath(grid.cld), FileMode.Open, FileAccess.ReadWrite))
+            using (BinaryReader reader = new BinaryReader(file))
+            {
+                collisionFile = new FileCollisions(reader);
+            }
+
+            UnityEngine.Profiling.Profiler.EndSample();
+            return collisionFile;
+        }
+
+        private static FileMap GetMapFile(GridProxy grid)
         {
             UnityEngine.Profiling.Profiler.BeginSample("GetMapFile");
 
-            MapGeometry mapFile = new MapGeometry();
+            FileMap mapFile = new FileMap();
             using (FileStream file = new FileStream(UnpackPath.GetPath(grid.map), FileMode.Open, FileAccess.ReadWrite))
             using (BinaryReader reader = new BinaryReader(file))
             {
@@ -217,7 +252,7 @@ namespace SH.Unity.SH3
             UnityEngine.Profiling.Profiler.EndSample();
         }
 
-        private static GameObject UnpackMap(GridProxy grid, MapGeometry mapFile)
+        private static GameObject UnpackMap(GridProxy grid, FileMap mapFile)
         {
             UnityEngine.Profiling.Profiler.BeginSample("UnpackMap");
             GameObject mapGo = new GameObject("Geometry");
@@ -226,7 +261,7 @@ namespace SH.Unity.SH3
             {
                 for (int i = 0; i < mapFile.transforms.Length; i++)
                 {
-                    ref readonly MapGeometry.ObjectTransform objectTransform = ref mapFile.transforms[i];
+                    ref readonly FileMap.ObjectTransform objectTransform = ref mapFile.transforms[i];
                     if (objectTransform.objectType == 1 && objectTransform.partID == 0)
                     {
                         Matrix4x4Util.SetTransformFromMatrix(mapGo.transform, in objectTransform.transform);
@@ -245,7 +280,7 @@ namespace SH.Unity.SH3
                 //Do Object Transforms
                 for (int i = 0; i < mapFile.transforms.Length; i++)
                 {
-                    ref readonly MapGeometry.ObjectTransform objectTransform = ref mapFile.transforms[i];
+                    ref readonly FileMap.ObjectTransform objectTransform = ref mapFile.transforms[i];
                     GameObject objectTransformGo = null;
                     try
                     {
@@ -275,7 +310,7 @@ namespace SH.Unity.SH3
                 UnityEngine.Profiling.Profiler.BeginSample("Do Meshes");
                 for (int i = 0; i < mapFile.meshGroups.Length; i++)
                 {
-                    MapGeometry.MeshGroup meshGroupStruct = mapFile.meshGroups[i];
+                    FileMap.MeshGroup meshGroupStruct = mapFile.meshGroups[i];
 
                     GameObject meshGroupGo = new GameObject("Mesh Group");
                     {
@@ -289,7 +324,7 @@ namespace SH.Unity.SH3
                     UnityEngine.Profiling.Profiler.BeginSample("Do sub meshes");
                     for (int j = 0; j < meshGroupStruct.subs.Length; j++)
                     {
-                        MapGeometry.SubMeshGroup subMeshGroupStruct = meshGroupStruct.subs[j];
+                        FileMap.SubMeshGroup subMeshGroupStruct = meshGroupStruct.subs[j];
 
                         GameObject subMeshGroupGo = new GameObject("SubMesh Group");
                         {
@@ -303,7 +338,7 @@ namespace SH.Unity.SH3
                         UnityEngine.Profiling.Profiler.BeginSample("Do sub sub meshes");
                         for (int k = 0; k < subMeshGroupStruct.subsubs.Length; k++)
                         {
-                            MapGeometry.SubSubMeshGroup subSubMeshGroupStruct = subMeshGroupStruct.subsubs[k];
+                            FileMap.SubSubMeshGroup subSubMeshGroupStruct = subMeshGroupStruct.subsubs[k];
 
                             GameObject subSubMeshGroupGo = new GameObject("SubSubMesh Group");
                             {
@@ -317,7 +352,7 @@ namespace SH.Unity.SH3
                             UnityEngine.Profiling.Profiler.BeginSample("Do mesh parts");
                             for (int l = 0; l < subSubMeshGroupStruct.parts.Length; l++)
                             {
-                                MapGeometry.MeshPart meshPartStruct = subSubMeshGroupStruct.parts[l];
+                                FileMap.MeshPart meshPartStruct = subSubMeshGroupStruct.parts[l];
 
                                 GameObject meshPartGO = new GameObject("Mesh Part");
                                 {
@@ -331,7 +366,7 @@ namespace SH.Unity.SH3
                                     {
                                         for (int m = 0; m < mapFile.transforms.Length; m++)
                                         {
-                                            ref readonly MapGeometry.ObjectTransform objectTransform = ref mapFile.transforms[m];
+                                            ref readonly FileMap.ObjectTransform objectTransform = ref mapFile.transforms[m];
                                             if(objectTransform.objectType == 3 && objectTransform.partID == meshPartStruct.header.partID)
                                             {
                                                 meshPartGO.transform.position = Matrix4x4Util.ExtractTranslationFromMatrix(in objectTransform.transform);
@@ -351,7 +386,7 @@ namespace SH.Unity.SH3
                                 UnityEngine.Profiling.Profiler.BeginSample("meshPartStruct.vertices.Length");
                                 for (int m = 0; m != meshPartStruct.vertices.Length; m++)
                                 {
-                                    ref MapGeometry.MeshPart.VertexInfo vertex = ref meshPartStruct.vertices[m];
+                                    ref FileMap.MeshPart.VertexInfo vertex = ref meshPartStruct.vertices[m];
                                     verts.Add(vertex.position);
                                     norms.Add(-vertex.normal);
                                     uvs.Add(vertex.uv);
@@ -414,6 +449,30 @@ namespace SH.Unity.SH3
 
             UnityEngine.Profiling.Profiler.EndSample();
             return mapGo;
+        }
+
+        private static GameObject UnpackCollisions(GridProxy grid, FileCollisions collisionFile)
+        {
+            UnityEngine.Profiling.Profiler.BeginSample("UnpackMap");
+            GameObject colGo = new GameObject("Collisions");
+            colGo.isStatic = true;
+            try
+            {
+                Mesh mesh = collisionFile.GetAsMesh();
+
+                MapCollisionComponent collisionComponent = colGo.AddComponent<MapCollisionComponent>();
+                collisionComponent.collisions = collisionFile;
+            }
+            catch
+            {
+                GameObject.DestroyImmediate(colGo);
+
+                UnityEngine.Profiling.Profiler.EndSample();
+                throw;
+            }
+
+            UnityEngine.Profiling.Profiler.EndSample();
+            return colGo;
         }
     }
 }

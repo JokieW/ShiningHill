@@ -53,7 +53,6 @@ namespace SH.Unity.SH3
         public ArcProxy parentArc;
         public SceneAsset scene;
         public GridProxy[] grids;
-        public bool unpackRecursive = true;
         public UnityEngine.Object GBtex;
         public UnityEngine.Object GBcam;
         public UnityEngine.Object GBfcl;
