@@ -49,7 +49,7 @@ namespace SH.Editor
             }
             if (GUILayout.Button("test cld"))
             {
-                MapCollisions mc = MapCollisions.MakeDebug();
+                FileCollisions mc = FileCollisions.MakeDebug();
                 /*using (FileStream file = new FileStream(@"C:\Silent Hill 3\arc\bgam\data\bg\am\am1e.cld", FileMode.Open, FileAccess.Read))
                 using (BinaryReader reader = new BinaryReader(file))
                 {
@@ -66,7 +66,7 @@ namespace SH.Editor
             texture = (Texture2D)EditorGUILayout.ObjectField(texture, typeof(Texture2D), true);
             if (GUILayout.Button("test map"))
             {
-                MapGeometry m = new MapGeometry(); ;
+                FileMap m = new FileMap(); ;
                 using (FileStream file = new FileStream(@"C:\Silent Hill 3 - Copy\arc\bgmr\data\tmp\mrff.map", FileMode.Open, FileAccess.Read))
                 using (BinaryReader reader = new BinaryReader(file))
                 {
