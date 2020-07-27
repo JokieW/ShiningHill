@@ -97,6 +97,16 @@ namespace SH.Unity.SH3
             }
         }
 
+        public override void Unpack()
+        {
+            throw new System.InvalidOperationException();
+        }
+
+        public override void Pack()
+        {
+            throw new System.InvalidOperationException();
+        }
+
         public void Unpack(in FileArcArc.Root.Folder extractedFolder, bool doAssetImport)
         {
             UnityEngine.Profiling.Profiler.BeginSample("UnpackArc");

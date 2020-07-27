@@ -12,43 +12,9 @@ using UnityEngine.Analytics;
 
 namespace SH.Unity.SH3
 {
+
     [CustomEditor(typeof(GridProxy))]
-    [CanEditMultipleObjects]
-    public class GridProxyEditor : Editor
-    {
-        public override void OnInspectorGUI()
-        {
-            DrawDefaultInspector();
-
-            //Unpack
-            if (GUILayout.Button("Unpack"))
-            {
-                try
-                {
-                    AssetUtil.StartAssetEditing();
-                    for (int i = 0; i < targets.Length; i++)
-                    {
-                        GridProxy proxy = (GridProxy)targets[i];
-                        proxy.Unpack();
-                    }
-                }
-                finally
-                {
-                    AssetUtil.StopAssetEditing();
-                }
-            }
-
-            //Pack
-            if (GUILayout.Button("Pack"))
-            {
-                for (int i = 0; i < targets.Length; i++)
-                {
-                    GridProxy proxy = (GridProxy)targets[i];
-                    proxy.Pack();
-                }
-            }
-        }
-    }
+    public class GridProxyEditor : BaseImportProxyEditor { }
 
     public class GridProxy : BaseImportProxy
     {
@@ -79,6 +45,11 @@ namespace SH.Unity.SH3
             get => level.levelName + gridName;
         }
 
+        private UnpackPath prefabPath
+        {
+            get => UnpackPath.GetDirectory(this).AddToPath("scene/").WithDirectoryAndName(UnpackDirectory.Unity, fullName + ".prefab", true);
+        }
+
         public MaterialRolodex GetTextureGroup(int group)
         {
             if (group == 3) return localTextures;
@@ -89,62 +60,10 @@ namespace SH.Unity.SH3
 
         public void MakePrefab()
         {
-            MakePrefab(null, null);
+            PrefabUtil.MakePrefab(ref prefab, prefabPath, null);
         }
 
-        public void MakePrefab(GameObject map, GameObject col)
-        {
-            UnpackPath dest = UnpackPath.GetDirectory(this).AddToPath("scene/").WithDirectoryAndName(UnpackDirectory.Unity, fullName + ".prefab", true);
-
-            GameObject prefabinstance;
-            if (dest.FileExists())
-            {
-                prefabinstance = PrefabUtility.LoadPrefabContents(dest);
-                foreach (Transform child in prefabinstance.transform)
-                {
-                    if (map != null && child.name == "Geometry")
-                    {
-                        GameObject.DestroyImmediate(child.gameObject);
-                        continue;
-                    }
-
-                    if (col != null && child.name == "Collisions")
-                    {
-                        GameObject.DestroyImmediate(child.gameObject);
-                        continue;
-                    }
-                }
-            }
-            else
-            {
-                prefabinstance = new GameObject(fullName);
-                prefabinstance.isStatic = true;
-            }
-
-            if (map != null)
-            {
-                map.transform.SetParent(prefabinstance.transform, true);
-            }
-
-            if (col != null)
-            {
-                col.transform.SetParent(prefabinstance.transform, true);
-            }
-
-            if (dest.FileExists())
-            {
-                prefab = PrefabUtility.SaveAsPrefabAsset(prefabinstance, dest);
-                PrefabUtility.UnloadPrefabContents(prefabinstance);
-            }
-            else
-            {
-                prefab = PrefabUtility.SaveAsPrefabAsset(prefabinstance, dest);
-                DestroyImmediate(prefabinstance);
-            }
-            EditorUtility.IsDirty(this);
-        }
-
-        public void Unpack()
+        public override void Unpack()
         {
             UnityEngine.Profiling.Profiler.BeginSample("UnpackGrid");
 
@@ -165,48 +84,20 @@ namespace SH.Unity.SH3
 
             if (cld != null)
             {
-                FileCollisions collisionFile = GetCollisionFile(this);
+                FileCollisions collisionFile = FileCollisions.ReadCollisionFile(UnpackPath.GetPath(cld));
                 colGO = UnpackCollisions(this, collisionFile);
             }
 
             UnityEngine.Profiling.Profiler.BeginSample("MakePrefab");
-            try
-            {
-                MakePrefab(mapGO, colGO);
-            }
-            catch
-            {
-                GameObject.DestroyImmediate(mapGO);
-                GameObject.DestroyImmediate(colGO);
-
-                UnityEngine.Profiling.Profiler.EndSample();
-                UnityEngine.Profiling.Profiler.EndSample();
-                throw;
-            }
-
+            PrefabUtil.MakePrefab(ref prefab, prefabPath, new GameObject[] { mapGO, colGO }, true);
             UnityEngine.Profiling.Profiler.EndSample();
             EditorUtility.SetDirty(this);
             UnityEngine.Profiling.Profiler.EndSample();
         }
 
-        public void Pack()
+        public override void Pack()
         {
 
-        }
-
-        private static FileCollisions GetCollisionFile(GridProxy grid)
-        {
-            UnityEngine.Profiling.Profiler.BeginSample("GetCollisionFile");
-
-            FileCollisions collisionFile = null;
-            using (FileStream file = new FileStream(UnpackPath.GetPath(grid.cld), FileMode.Open, FileAccess.ReadWrite))
-            using (BinaryReader reader = new BinaryReader(file))
-            {
-                collisionFile = new FileCollisions(reader);
-            }
-
-            UnityEngine.Profiling.Profiler.EndSample();
-            return collisionFile;
         }
 
         private static FileMap GetMapFile(GridProxy grid)

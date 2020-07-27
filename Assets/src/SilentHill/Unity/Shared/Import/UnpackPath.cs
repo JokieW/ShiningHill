@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 
+using UnityEngine;
 using UnityEditor;
 
 namespace SH.Unity.Shared
@@ -12,28 +13,55 @@ namespace SH.Unity.Shared
         Unity = 3
     }
 
-    public readonly struct UnpackPath
+    [Serializable]
+    public struct UnpackPath
     {
         private const string _unpackDirectory = "Assets/upk/";
         private const string _workspaceDirectory = "work/";
         private const string _proxyDirectory = "proxy/";
         private const string _unityDirectory = "unity/";
 
-        public readonly string projectName;
-        public readonly string relativePath;
-        public readonly string name;
-        private readonly string _directoryPath;
-        private readonly string _fullPath;
-        public readonly UnpackDirectory unpackDirectory;
+        [SerializeField]
+        private string _projectName;
+        [SerializeField]
+        private string _relativePath;
+        [SerializeField]
+        private string _name;
+        [SerializeField]
+        private string _directoryPath;
+        [SerializeField]
+        private string _fullPath;
+        [SerializeField]
+        private UnpackDirectory _unpackDirectoryEnum;
+
+        public string projectName
+        {
+            get => _projectName;
+        }
+
+        public string relativePath
+        {
+            get => _relativePath;
+        }
+
+        public string name
+        {
+            get => _name;
+        }
+
+        public UnpackDirectory unpackDirectoryEnum
+        {
+            get => _unpackDirectoryEnum;
+        }
 
         public string extension
         {
-            get => Path.GetExtension(name);
+            get => Path.GetExtension(_name);
         }
 
         public string nameWithoutExtension
         {
-            get => Path.GetFileNameWithoutExtension(name);
+            get => Path.GetFileNameWithoutExtension(_name);
         }
 
         public UnpackPath(string projectName, UnpackDirectory unpackDirectory, string relativePath, string name, bool makeSureDirectoryExists = false)
@@ -41,8 +69,8 @@ namespace SH.Unity.Shared
             if (String.IsNullOrEmpty(projectName)) throw new ArgumentNullException(nameof(projectName));
             if (relativePath == null) throw new ArgumentNullException(nameof(relativePath));
 
-            this.projectName = projectName;
-            this.unpackDirectory = unpackDirectory;
+            this._projectName = projectName;
+            this._unpackDirectoryEnum = unpackDirectory;
             if (relativePath.Length > 0)
             {
                 relativePath = relativePath.Replace('\\', '/');
@@ -51,8 +79,8 @@ namespace SH.Unity.Shared
                     relativePath += '/';
                 }
             }
-            this.relativePath = relativePath;
-            this.name = name;
+            this._relativePath = relativePath;
+            this._name = name;
 
             this._directoryPath = string.Concat(_unpackDirectory,
                 string.Concat(projectName + "/"),
@@ -72,23 +100,23 @@ namespace SH.Unity.Shared
             if (String.IsNullOrEmpty(projectName)) throw new ArgumentNullException(nameof(projectName));
             if (mixedRelativePath == null) throw new ArgumentNullException(nameof(mixedRelativePath));
 
-            this.projectName = projectName;
-            this.unpackDirectory = unpackDirectory;
+            this._projectName = projectName;
+            this._unpackDirectoryEnum = unpackDirectory;
             if (mixedRelativePath.Length > 0)
             {
                 mixedRelativePath = mixedRelativePath.Replace('\\', '/');
             }
 
-            this.name = Path.GetFileName(mixedRelativePath);
+            this._name = Path.GetFileName(mixedRelativePath);
 
-            this.relativePath = mixedRelativePath.Substring(0, mixedRelativePath.Length - this.name.Length);
+            this._relativePath = mixedRelativePath.Substring(0, mixedRelativePath.Length - this._name.Length);
 
             this._directoryPath = string.Concat(_unpackDirectory,
                 string.Concat(projectName + "/"),
                 FolderTypeToString(unpackDirectory),
-                relativePath);
+                _relativePath);
 
-            this._fullPath = this._directoryPath + name;
+            this._fullPath = this._directoryPath + _name;
 
             if (makeSureDirectoryExists)
             {
@@ -136,10 +164,10 @@ namespace SH.Unity.Shared
                 string name = Path.GetFileName(strPath);
                 string relativePath = strPath.Substring(0, strPath.Length - name.Length);
 
-                this.projectName = projectName;
-                this.unpackDirectory = unpackDirectory;
-                this.relativePath = relativePath;
-                this.name = name;
+                this._projectName = projectName;
+                this._unpackDirectoryEnum = unpackDirectory;
+                this._relativePath = relativePath;
+                this._name = name;
 
                 this._directoryPath = string.Concat(_unpackDirectory,
                 string.Concat(projectName + "/"),
@@ -169,46 +197,46 @@ namespace SH.Unity.Shared
             => new UnpackPath(projectName, UnpackDirectory.Unity, "", "", makeSureDirectoryExists);
 
         public UnpackPath WithDirectory(UnpackDirectory newUnpackDirectory, bool makeSureDirectoryExists = false)
-            => new UnpackPath(projectName, newUnpackDirectory, relativePath, name, makeSureDirectoryExists);
+            => new UnpackPath(_projectName, newUnpackDirectory, _relativePath, _name, makeSureDirectoryExists);
 
         public UnpackPath WithPath(string newRelativePath, bool makeSureDirectoryExists = false)
-            => new UnpackPath(projectName, unpackDirectory, newRelativePath, name, makeSureDirectoryExists);
+            => new UnpackPath(_projectName, _unpackDirectoryEnum, newRelativePath, _name, makeSureDirectoryExists);
 
         public UnpackPath WithName(string newName, bool makeSureDirectoryExists = false)
-            => new UnpackPath(projectName, unpackDirectory, relativePath, newName, makeSureDirectoryExists);
+            => new UnpackPath(_projectName, _unpackDirectoryEnum, _relativePath, newName, makeSureDirectoryExists);
 
         public UnpackPath WithDirectoryAndPath(UnpackDirectory newUnpackDirectory, string newRelativePath, bool makeSureDirectoryExists = false)
-            => new UnpackPath(projectName, newUnpackDirectory, newRelativePath, name, makeSureDirectoryExists);
+            => new UnpackPath(_projectName, newUnpackDirectory, newRelativePath, _name, makeSureDirectoryExists);
 
         public UnpackPath WithDirectoryAndPathAndName(UnpackDirectory newUnpackDirectory, string newRelativePath, string newName, bool makeSureDirectoryExists = false)
-            => new UnpackPath(projectName, newUnpackDirectory, newRelativePath, newName, makeSureDirectoryExists);
+            => new UnpackPath(_projectName, newUnpackDirectory, newRelativePath, newName, makeSureDirectoryExists);
 
         public UnpackPath WithDirectoryAndName(UnpackDirectory newUnpackDirectory, string newName, bool makeSureDirectoryExists = false)
-            => new UnpackPath(projectName, newUnpackDirectory, relativePath, newName, makeSureDirectoryExists);
+            => new UnpackPath(_projectName, newUnpackDirectory, _relativePath, newName, makeSureDirectoryExists);
 
         public UnpackPath WithPathAndName(string newRelativePath, string newName, bool makeSureDirectoryExists = false)
-            => new UnpackPath(projectName, unpackDirectory, newRelativePath, newName, makeSureDirectoryExists);
+            => new UnpackPath(_projectName, _unpackDirectoryEnum, newRelativePath, newName, makeSureDirectoryExists);
 
         public UnpackPath WithMixedPath(string newMixedRelativePath, bool makeSureDirectoryExists = false)
-            => new UnpackPath(projectName, unpackDirectory, newMixedRelativePath, makeSureDirectoryExists);
+            => new UnpackPath(_projectName, _unpackDirectoryEnum, newMixedRelativePath, makeSureDirectoryExists);
 
         public UnpackPath AddToPath(string relativePathAddition, bool makeSureDirectoryExists = false)
-            => new UnpackPath(projectName, unpackDirectory, relativePath + relativePathAddition, name, makeSureDirectoryExists);
+            => new UnpackPath(_projectName, _unpackDirectoryEnum, _relativePath + relativePathAddition, _name, makeSureDirectoryExists);
 
         public UnpackPath AddToName(string nameAddition, bool makeSureDirectoryExists = false)
-            => new UnpackPath(projectName, unpackDirectory, relativePath, name + nameAddition, makeSureDirectoryExists);
+            => new UnpackPath(_projectName, _unpackDirectoryEnum, _relativePath, _name + nameAddition, makeSureDirectoryExists);
 
         public UnpackPath AddToPathAndName(string relativePathAddition, string nameAddition, bool makeSureDirectoryExists = false)
-            => new UnpackPath(projectName, unpackDirectory, relativePath + relativePathAddition, name + nameAddition, makeSureDirectoryExists);
+            => new UnpackPath(_projectName, _unpackDirectoryEnum, _relativePath + relativePathAddition, _name + nameAddition, makeSureDirectoryExists);
 
         public UnpackPath RemoveToPath(string relativePathDeletion, bool makeSureDirectoryExists = false)
-            => new UnpackPath(projectName, unpackDirectory, relativePath.Replace(relativePathDeletion, ""), name, makeSureDirectoryExists);
+            => new UnpackPath(_projectName, _unpackDirectoryEnum, _relativePath.Replace(relativePathDeletion, ""), _name, makeSureDirectoryExists);
 
         public bool IsFile()
-            => !String.IsNullOrEmpty(name);
+            => !String.IsNullOrEmpty(_name);
 
         public bool IsDirectory()
-            => String.IsNullOrEmpty(name);
+            => String.IsNullOrEmpty(_name);
 
         public bool FileExists()
             => File.Exists(GetFullPath());
@@ -235,7 +263,7 @@ namespace SH.Unity.Shared
 
         public UnpackPath GetDirectory()
         {
-            return new UnpackPath(projectName, unpackDirectory, relativePath, "");
+            return new UnpackPath(_projectName, _unpackDirectoryEnum, _relativePath, "");
         }
 
         public string GetDirectoryPath()
@@ -250,7 +278,7 @@ namespace SH.Unity.Shared
 
         public string GetRelativePath()
         {
-            return relativePath + name;
+            return _relativePath + _name;
         }
 
         public override string ToString()

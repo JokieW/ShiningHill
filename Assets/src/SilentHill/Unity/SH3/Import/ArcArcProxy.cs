@@ -49,7 +49,7 @@ namespace SH.Unity.SH3
             FileArcArc.UnpackArcArc(UnpackPath.GetPath(arcArc), out root);
         }
 
-        public void Unpack()
+        public override void Unpack()
         {
             GetRoot(out FileArcArc.Root root);
 
@@ -97,7 +97,7 @@ namespace SH.Unity.SH3
             EditorUtility.SetDirty(this);
         }
 
-        public void Pack()
+        public override void Pack()
         {
             (string, string[])[] map = new (string, string[])[arcs.Count];
             for (int i = 0; i < arcs.Count; i++)

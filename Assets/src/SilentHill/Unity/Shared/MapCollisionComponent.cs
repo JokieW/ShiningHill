@@ -3,6 +3,7 @@ using UnityEditor;
 
 using SH.GameData.Shared;
 using UnityEngine.UI;
+using System;
 
 namespace SH.Unity.Shared
 {
@@ -17,6 +18,23 @@ namespace SH.Unity.Shared
         private bool showGroup3 = true;
         private bool showGroup4 = true;
 
+        private static Vector3 GetFaceCenter(in CollisionFace face)
+        {
+            if(face.isTriangle)
+            {
+                return new Vector3(
+                    (face.vertex0.x + face.vertex1.x + face.vertex2.x) / 3,
+                    (face.vertex0.y + face.vertex1.y + face.vertex2.y) / 3,
+                    (face.vertex0.z + face.vertex1.z + face.vertex2.z) / 3
+                );
+            }
+            else if(face.isQuad)
+            {
+                return face.vertex0 + ((face.vertex2 - face.vertex0) / 2);
+            }
+            throw new InvalidOperationException();
+        }
+
         void OnSceneGUI()
         {
             MapCollisionComponent t = target as MapCollisionComponent;
@@ -28,16 +46,16 @@ namespace SH.Unity.Shared
                 {
                     if (ShowGroupIndex(arrayIndex))
                     {
-                        CollisionQuad[] quads = t.collisions.IndexToQuadArray(arrayIndex);
-                        if (quads != null)
+                        CollisionFace[] faces = t.collisions.IndexToFaceArray(arrayIndex);
+                        if (faces != null)
                         {
-                            for (int i = 0; i < quads.Length; i++)
+                            for (int i = 0; i < faces.Length; i++)
                             {
-                                ref readonly CollisionQuad quad = ref quads[i];
-                                rectBuffer[0] = quad.vertex0;
-                                rectBuffer[1] = quad.vertex1;
-                                rectBuffer[2] = quad.vertex2;
-                                rectBuffer[3] = quad.vertex3;
+                                ref readonly CollisionFace face = ref faces[i];
+                                rectBuffer[0] = face.vertex0;
+                                rectBuffer[1] = face.vertex1;
+                                rectBuffer[2] = face.vertex2;
+                                rectBuffer[3] = face.isQuad ? face.vertex3 : face.vertex2;
                                 GroupIndexToColors(arrayIndex, out Color faceColor, out Color outlineColor);
                                 Handles.DrawSolidRectangleWithOutline(rectBuffer, faceColor, outlineColor);
                             }
@@ -49,14 +67,14 @@ namespace SH.Unity.Shared
                 {
                     if (ShowGroupIndex(arrayIndex))
                     {
-                        CollisionQuad[] quads = t.collisions.IndexToQuadArray(arrayIndex);
-                        if (quads != null)
+                        CollisionFace[] faces = t.collisions.IndexToFaceArray(arrayIndex);
+                        if (faces != null)
                         {
-                            for (int i = 0; i < quads.Length; i++)
+                            for (int i = 0; i < faces.Length; i++)
                             {
-                                ref readonly CollisionQuad quad = ref quads[i];
+                                ref readonly CollisionFace face = ref faces[i];
                                 GUI.contentColor = Color.black;
-                                Handles.Label(quad.vertex0 + ((quad.vertex2 - quad.vertex0) / 2), quad.GetLabel());
+                                Handles.Label(GetFaceCenter(face), face.GetLabel());
                             }
                         }
                     }

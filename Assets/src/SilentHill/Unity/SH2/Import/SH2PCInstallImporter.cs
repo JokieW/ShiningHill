@@ -6,6 +6,7 @@ using UnityEditor;
 using UnityEngine;
 
 using SH.Unity.Shared;
+using SH.Core;
 
 namespace SH.Unity.SH2
 {
@@ -62,7 +63,7 @@ namespace SH.Unity.SH2
         public bool unpackFromCleanInstall = true;
         public bool unpackRecursive = true;
 
-        public UnityEngine.Object[] files;
+        public RootFolderProxy[] rootFolders;
 
         public override void ImportSource()
         {
@@ -71,7 +72,7 @@ namespace SH.Unity.SH2
                 string pathToInstall = unpackFromCleanInstall ? cleanInstallPath : installPath;
                 UnpackPath workDirectory = UnpackPath.GetWorkspaceDirectory(importName, true);
                 UnpackPath proxyDirectory = UnpackPath.GetProxyDirectory(importName, true);
-
+                /*
                 //Copy exe
                 {
                     string from = pathToInstall + "sh2pc.exe";
@@ -84,24 +85,42 @@ namespace SH.Unity.SH2
                 {
                     string from = pathToInstall + "data/";
                     UnpackPath to = workDirectory.WithPath("data/");
-                    if (EditorUtility.DisplayCancelableProgressBar("Importing data...", from, 0.5f)) return;
-                    if (AssetUtil.DirectoryCopy(from, to, true, (s, f) => EditorUtility.DisplayCancelableProgressBar("Importing files...", s, f))) return;
+                    if (EditorUtility.DisplayCancelableProgressBar("Importing data/...", from, 0.5f)) return;
+                    if (AssetUtil.DirectoryCopy(from, to, true, (s, f) => EditorUtility.DisplayCancelableProgressBar("Importing data/ files...", s, f))) return;
                 }
 
-                AssetDatabase.Refresh();
+                AssetDatabase.Refresh();*/
 
-                //Make arcarc proxy
+                //Make root folder proxies
                 {
-                    UnpackPath to = workDirectory.WithPath("data/");
-                    List<UnityEngine.Object> fileList = new List<UnityEngine.Object>();
-                    foreach (string file in Directory.EnumerateFiles(to, "*.*", SearchOption.AllDirectories))
+                    UnpackPath from = workDirectory.WithPath("data/");
+
+                    string[] directories = Directory.GetDirectories(from);
+                    rootFolders = new RootFolderProxy[directories.Length];
+                    for(int i = 0; i < directories.Length; i++)
                     {
-                        if (!file.Contains(".mkimage") && Path.GetExtension(file) != ".meta")
+                        string rootFolder = directories[i] + '/';
+                        string directoryName = new DirectoryInfo(rootFolder).Name;
+                        UnpackPath directoryPath = new UnpackPath(rootFolder);
+
+                        if (EditorUtility.DisplayCancelableProgressBar("Importing "+ directoryName + "...", from, 0.5f)) return;
+
+                        RootFolderProxy rootFolderProxy = null;
+                        if(directoryName == "bg" || directoryName == "bg2")
                         {
-                            fileList.Add(AssetDatabase.LoadMainAssetAtPath(file));
+                            rootFolderProxy = ScriptableObject.CreateInstance<BGFolderProxy>();
                         }
+                        else
+                        {
+                            rootFolderProxy = ScriptableObject.CreateInstance<GenericFolderProxy>();
+                        }
+
+                        rootFolderProxy.SetFolder(directoryName, directoryPath);
+                        UnpackPath to = from.WithDirectoryAndName(UnpackDirectory.Proxy, directoryName + ".asset", true);
+                        AssetDatabase.CreateAsset(rootFolderProxy, to);
+                        rootFolders[i] = rootFolderProxy;
+
                     }
-                    files = fileList.ToArray();
                 }
             }
             finally

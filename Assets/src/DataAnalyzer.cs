@@ -15,33 +15,33 @@ public class DataAnalyzer : MonoBehaviour
         {
             FileCollisions cols = comp.collisions;
             
-            for(int i = 0; i < cols.group0Quads.Length; i++)
+            for(int i = 0; i < cols.group0Faces.Length; i++)
             {
-                ref readonly CollisionQuad quad = ref cols.group0Quads[i];
+                ref readonly CollisionFace quad = ref cols.group0Faces[i];
                 if(quad.field_04 != 4)
                 {
                     Debug.LogWarning("Group0 " + i + " non4 " + quad.field_04);
                 }
             }
-            for (int i = 0; i < cols.group1Quads.Length; i++)
+            for (int i = 0; i < cols.group1Faces.Length; i++)
             {
-                ref readonly CollisionQuad quad = ref cols.group1Quads[i];
+                ref readonly CollisionFace quad = ref cols.group1Faces[i];
                 if (quad.field_04 != 4)
                 {
                     Debug.LogWarning("Group1 " + i + " non4 " + quad.field_04);
                 }
             }
-            for (int i = 0; i < cols.group2Quads.Length; i++)
+            for (int i = 0; i < cols.group2Faces.Length; i++)
             {
-                ref readonly CollisionQuad quad = ref cols.group2Quads[i];
+                ref readonly CollisionFace quad = ref cols.group2Faces[i];
                 if (quad.field_04 != 4)
                 {
                     Debug.LogWarning("Group2 " + i + " non4 " + quad.field_04);
                 }
             }
-            for (int i = 0; i < cols.group3Quads.Length; i++)
+            for (int i = 0; i < cols.group3Faces.Length; i++)
             {
-                ref readonly CollisionQuad quad = ref cols.group3Quads[i];
+                ref readonly CollisionFace quad = ref cols.group3Faces[i];
                 if (quad.field_04 != 4)
                 {
                     Debug.LogWarning("Group3 " + i + " non4 " + quad.field_04);

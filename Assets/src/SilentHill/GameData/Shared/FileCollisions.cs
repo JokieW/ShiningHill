@@ -25,12 +25,12 @@ namespace SH.GameData.Shared
 
         public CollisionOffsetTable offsetTable;
 
-        public void UpdateFrom(Vector2 origin, int[][][] indicesList, CollisionQuad[] quads0, CollisionQuad[] quads1, CollisionQuad[] quads2, CollisionQuad[] quads3, CollisionCylinder[] cylinders)
+        public void UpdateFrom(Vector2 origin, int[][][] indicesList, CollisionFace[] faces0, CollisionFace[] faces1, CollisionFace[] faces2, CollisionFace[] faces3, CollisionCylinder[] cylinders)
         {
-            this.floorGroupLength = (quads0.Length + 1) * 0x50;
-            this.wallGroupLength = (quads1.Length + 1) * 0x50;
-            this.something__GroupLength = (quads2.Length + 1) * 0x50;
-            this.furniture__GroupLength = (quads3.Length + 1) * 0x50;
+            this.floorGroupLength = (faces0.Length + 1) * 0x50;
+            this.wallGroupLength = (faces1.Length + 1) * 0x50;
+            this.something__GroupLength = (faces2.Length + 1) * 0x50;
+            this.furniture__GroupLength = (faces3.Length + 1) * 0x50;
             this.radialGroupLength = (cylinders.Length + 1) * 0x30;
             this.padding = 0x00;
 
@@ -69,16 +69,16 @@ namespace SH.GameData.Shared
             }
 
             offsetTable.group0VertexOffset = fileOffset;
-            fileOffset += 0x50 + (0x50 * quads0.Length);
+            fileOffset += 0x50 + (0x50 * faces0.Length);
 
             offsetTable.group1VertexOffset = fileOffset;
-            fileOffset += 0x50 + (0x50 * quads1.Length);
+            fileOffset += 0x50 + (0x50 * faces1.Length);
 
             offsetTable.group2VertexOffset = fileOffset;
-            fileOffset += 0x50 + (0x50 * quads2.Length);
+            fileOffset += 0x50 + (0x50 * faces2.Length);
 
             offsetTable.group3VertexOffset = fileOffset;
-            fileOffset += 0x50 + (0x50 * quads3.Length);
+            fileOffset += 0x50 + (0x50 * faces3.Length);
 
             offsetTable.group4VertexOffset = fileOffset;
             fileOffset += 0x30 + (0x30 * cylinders.Length);
@@ -119,9 +119,9 @@ namespace SH.GameData.Shared
 
     [Serializable]
     [StructLayout(LayoutKind.Sequential, Pack = 0)]
-    public struct CollisionQuad
+    public struct CollisionFace
     {
-        public int field_00;
+        public int field_00; //Has flags; 0x01 always 1?, 0x02 always 0?, 0x04 is 1 if quad, 0 if triangle
         public int field_04; //Always 4 in sh3, sh2?
         public int field_08;
         public int padding;
@@ -131,7 +131,7 @@ namespace SH.GameData.Shared
         public Vector4 vertex2;
         public Vector4 vertex3;
 
-        public CollisionQuad(int field_00, int field_08, Vector3 v0, Vector3 v1, Vector3 v2, Vector3 v3)
+        public CollisionFace(int field_00, int field_08, Vector3 v0, Vector3 v1, Vector3 v2, Vector3 v3)
         {
             this.field_00 = field_00;
             this.field_04 = 0x04;
@@ -148,6 +148,16 @@ namespace SH.GameData.Shared
             return
                 field_00.ToString("X") + "\n" + 
                 field_08.ToString("X");
+        }
+
+        public bool isTriangle
+        {
+            get => (field_00 & 0x100) == 0;
+        }
+
+        public bool isQuad
+        {
+            get => (field_00 & 0x100) != 0;
         }
     }
 
@@ -178,27 +188,27 @@ namespace SH.GameData.Shared
     {
         public CollisionHeader header;
         public int[][][] groupIndicesLists; //[group][subgroup][indices]
-        public CollisionQuad[] group0Quads;
-        public CollisionQuad[] group1Quads;
-        public CollisionQuad[] group2Quads;
-        public CollisionQuad[] group3Quads;
+        public CollisionFace[] group0Faces;
+        public CollisionFace[] group1Faces;
+        public CollisionFace[] group2Faces;
+        public CollisionFace[] group3Faces;
         public CollisionCylinder[] group4Cylinders;
 
-        public CollisionQuad[] IndexToQuadArray(int index)
+        public CollisionFace[] IndexToFaceArray(int index)
         {
-            if (index == 0) return group0Quads;
-            if (index == 1) return group1Quads;
-            if (index == 2) return group2Quads;
-            if (index == 3) return group3Quads;
+            if (index == 0) return group0Faces;
+            if (index == 1) return group1Faces;
+            if (index == 2) return group2Faces;
+            if (index == 3) return group3Faces;
             throw new IndexOutOfRangeException();
         }
 
-        public void SetQuadArrayAtIndex(int index, CollisionQuad[] array)
+        public void SetFaceArrayAtIndex(int index, CollisionFace[] array)
         {
-            if (index == 0) { group0Quads = array; return; }
-            if (index == 1) { group1Quads = array; return; }
-            if (index == 2) { group2Quads = array; return; }
-            if (index == 3) { group3Quads = array; return; }
+            if (index == 0) { group0Faces = array; return; }
+            if (index == 1) { group1Faces = array; return; }
+            if (index == 2) { group2Faces = array; return; }
+            if (index == 3) { group3Faces = array; return; }
             throw new IndexOutOfRangeException();
         }
 
@@ -210,15 +220,15 @@ namespace SH.GameData.Shared
 
             for(int i = 0; i < 4; i++)
             {
-                CollisionQuad[] quads = IndexToQuadArray(i);
+                CollisionFace[] faces = IndexToFaceArray(i);
 
-                for (int j = 0; j < quads.Length; j++)
+                for (int j = 0; j < faces.Length; j++)
                 {
-                    CollisionQuad quad = quads[j];
-                    vertices.Add(quad.vertex0);
-                    vertices.Add(quad.vertex1);
-                    vertices.Add(quad.vertex2);
-                    vertices.Add(quad.vertex3);
+                    CollisionFace face = faces[j];
+                    vertices.Add(face.vertex0);
+                    vertices.Add(face.vertex1);
+                    vertices.Add(face.vertex2);
+                    vertices.Add(face.vertex3);
 
                     triangles.Add(triangleIndex);
                     triangles.Add(triangleIndex + 1);
@@ -240,6 +250,18 @@ namespace SH.GameData.Shared
             return mesh;
         }
 
+        public static FileCollisions ReadCollisionFile(string path)
+        {
+            FileCollisions collisionFile = null;
+            using (FileStream file = new FileStream(path, FileMode.Open, FileAccess.ReadWrite))
+            using (BinaryReader reader = new BinaryReader(file))
+            {
+                collisionFile = new FileCollisions(reader);
+            }
+
+            return collisionFile;
+        }
+
         private FileCollisions()
         {
             header = new CollisionHeader();
@@ -254,12 +276,12 @@ namespace SH.GameData.Shared
                 groupIndicesLists[i] = subgroup;
             }
 
-            group0Quads = new CollisionQuad[0];
-            group1Quads = new CollisionQuad[0];
-            group2Quads = new CollisionQuad[0];
-            group3Quads = new CollisionQuad[0];
+            group0Faces = new CollisionFace[0];
+            group1Faces = new CollisionFace[0];
+            group2Faces = new CollisionFace[0];
+            group3Faces = new CollisionFace[0];
             group4Cylinders = new CollisionCylinder[0];
-            header.UpdateFrom(Vector2.zero, groupIndicesLists, group0Quads, group1Quads, group2Quads, group3Quads, group4Cylinders);
+            header.UpdateFrom(Vector2.zero, groupIndicesLists, group0Faces, group1Faces, group2Faces, group3Faces, group4Cylinders);
         }
 
         public FileCollisions(BinaryReader reader)
@@ -288,17 +310,17 @@ namespace SH.GameData.Shared
             }
 
             {
-                List<CollisionQuad> quadBuffer = new List<CollisionQuad>(0x20);
+                List<CollisionFace> faceBuffer = new List<CollisionFace>(0x20);
                 for (int j = 0; j < 4; j++)
                 {
                     reader.BaseStream.Position = header.offsetTable.allOffsets[i++];
-                    quadBuffer.Clear();
-                    CollisionQuad quad;
-                    while((quad = reader.ReadStruct<CollisionQuad>()).field_00 != 0 || quad.field_04 != 0 || quad.field_08 != 0)
+                    faceBuffer.Clear();
+                    CollisionFace face;
+                    while((face = reader.ReadStruct<CollisionFace>()).field_00 != 0 || face.field_04 != 0 || face.field_08 != 0)
                     {
-                        quadBuffer.Add(quad);
+                        faceBuffer.Add(face);
                     }
-                    SetQuadArrayAtIndex(j, quadBuffer.ToArray());
+                    SetFaceArrayAtIndex(j, faceBuffer.ToArray());
                 }
             }
 
@@ -324,43 +346,43 @@ namespace SH.GameData.Shared
         public static FileCollisions MakeDebug()
         {
             FileCollisions mc = new FileCollisions();
-            CollisionQuad[] floor = new CollisionQuad[1]
+            CollisionFace[] floor = new CollisionFace[1]
             {
-                new CollisionQuad(1, 80,
+                new CollisionFace(1, 80,
                     new Vector3(-12575.0f, 0.0f, -15000.0f),
                     new Vector3(-12575.0f, 0.0f, -25000.0f),
                     new Vector3(-27400.0f, 0.0f, -25000.0f),
                     new Vector3(-27400.0f, 0.0f, -15000.0f))
             };
             int[] floorIndices = new int[1] { 0 };
-            mc.group0Quads = floor;
+            mc.group0Faces = floor;
             mc.groupIndicesLists[0][0] = floorIndices;
 
-            CollisionQuad[] walls = new CollisionQuad[4]
+            CollisionFace[] walls = new CollisionFace[4]
             {
-                new CollisionQuad(1, 0x80,
+                new CollisionFace(1, 0x80,
                     new Vector3(-12600.0f, 0.0f, -15000.0f),
                     new Vector3(-12600.0f, -2500.0f, -15000.0f),
                     new Vector3(-12600.0f, -2500.0f, -25000.0f),
                     new Vector3(-12600.0f, 0.0f, -25000.0f)),
-                new CollisionQuad(1, 0x80,
+                new CollisionFace(1, 0x80,
                     new Vector3(-12600.0f, 0.0f, -25000.0f),
                     new Vector3(-12600.0f, -2500.0f, -25000.0f),
                     new Vector3(-22600.0f, -2500.0f, -25000.0f),
                     new Vector3(-22600.0f, 0.0f, -25000.0f)),
-                new CollisionQuad(1, 0x80,
+                new CollisionFace(1, 0x80,
                     new Vector3(-22600.0f, 0.0f, -25000.0f),
                     new Vector3(-22600.0f, -2500.0f, -25000.0f),
                     new Vector3(-22600.0f, -2500.0f, -15000.0f),
                     new Vector3(-22600.0f, 0.0f, -15000.0f)),
-                new CollisionQuad(1, 0x80,
+                new CollisionFace(1, 0x80,
                     new Vector3(-22600.0f, 0.0f, -15000.0f),
                     new Vector3(-22600.0f, -2500.0f, -15000.0f),
                     new Vector3(-12600.0f, -2500.0f, -15000.0f),
                     new Vector3(-12600.0f, 0.0f, -15000.0f)),
             };
             int[] wallIndices = new int[4] { 0, 1, 2, 3 };
-            mc.group1Quads = walls;
+            mc.group1Faces = walls;
             mc.groupIndicesLists[1][0] = wallIndices;
 
             mc.UpdateHeader(new Vector2(-20000.0f, -20000.0f));
@@ -369,7 +391,7 @@ namespace SH.GameData.Shared
 
         public void UpdateHeader(Vector2 origin)
         {
-            header.UpdateFrom(origin, groupIndicesLists, group0Quads, group1Quads, group2Quads, group3Quads, group4Cylinders);
+            header.UpdateFrom(origin, groupIndicesLists, group0Faces, group1Faces, group2Faces, group3Faces, group4Cylinders);
         }
 
         public void Write(BinaryWriter writer)
@@ -393,12 +415,12 @@ namespace SH.GameData.Shared
             for (int j = 0; j < 4; j++)
             {
                 writer.BaseStream.Position = header.offsetTable.allOffsets[i++];
-                CollisionQuad[] quads = IndexToQuadArray(j);
-                for(int k = 0; k < quads.Length; k++)
+                CollisionFace[] faces = IndexToFaceArray(j);
+                for(int k = 0; k < faces.Length; k++)
                 {
-                    writer.WriteStruct(in quads[k]);
+                    writer.WriteStruct(in faces[k]);
                 }
-                writer.WriteStruct<CollisionQuad>(default);
+                writer.WriteStruct<CollisionFace>(default);
             }
 
             {
