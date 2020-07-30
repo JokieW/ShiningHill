@@ -9,6 +9,7 @@ namespace SH.Unity.Shared
     [CreateAssetMenu]
 	public abstract class MaterialRolodexBase : ScriptableObject 
 	{
+        [SerializeField]
         protected List<TexMatsPair> texMatPairs = new List<TexMatsPair>();
 
         public MaterialRolodexBase()

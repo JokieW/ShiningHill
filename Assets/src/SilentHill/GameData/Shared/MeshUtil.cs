@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 
 using UnityEngine;
+using UnityEngine.Analytics;
 
 namespace SH.GameData.Shared
 {
@@ -25,7 +26,7 @@ namespace SH.GameData.Shared
             colors = newColors;
         }
 
-        public static Mesh MakeIndexedStrip(List<Vector3> vertices, List<short[]> indices, List<Vector3> normals = null, List<Vector2> uvs = null, List<Color32> colors = null, bool isBacksided = false)
+        public static Mesh MakeIndexedStrip(List<Vector3> vertices, Dictionary<int, short[]> indices, List<Vector3> normals = null, List<Vector2> uvs = null, List<Color32> colors = null, bool isBacksided = false)
         {
             Mesh mesh = new Mesh();
             mesh.SetVertices(vertices);
@@ -43,25 +44,27 @@ namespace SH.GameData.Shared
             }
 
             mesh.subMeshCount = indices.Count;
-            for (int j = 0; j != indices.Count; j++)
+            int subMesh = 0;
+            foreach(KeyValuePair<int, short[]> kvp in indices)
             {
+                short[] groupIndices = kvp.Value;
                 List<int> _tris = new List<int>();
 
-                for (int i = 1; i < indices[j].Length - 1; i += 2)
+                for (int i = 1; i < groupIndices.Length - 1; i += 2)
                 {
-                    _tris.Add(indices[j][i]);
-                    _tris.Add(indices[j][i - 1]);
-                    _tris.Add(indices[j][i + 1]);
+                    _tris.Add(groupIndices[i]);
+                    _tris.Add(groupIndices[i + 1]);
+                    _tris.Add(groupIndices[i - 1]);
 
-                    if (i + 2 < indices[j].Length)
+                    if (i + 2 < groupIndices.Length)
                     {
-                        _tris.Add(indices[j][i]);
-                        _tris.Add(indices[j][i + 1]);
-                        _tris.Add(indices[j][i + 2]);
+                        _tris.Add(groupIndices[i]);
+                        _tris.Add(groupIndices[i + 2]);
+                        _tris.Add(groupIndices[i + 1]);
                     }
                 }
 
-                mesh.SetTriangles(_tris, j);
+                mesh.SetTriangles(_tris, subMesh++);
             }
             return mesh;
         }

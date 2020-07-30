@@ -8,39 +8,6 @@ namespace SH.Core
 {
     public static class BinaryReaderExtension
     {
-        public static IntPtr ReadIntPtr(this BinaryReader reader)
-        {
-            return (IntPtr)reader.ReadInt32();
-        }
-
-        public unsafe static T ReadStruct<T>(this BinaryReader reader) where T : unmanaged
-        {
-            int structlength = Marshal.SizeOf<T>();
-            byte* structbytes = stackalloc byte[structlength];
-            for (int i = 0; i < structlength; i++)
-            {
-                *(structbytes + i) = reader.ReadByte();
-            }
-            return *((T*)structbytes);
-        }
-
-        public unsafe static void ReadStruct<T>(this BinaryReader reader, T[] buffer) where T : unmanaged
-        {
-            int structlength = Marshal.SizeOf<T>();
-            int totalLength = structlength * buffer.Length;
-
-            UnityEngine.Profiling.Profiler.BeginSample("readbytes");
-            byte[] bytes = GetReadBuffer(totalLength);
-            reader.Read(bytes, 0, totalLength);
-            UnityEngine.Profiling.Profiler.EndSample();
-            fixed (void* bufferPtr = buffer, bytesPtr = bytes)
-            {
-                UnityEngine.Profiling.Profiler.BeginSample("MemoryCopy");
-                MemCopy(bytesPtr, bufferPtr, totalLength);
-                UnityEngine.Profiling.Profiler.EndSample();
-            }
-        }
-
         private static unsafe void MemCopy(void* source, void* destination, long count)
         {
             long lenghtByte = count % 8;
@@ -70,6 +37,122 @@ namespace SH.Core
             }
             return _readBuffer;
         }
+
+        #region General
+        public static IntPtr ReadIntPtr(this BinaryReader reader)
+        {
+            return (IntPtr)reader.ReadInt32();
+        }
+
+        public unsafe static T ReadStruct<T>(this BinaryReader reader) where T : unmanaged
+        {
+            int structlength = Marshal.SizeOf<T>();
+            byte* structbytes = stackalloc byte[structlength];
+            for (int i = 0; i < structlength; i++)
+            {
+                *(structbytes + i) = reader.ReadByte();
+            }
+            return *((T*)structbytes);
+        }
+        #endregion
+
+        #region Buffers
+        public unsafe static void ReadBytes(this BinaryReader reader, byte[] buffer)
+        {
+            reader.Read(buffer, 0, buffer.Length);
+        }
+
+        public unsafe static void ReadInt16(this BinaryReader reader, short[] buffer)
+        {
+            int structlength = sizeof(short);
+            int totalLength = structlength * buffer.Length;
+
+            byte[] bytes = GetReadBuffer(totalLength);
+            reader.Read(bytes, 0, totalLength);
+            fixed (void* bufferPtr = buffer, bytesPtr = bytes)
+            {
+                MemCopy(bytesPtr, bufferPtr, totalLength);
+            }
+        }
+
+        public unsafe static void ReadInt32(this BinaryReader reader, int[] buffer)
+        {
+            int structlength = sizeof(int);
+            int totalLength = structlength * buffer.Length;
+
+            byte[] bytes = GetReadBuffer(totalLength);
+            reader.Read(bytes, 0, totalLength);
+            fixed (void* bufferPtr = buffer, bytesPtr = bytes)
+            {
+                MemCopy(bytesPtr, bufferPtr, totalLength);
+            }
+        }
+
+        public unsafe static void ReadInt64(this BinaryReader reader, long[] buffer)
+        {
+            int structlength = sizeof(long);
+            int totalLength = structlength * buffer.Length;
+
+            byte[] bytes = GetReadBuffer(totalLength);
+            reader.Read(bytes, 0, totalLength);
+            fixed (void* bufferPtr = buffer, bytesPtr = bytes)
+            {
+                MemCopy(bytesPtr, bufferPtr, totalLength);
+            }
+        }
+
+        public unsafe static void ReadUInt16(this BinaryReader reader, ushort[] buffer)
+        {
+            int structlength = sizeof(ushort);
+            int totalLength = structlength * buffer.Length;
+
+            byte[] bytes = GetReadBuffer(totalLength);
+            reader.Read(bytes, 0, totalLength);
+            fixed (void* bufferPtr = buffer, bytesPtr = bytes)
+            {
+                MemCopy(bytesPtr, bufferPtr, totalLength);
+            }
+        }
+
+        public unsafe static void ReadUInt32(this BinaryReader reader, uint[] buffer)
+        {
+            int structlength = sizeof(uint);
+            int totalLength = structlength * buffer.Length;
+
+            byte[] bytes = GetReadBuffer(totalLength);
+            reader.Read(bytes, 0, totalLength);
+            fixed (void* bufferPtr = buffer, bytesPtr = bytes)
+            {
+                MemCopy(bytesPtr, bufferPtr, totalLength);
+            }
+        }
+
+        public unsafe static void ReadUInt64(this BinaryReader reader, ulong[] buffer)
+        {
+            int structlength = sizeof(ulong);
+            int totalLength = structlength * buffer.Length;
+
+            byte[] bytes = GetReadBuffer(totalLength);
+            reader.Read(bytes, 0, totalLength);
+            fixed (void* bufferPtr = buffer, bytesPtr = bytes)
+            {
+                MemCopy(bytesPtr, bufferPtr, totalLength);
+            }
+        }
+
+        public unsafe static void ReadStruct<T>(this BinaryReader reader, T[] buffer) where T : unmanaged
+        {
+            int structlength = Marshal.SizeOf<T>();
+            int totalLength = structlength * buffer.Length;
+
+            byte[] bytes = GetReadBuffer(totalLength);
+            reader.Read(bytes, 0, totalLength);
+            fixed (void* bufferPtr = buffer, bytesPtr = bytes)
+            {
+                MemCopy(bytesPtr, bufferPtr, totalLength);
+            }
+        }
+        #endregion
 
         #region Matrices
         /// <summary>

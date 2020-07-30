@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using SH.Core;
+using System.Collections.Generic;
 
 using UnityEditor;
 using UnityEngine;
@@ -17,18 +18,25 @@ namespace SH.Unity.Shared
                     prefabinstance = PrefabUtility.LoadPrefabContents(dest);
                     if (gameObjects != null)
                     {
+                        CollectionPool.Request(out List<GameObject> toDelete);
                         foreach (Transform child in prefabinstance.transform)
                         {
                             for (int i = 0; i < gameObjects.Count; i++)
                             {
                                 GameObject go = gameObjects[i];
-                                if (child.name == go.name)
+                                if (child != null && child.name == go.name)
                                 {
-                                    GameObject.DestroyImmediate(child.gameObject);
-                                    continue;
+                                    toDelete.Add(child.gameObject);
+                                    break;
                                 }
                             }
                         }
+
+                        for(int i = 0; i < toDelete.Count; i++)
+                        {
+                            GameObject.DestroyImmediate(toDelete[i]);
+                        }
+                        CollectionPool.Return(ref toDelete);
                     }
                 }
                 else
@@ -63,7 +71,11 @@ namespace SH.Unity.Shared
                 {
                     for(int i = 0; i < gameObjects.Count; i++)
                     {
-                        GameObject.DestroyImmediate(gameObjects[i]);
+                        GameObject go = gameObjects[i];
+                        if (go != null)
+                        {
+                            GameObject.DestroyImmediate(gameObjects[i]);
+                        }
                     }
                 }
                 throw;
