@@ -48,7 +48,9 @@ namespace SH.Unity.SH2
             {
                 FileMap mapFile = FileMap.ReadMapFile(UnpackPath.GetPath(map));
                 UnpackLocalTextures(this, mapFile.GetMainTextureFile());
-                gameObjects.Add(UnpackMap(mapFile, this));
+                GameObject go = UnpackMap(mapFile, this);
+                go.AddComponent<MapFileComponent>().SetMapFile(mapFile);
+                gameObjects.Add(go);
             }
 
             if (cld != null)
@@ -76,8 +78,6 @@ namespace SH.Unity.SH2
             try
             {
                 FileGeometry meshFile = mapFile.GetMainGeometryFile();
-                MapFileComponent mapComponent = go.AddComponent<MapFileComponent>();
-                mapComponent.mapFile = mapFile;
 
                 {
                     FileGeometry.Geometry.MapMesh.MapSubMesh[] subMeshes = meshFile.geometry.mapMesh.mapSubMeshes;
@@ -86,7 +86,7 @@ namespace SH.Unity.SH2
                     {
                         FileGeometry.Geometry.MapMesh.MapSubMesh subMesh = subMeshes[i];
                         Mesh mesh = MakeSubMeshFromIndices(baseMesh, grid.fullName + "_mapsubmesh_" + subMesh.materialIndex, subMesh.indexCount, 1, ref indicesIndex, meshFile.geometry.mapMesh.indices);
-                        Material material = grid.localTextures.GetOrCreateMaterial(meshFile.materials[subMesh.materialIndex].textureId, MaterialRolodex.MaterialType.Diffuse);
+                        Material material = GetMaterial(grid.localTextures, grid.level.levelMaterials, meshFile.materials[subMesh.materialIndex], MaterialRolodex.MaterialType.Diffuse);
                         GameObject subGo = CreateMeshAssetAndSubGameObject("MapSubMesh", meshAssetPath, go, mesh, material);
                         subGo.AddComponent<MapSubMeshComponent>().subMesh = subMesh;
                     }
@@ -134,6 +134,20 @@ namespace SH.Unity.SH2
             if (level != null && material == null)
             {
                 material = level.GetOrCreateMaterial(meshMaterial.textureId);
+            }
+            return material;
+        }
+
+        private static Material GetMaterial(MaterialRolodex local, MaterialRolodex level, FileGeometry.MeshMaterial meshMaterial, MaterialRolodex.MaterialType materialType)
+        {
+            Material material = null;
+            if (local != null)
+            {
+                material = local.GetOrCreateMaterial(meshMaterial.textureId, materialType);
+            }
+            if (level != null && material == null)
+            {
+                material = level.GetOrCreateMaterial(meshMaterial.textureId, materialType);
             }
             return material;
         }

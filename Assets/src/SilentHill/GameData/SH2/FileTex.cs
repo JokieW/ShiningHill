@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 namespace SH.GameData.SH2
 {
     [Serializable]
-    public class FileTex : IFileMapSubFile
+    public class FileTex : FileMapSubFile
     {
         public FileMap.SubFileHeader subFileHeader;
         public Header header;
@@ -110,7 +110,7 @@ namespace SH.GameData.SH2
 
         }
 
-        public FileMap.SubFileHeader GetSubFileHeader()
+        public override FileMap.SubFileHeader GetSubFileHeader()
         {
             return subFileHeader;
         }

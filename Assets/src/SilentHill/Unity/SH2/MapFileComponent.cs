@@ -3,6 +3,9 @@ using UnityEngine;
 
 using SH.Core;
 using SH.GameData.SH2;
+using System.Linq;
+using System.Reflection;
+using System.Collections.Generic;
 
 namespace SH.Unity.SH2
 {
@@ -17,7 +20,11 @@ namespace SH.Unity.SH2
             if (t.mapFile != null)
             {
                 Handles.matrix = t.transform.localToWorldMatrix;
-                HandlesUtil.DrawBoundingCube(t.mapFile.GetMainGeometryFile().geometry.mapMesh.header.boundingBoxA, t.mapFile.GetMainGeometryFile().geometry.mapMesh.header.boundingBoxB);
+                FileGeometry fg = t.mapFile.GetMainGeometryFile();
+                if (fg != null)
+                {
+                    HandlesUtil.DrawBoundingCube(fg.geometry.mapMesh.header.boundingBoxA, fg.geometry.mapMesh.header.boundingBoxB);
+                }
             }
             Handles.matrix = prevMatrix;
         }
@@ -25,6 +32,17 @@ namespace SH.Unity.SH2
 
     public class MapFileComponent : MonoBehaviour
     {
-       public FileMap mapFile;
+        public FileMap mapFile;
+        public List<FileTex> textures;
+        public List<FileGeometry> geometries;
+
+        public void SetMapFile(FileMap mapFile)
+        {
+            this.mapFile = mapFile;
+            textures = new List<FileTex>();
+            mapFile.GetTextureFiles(textures);
+            geometries = new List<FileGeometry>();
+            mapFile.GetGeometryFiles(geometries);
+        }
     }
 }

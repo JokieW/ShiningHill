@@ -11,7 +11,7 @@ using SH.GameData.Shared;
 namespace SH.GameData.SH2
 {
     [Serializable]
-    public class FileGeometry : IFileMapSubFile
+    public class FileGeometry : FileMapSubFile
     {
         public FileMap.SubFileHeader subFileHeader;
         public Header header;
@@ -288,6 +288,12 @@ namespace SH.GameData.SH2
                     decoration.header = reader.ReadStruct<Geometry.MapDecorations.Decoration.Header>();
                     decoration.subDecorations = reader.ReadStruct<Geometry.MapDecorations.Decoration.SubDecoration>(decoration.header.decorationCount);
                     decoration.verticesHeader = reader.ReadStruct<Geometry.VerticesHeader>();
+                    if(decoration.verticesHeader.field_04 == 2)
+                    {
+                        reader.SkipInt32();
+                        reader.SkipInt32();
+                        reader.SkipInt32();
+                    }
                     decoration.vertices = reader.ReadBytes(decoration.verticesHeader.verticesSize);
                     decoration.indices = reader.ReadUInt16(decoration.header.indicesLength / sizeof(ushort));
                     geometry.mapDecorations.decorations[i] = decoration;
@@ -299,7 +305,7 @@ namespace SH.GameData.SH2
             materials = reader.ReadStruct<MeshMaterial>(header.materialCount);
         }
 
-        public FileMap.SubFileHeader GetSubFileHeader()
+        public override FileMap.SubFileHeader GetSubFileHeader()
         {
             return subFileHeader;
         }
