@@ -16,7 +16,7 @@ namespace SH.Unity.SH3
 
         public static ExeData.RegionData[] ExtractRegionEventData()
         {
-            BinaryReader reader = null;//new BinaryReader(new FileStream(SH3ExeAssetPaths.GetHardAssetPath(), FileMode.Open, FileAccess.Read, FileShare.Read));
+            BinaryReader reader = new BinaryReader(new FileStream("Assets/upk/sh3pc/work/sh3.exe", FileMode.Open, FileAccess.Read, FileShare.Read));
             try
             {
                 reader.BaseStream.Position = _regionPointerArrayPtr.raw;
@@ -228,16 +228,16 @@ namespace SH.Unity.SH3
                         reg.markerLines = _lines.ToArray();
                         reg.regionData = region;
                         go.AddComponent<MeshFilter>().sharedMesh = reg.markerMesh;
-                        go.AddComponent<MeshRenderer>().sharedMaterial = null;//MaterialRolodex.defaultGizmo;
+                        go.AddComponent<MeshRenderer>().sharedMaterial = MaterialRolodex.GetGizmo();
 
                         {
-                            string path = null;//SH3ExeAssetPaths.GetRegionExtractAssetPath(region.name) + region.name + ".asset";
+                            string path = "Assets/upk/sh3pc/unity/"+ region.name + ".asset";
                             MakeDirectory(path);
                             AssetDatabase.DeleteAsset(path);
                             AssetDatabase.CreateAsset(reg.markerMesh, path);
                         }
                         {
-                            string path = null;//SH3ExeAssetPaths.GetRegionPrefabPath(region.name) + region.name + ".prefab";
+                            string path = "Assets/upk/sh3pc/unity/" + region.name + ".prefab";
                             MakeDirectory(path);
                             AssetDatabase.DeleteAsset(path);
                             PrefabUtility.CreatePrefab(path, go);

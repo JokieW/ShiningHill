@@ -57,9 +57,23 @@ namespace SH.Core
         #endregion
 
         #region Buffers
+        public unsafe static byte[] ReadBytes(this BinaryReader reader, int count)
+        {
+            byte[] buffer = new byte[count];
+            ReadBytes(reader, buffer);
+            return buffer;
+        }
+
         public unsafe static void ReadBytes(this BinaryReader reader, byte[] buffer)
         {
             reader.Read(buffer, 0, buffer.Length);
+        }
+
+        public unsafe static short[] ReadInt16(this BinaryReader reader, int count)
+        {
+            short[] buffer = new short[count];
+            ReadInt16(reader, buffer);
+            return buffer;
         }
 
         public unsafe static void ReadInt16(this BinaryReader reader, short[] buffer)
@@ -75,6 +89,13 @@ namespace SH.Core
             }
         }
 
+        public unsafe static int[] ReadInt32(this BinaryReader reader, int count)
+        {
+            int[] buffer = new int[count];
+            ReadInt32(reader, buffer);
+            return buffer;
+        }
+
         public unsafe static void ReadInt32(this BinaryReader reader, int[] buffer)
         {
             int structlength = sizeof(int);
@@ -86,6 +107,13 @@ namespace SH.Core
             {
                 MemCopy(bytesPtr, bufferPtr, totalLength);
             }
+        }
+
+        public unsafe static long[] ReadInt64(this BinaryReader reader, int count)
+        {
+            long[] buffer = new long[count];
+            ReadInt64(reader, buffer);
+            return buffer;
         }
 
         public unsafe static void ReadInt64(this BinaryReader reader, long[] buffer)
@@ -101,6 +129,13 @@ namespace SH.Core
             }
         }
 
+        public unsafe static ushort[] ReadUInt16(this BinaryReader reader, int count)
+        {
+            ushort[] buffer = new ushort[count];
+            ReadUInt16(reader, buffer);
+            return buffer;
+        }
+
         public unsafe static void ReadUInt16(this BinaryReader reader, ushort[] buffer)
         {
             int structlength = sizeof(ushort);
@@ -112,6 +147,13 @@ namespace SH.Core
             {
                 MemCopy(bytesPtr, bufferPtr, totalLength);
             }
+        }
+
+        public unsafe static uint[] ReadUInt32(this BinaryReader reader, int count)
+        {
+            uint[] buffer = new uint[count];
+            ReadUInt32(reader, buffer);
+            return buffer;
         }
 
         public unsafe static void ReadUInt32(this BinaryReader reader, uint[] buffer)
@@ -127,6 +169,13 @@ namespace SH.Core
             }
         }
 
+        public unsafe static ulong[] ReadUInt64(this BinaryReader reader, int count)
+        {
+            ulong[] buffer = new ulong[count];
+            ReadUInt64(reader, buffer);
+            return buffer;
+        }
+
         public unsafe static void ReadUInt64(this BinaryReader reader, ulong[] buffer)
         {
             int structlength = sizeof(ulong);
@@ -138,6 +187,13 @@ namespace SH.Core
             {
                 MemCopy(bytesPtr, bufferPtr, totalLength);
             }
+        }
+
+        public unsafe static T[] ReadStruct<T>(this BinaryReader reader, int count) where T : unmanaged
+        {
+            T[] buffer = new T[count];
+            ReadStruct(reader, buffer);
+            return buffer;
         }
 
         public unsafe static void ReadStruct<T>(this BinaryReader reader, T[] buffer) where T : unmanaged
@@ -397,6 +453,19 @@ namespace SH.Core
         #endregion
 
         #region Skips
+        /// <summary>
+        /// Align the position of the buffer to the line, a line being 0x10 bytes.
+        /// Will stay at the same position if already aligned, or next aligned offset if not.
+        /// </summary>
+        public static void AlignToLine(this BinaryReader reader)
+        {
+            long mod = reader.BaseStream.Position % 0x10;
+            if(mod != 0)
+            {
+                reader.BaseStream.Position += 0x10 - mod;
+            }
+        }
+
         /// <summary>
         /// Skips a byte
         /// </summary>

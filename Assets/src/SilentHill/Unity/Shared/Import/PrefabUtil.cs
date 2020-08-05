@@ -50,7 +50,10 @@ namespace SH.Unity.Shared
                     for (int i = 0; i < gameObjects.Count; i++)
                     {
                         GameObject go = gameObjects[i];
-                        go.transform.SetParent(prefabinstance.transform, true);
+                        if (go != null)
+                        {
+                            go.transform.SetParent(prefabinstance.transform, true);
+                        }
                     }
                 }
 

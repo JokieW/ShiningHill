@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using SH.Core;
+using System.Collections.Generic;
 
 using UnityEngine;
 using UnityEngine.Analytics;
@@ -26,7 +27,7 @@ namespace SH.GameData.Shared
             colors = newColors;
         }
 
-        public static Mesh MakeIndexedStrip(List<Vector3> vertices, Dictionary<int, short[]> indices, List<Vector3> normals = null, List<Vector2> uvs = null, List<Color32> colors = null, bool isBacksided = false)
+        public static Mesh MakeIndexedStrip(List<Vector3> vertices, Dictionary<int, ushort[]> indices, List<Vector3> normals = null, List<Vector2> uvs = null, List<Color32> colors = null, bool isBacksided = false)
         {
             Mesh mesh = new Mesh();
             mesh.SetVertices(vertices);
@@ -45,9 +46,9 @@ namespace SH.GameData.Shared
 
             mesh.subMeshCount = indices.Count;
             int subMesh = 0;
-            foreach(KeyValuePair<int, short[]> kvp in indices)
+            foreach(KeyValuePair<int, ushort[]> kvp in indices)
             {
-                short[] groupIndices = kvp.Value;
+                ushort[] groupIndices = kvp.Value;
                 List<int> _tris = new List<int>();
 
                 for (int i = 1; i < groupIndices.Length - 1; i += 2)
@@ -69,8 +70,36 @@ namespace SH.GameData.Shared
             return mesh;
         }
 
-        public static Mesh MakeIndexedStrip(List<Vector3> vertices, List<short> indices, List<Vector3> normals = null, List<Vector2> uvs = null, List<Color32> colors = null, bool isBacksided = false)
+        public static Mesh MakeIndexedStrip(List<Vector3> vertices, IReadOnlyList<ushort> indices, List<Vector3> normals = null, List<Vector2> uvs = null, List<Color32> colors = null, bool isBacksided = false)
         {
+            CollectionPool.Request(out List<int> _tris);
+
+            int toRead = indices.Count;
+            int read = 2;
+            int i = 0;
+
+            int memory = indices[i++] << 0x10;
+            int shift = 0x0;
+            uint mask = 0xFFFF0000;
+            ushort currentIndex = indices[i++];
+
+            do
+            {
+                unchecked
+                {
+                    memory = (memory & (int)mask) + (currentIndex << shift);
+                    mask ^= 0xFFFFFFFF;
+                    shift ^= 0x10;
+
+                    read++;
+                    currentIndex = indices[i++];
+
+                    _tris.Add((ushort)(memory >> 0x10));
+                    _tris.Add((ushort)memory);
+                    _tris.Add(currentIndex);
+                }
+            } while (read < toRead);
+
             Mesh mesh = new Mesh();
             mesh.SetVertices(vertices);
             if (normals != null)
@@ -85,28 +114,14 @@ namespace SH.GameData.Shared
             {
                 mesh.SetColors(colors);
             }
-            
-            List<int> _tris = new List<int>();
-
-            for (int i = 1; i < indices.Count - 1; i += 2)
-            {
-                _tris.Add(indices[i]);
-                _tris.Add(indices[i - 1]);
-                _tris.Add(indices[i + 1]);
-
-                if (i + 2 < indices.Count)
-                {
-                    _tris.Add(indices[i]);
-                    _tris.Add(indices[i + 1]);
-                    _tris.Add(indices[i + 2]);
-                }
-            }
 
             mesh.SetTriangles(_tris, 0);
+            CollectionPool.Return(ref _tris);
+
             return mesh;
         }
 
-        public static Mesh MakeIndexedStripInverted(List<Vector3> vertices, List<short> indices, List<Vector3> normals = null, List<Vector2> uvs = null, List<Color32> colors = null, bool isBacksided = false)
+        public static Mesh MakeStrip(List<Vector3> vertices, IReadOnlyList<ushort> indices, int length, List<Vector3> normals = null, List<Vector2> uvs = null, List<Color32> colors = null, bool isBacksided = false)
         {
             Mesh mesh = new Mesh();
             mesh.SetVertices(vertices);
@@ -122,24 +137,70 @@ namespace SH.GameData.Shared
             {
                 mesh.SetColors(colors);
             }
-            
-            List<int> _tris = new List<int>();
 
-            for (int i = 1; i < indices.Count - 1; i += 2)
+            CollectionPool.Request(out List<int> _tris);
+            for (int i = 0; i < indices.Count; i++)
             {
-                _tris.Add(indices[i + 1]);
-                _tris.Add(indices[i - 1]);
                 _tris.Add(indices[i]);
+                _tris.Add(indices[i + 1]);
+                _tris.Add(indices[i + 2]);
+            }
+            mesh.SetTriangles(_tris, 0);
+            CollectionPool.Return(ref _tris);
 
-                if (i + 2 < indices.Count)
+            return mesh;
+        }
+
+        public static int Unstrip(int from, int stripLength, int stripCount, IReadOnlyList<ushort> indices, List<int> triangles)
+        {
+            int totalRead = 0;
+            int i = from;
+            for (int i_strips = 0; i_strips < stripCount; i_strips++)
+            {
+                unchecked
                 {
-                    _tris.Add(indices[i + 2]);
-                    _tris.Add(indices[i + 1]);
-                    _tris.Add(indices[i]);
+                    int memory = indices[i++] << 0x10;
+                    int mask = (int)0xFFFF0000;
+                    ushort currentIndex = indices[i++];
+                    int read = 2;
+
+                    while (read < stripLength)
+                    {
+                        memory = (memory & mask) + (currentIndex << (0x10 & mask));
+                        mask ^= (int)0xFFFFFFFF;
+
+                        read++;
+                        currentIndex = indices[i++];
+
+                        triangles.Add((ushort)(memory >> 0x10));
+                        triangles.Add((ushort)memory);
+                        triangles.Add(currentIndex);
+                    }
+                    totalRead += read;
                 }
             }
 
-            mesh.SetTriangles(_tris, 0);
+            return totalRead;
+        }
+
+        public static Mesh MakeIndexed(List<Vector3> vertices, ushort[] indices, List<Vector3> normals = null, List<Vector2> uvs = null, List<Color32> colors = null, bool isBacksided = false)
+        {
+            Mesh mesh = new Mesh();
+            mesh.SetVertices(vertices);
+            if (normals != null)
+            {
+                mesh.SetNormals(normals);
+            }
+            if (uvs != null)
+            {
+                mesh.SetUVs(0, uvs);
+            }
+            if (colors != null && colors.Count > 0)
+            {
+                mesh.SetColors(colors);
+            }
+
+            mesh.SetTriangles(indices, 0);
             return mesh;
         }
 
@@ -294,56 +355,6 @@ namespace SH.GameData.Shared
                         _tris.Add(i + 2);
                         _tris.Add(i - 1);
                         _tris.Add(i + 1);
-                    }
-                }
-            }
-
-            mesh.SetTriangles(_tris, 0);
-            return mesh;
-        }
-
-        public static Mesh MakeSquareInverted(List<Vector3> vertices, List<Vector3> normals = null, List<Vector2> uvs = null, List<Color32> colors = null, bool isBacksided = false)
-        {
-            Mesh mesh = new Mesh();
-            mesh.SetVertices(vertices);
-            if (normals != null)
-            {
-                mesh.SetNormals(normals);
-            }
-            if (uvs != null)
-            {
-                mesh.SetUVs(0, uvs);
-            }
-            if (colors != null)
-            {
-                mesh.SetColors(colors);
-            }
-
-            List<int> _tris = new List<int>();
-            for (int i = 1; i < vertices.Count - 1; i += 2)
-            {
-                _tris.Add(i + 1);
-                _tris.Add(i - 1);
-                _tris.Add(i);
-
-                if (isBacksided)
-                {
-                    _tris.Add(i);
-                    _tris.Add(i - 1);
-                    _tris.Add(i + 1);
-                }
-
-                if (i + 2 < vertices.Count)
-                {
-                    _tris.Add(i + 2);
-                    _tris.Add(i - 1);
-                    _tris.Add(i + 1);
-
-                    if (isBacksided)
-                    {
-                        _tris.Add(i + 1);
-                        _tris.Add(i - 1);
-                        _tris.Add(i + 2);
                     }
                 }
             }

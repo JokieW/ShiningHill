@@ -4,6 +4,7 @@ using UnityEngine;
 
 using SH.GameData.SH3;
 using SH.Unity.Shared;
+using UnityEditor;
 
 namespace SH.Unity.SH3
 {
@@ -89,6 +90,12 @@ namespace SH.Unity.SH3
             mat.mainTexture = tex;
             mat.SetTexture("_EmissionMap", tex);
             mat.name = tex.name + "_selfIllum";
+            return mat;
+        }
+
+        public static Material GetGizmo()
+        {
+            Material mat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/DefaultGizmoMaterial.mat");
             return mat;
         }
     }

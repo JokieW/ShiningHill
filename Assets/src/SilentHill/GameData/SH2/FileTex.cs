@@ -7,8 +7,9 @@ using System.Runtime.InteropServices;
 namespace SH.GameData.SH2
 {
     [Serializable]
-    public class FileTex : FileMap.SubFile
+    public class FileTex : IFileMapSubFile
     {
+        public FileMap.SubFileHeader subFileHeader;
         public Header header;
         public DXTTexture[] textures;
 
@@ -107,6 +108,11 @@ namespace SH.GameData.SH2
         public void WriteFile(BinaryWriter writer)
         {
 
+        }
+
+        public FileMap.SubFileHeader GetSubFileHeader()
+        {
+            return subFileHeader;
         }
     }
 
