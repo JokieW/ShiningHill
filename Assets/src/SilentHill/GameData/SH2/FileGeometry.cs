@@ -7,6 +7,7 @@ using UnityEngine;
 
 using SH.Core;
 using SH.GameData.Shared;
+using System.Linq.Expressions;
 
 namespace SH.GameData.SH2
 {
@@ -32,7 +33,8 @@ namespace SH.GameData.SH2
         public class Geometry
         {
             public Header header;
-            public MapMesh mapMesh;
+            public MeshGroup meshGroup0;
+            public MeshGroup meshGroup1;
             public MapDecorations mapDecorations;
 
             [Serializable]
@@ -41,63 +43,69 @@ namespace SH.GameData.SH2
             {
                 [Hex] public int field_00; //Next mesh group?
                 [Hex] public int meshGroupSize;
-                [Hex] public int field_08; //saw 0x14
-                [Hex] public int field_0C; //saw 0
+                [Hex] public int offsetToFirstMeshGroup; //saw 0x14, offset to first mesh group?
+                [Hex] public int offsetToSecondMeshGroup;
 
                 [Hex] public int offsetToDecorations;
-                [Hex] public int field_14; //saw 0x01
-                [Hex] public int field_18; //saw 0x08
             }
 
             [Serializable]
-            public class MapMesh
+            public class MeshGroup
             {
-                public Header header;
-                public MapSubMesh[] mapSubMeshes;
-                public VertexSectionsHeader vertexSectionsHeader;
-                public VertexSectionHeader[] vertexSections;
-                public byte[][] vertices;
-                public ushort[] indices;
+                [Hex] public int subMeshGroupCount;
+                public int[] subMeshGroupOffsets;
+                public SubMeshGroup[] subMeshGroups;
 
                 [Serializable]
-                [StructLayout(LayoutKind.Sequential, Pack = 0)]
-                public struct Header
-                {
-                    public Vector4 boundingBoxA;
-                    public Vector4 boundingBoxB;
-
-                    [Hex] public int field_20; //Looks like flags?
-                    [Hex] public int offsetToIndices;
-                    [Hex] public int indicesLength;
-                    [Hex] public int field_2C; //looks like a length or offset but cant find from where
-
-                    [Hex] public int subMapMeshCount;
-                }
-
-                [Serializable]
-                public class MapSubMesh
+                public class SubMeshGroup
                 {
                     public Header header;
-                    public MapSubSubMesh[] subSubMeshes;
+                    public SubSubMeshGroup[] subSubMeshGroups;
+                    public VertexSectionsHeader vertexSectionsHeader;
+                    public VertexSectionHeader[] vertexSections;
+                    public byte[][] vertices;
+                    public ushort[] indices;
 
                     [Serializable]
                     [StructLayout(LayoutKind.Sequential, Pack = 0)]
                     public struct Header
                     {
-                        [Hex] public int materialIndex;
-                        [Hex] public int sectionId;
-                        [Hex] public int subSubMeshCount;
+                        public Vector4 boundingBoxA;
+                        public Vector4 boundingBoxB;
+
+                        [Hex] public int field_20; //Looks like flags?
+                        [Hex] public int offsetToIndices;
+                        [Hex] public int indicesLength;
+                        [Hex] public int field_2C; //looks like a length or offset but cant find from where
+
+                        [Hex] public int subSubMeshGroupCount;
                     }
 
                     [Serializable]
-                    [StructLayout(LayoutKind.Sequential, Pack = 0)]
-                    public struct MapSubSubMesh
+                    public class SubSubMeshGroup
                     {
-                        [Hex] public short stripLength;
-                        [Hex] public byte field_02; //saw 0, 1
-                        [Hex] public byte stripCount;
-                        [Hex] public ushort firstVertex;
-                        [Hex] public ushort lastVertex;
+                        public Header header;
+                        public MeshPart[] meshParts;
+
+                        [Serializable]
+                        [StructLayout(LayoutKind.Sequential, Pack = 0)]
+                        public struct Header
+                        {
+                            [Hex] public int materialIndex;
+                            [Hex] public int sectionId;
+                            [Hex] public int meshPartCount;
+                        }
+
+                        [Serializable]
+                        [StructLayout(LayoutKind.Sequential, Pack = 0)]
+                        public struct MeshPart
+                        {
+                            [Hex] public short stripLength;
+                            [Hex] public byte field_02; //saw 0, 1
+                            [Hex] public byte stripCount;
+                            [Hex] public ushort firstVertex;
+                            [Hex] public ushort lastVertex;
+                        }
                     }
                 }
             }
@@ -312,40 +320,64 @@ namespace SH.GameData.SH2
             geometries = new Geometry[header.geometryCount];
             for (int i = 0; i < geometries.Length; i++)
             {
+                long positiontest1 = reader.BaseStream.Position;
                 Geometry geo = new Geometry();
+                geo.header = reader.ReadStruct<Geometry.Header>();
 
-                //Get map geometry
+                for (int j = 0; j < 2; j++)
                 {
-                    geo.header = reader.ReadStruct<Geometry.Header>();
-
-                    geo.mapMesh = new Geometry.MapMesh();
-                    geo.mapMesh.header = reader.ReadStruct<Geometry.MapMesh.Header>();
-
-                    geo.mapMesh.mapSubMeshes = new Geometry.MapMesh.MapSubMesh[geo.mapMesh.header.subMapMeshCount];
-                    for(int j = 0; j < geo.mapMesh.mapSubMeshes.Length; j++)
+                    long positiontest2 = reader.BaseStream.Position;
+                    long meshGroupOffset = j == 0 ? geo.header.offsetToFirstMeshGroup : geo.header.offsetToSecondMeshGroup;
+                    if (meshGroupOffset != 0x00000000)
                     {
-                        Geometry.MapMesh.MapSubMesh subMesh = new Geometry.MapMesh.MapSubMesh();
-                        subMesh.header = reader.ReadStruct<Geometry.MapMesh.MapSubMesh.Header>();
-                        subMesh.subSubMeshes = reader.ReadStruct<Geometry.MapMesh.MapSubMesh.MapSubSubMesh>(subMesh.header.subSubMeshCount);
-                        geo.mapMesh.mapSubMeshes[j] = subMesh;
-                    }
+                        Geometry.MeshGroup meshGroup = new Geometry.MeshGroup();
+                        meshGroup.subMeshGroupCount = reader.ReadInt32();
+                        meshGroup.subMeshGroupOffsets = reader.ReadInt32(meshGroup.subMeshGroupCount);
+                        meshGroup.subMeshGroups = new Geometry.MeshGroup.SubMeshGroup[meshGroup.subMeshGroupCount];
+                        for (int k = 0; k < meshGroup.subMeshGroupCount; k++)
+                        {
+                            long positiontest3 = reader.BaseStream.Position;
+                            Geometry.MeshGroup.SubMeshGroup subMeshGroup = new Geometry.MeshGroup.SubMeshGroup();
+                            subMeshGroup.header = reader.ReadStruct<Geometry.MeshGroup.SubMeshGroup.Header>();
+                            subMeshGroup.subSubMeshGroups = new Geometry.MeshGroup.SubMeshGroup.SubSubMeshGroup[subMeshGroup.header.subSubMeshGroupCount];
+                            for (int l = 0; l < subMeshGroup.subSubMeshGroups.Length; l++)
+                            {
+                                long positiontest4 = reader.BaseStream.Position;
+                                Geometry.MeshGroup.SubMeshGroup.SubSubMeshGroup subSubMeshGroup = new Geometry.MeshGroup.SubMeshGroup.SubSubMeshGroup();
+                                subSubMeshGroup.header = reader.ReadStruct<Geometry.MeshGroup.SubMeshGroup.SubSubMeshGroup.Header>();
+                                subSubMeshGroup.meshParts = reader.ReadStruct<Geometry.MeshGroup.SubMeshGroup.SubSubMeshGroup.MeshPart>(subSubMeshGroup.header.meshPartCount);
 
-                    geo.mapMesh.vertexSectionsHeader = reader.ReadStruct<Geometry.VertexSectionsHeader>();
-                    geo.mapMesh.vertexSections = reader.ReadStruct<Geometry.VertexSectionHeader>(geo.mapMesh.vertexSectionsHeader.vertexSectionCount);
-                    geo.mapMesh.vertices = new byte[geo.mapMesh.vertexSections.Length][];
-                    for (int j = 0; j < geo.mapMesh.vertexSections.Length; j++)
-                    {
-                        geo.mapMesh.vertices[j] = reader.ReadBytes(geo.mapMesh.vertexSections[j].sectionLength);
+                                subMeshGroup.subSubMeshGroups[l] = subSubMeshGroup;
+                            }
+
+                            subMeshGroup.vertexSectionsHeader = reader.ReadStruct<Geometry.VertexSectionsHeader>();
+                            subMeshGroup.vertexSections = reader.ReadStruct<Geometry.VertexSectionHeader>(subMeshGroup.vertexSectionsHeader.vertexSectionCount);
+                            subMeshGroup.vertices = new byte[subMeshGroup.vertexSections.Length][];
+                            for (int l = 0; l < subMeshGroup.vertexSections.Length; l++)
+                            {
+                                subMeshGroup.vertices[l] = reader.ReadBytes(subMeshGroup.vertexSections[l].sectionLength);
+                            }
+                            subMeshGroup.indices = reader.ReadUInt16(subMeshGroup.header.indicesLength / sizeof(ushort));
+                            reader.AlignToLine();
+                            meshGroup.subMeshGroups[k] = subMeshGroup;
+                        }
+
+                        if(j == 0)
+                        {
+                            geo.meshGroup0 = meshGroup;
+                        }
+                        else
+                        {
+                            geo.meshGroup1 = meshGroup;
+                        }
                     }
-                    geo.mapMesh.indices = reader.ReadUInt16(geo.mapMesh.header.indicesLength / sizeof(ushort));
-                    reader.AlignToLine();
                 }
 
                 //Get decorations
                 if (geo.header.offsetToDecorations != 0x00000000)
                 {
+                    long positiontest5 = reader.BaseStream.Position;
                     geo.mapDecorations = new Geometry.MapDecorations();
-                    reader.AlignToLine();
                     long decorationsBaseOffset = reader.BaseStream.Position;
 
                     geo.mapDecorations.offsetToDecorations = reader.ReadInt32(reader.ReadInt32() /* offsets count */);
