@@ -54,8 +54,9 @@ namespace SH.GameData.SH2
             {
                 public Header header;
                 public MapSubMesh[] mapSubMeshes;
-                public VerticesHeader verticesHeader;
-                public byte[] vertices;
+                public VertexSectionsHeader vertexSectionsHeader;
+                public VertexSectionHeader[] vertexSections;
+                public byte[][] vertices;
                 public ushort[] indices;
 
                 [Serializable]
@@ -99,8 +100,9 @@ namespace SH.GameData.SH2
                 {
                     public Header header;
                     public SubDecoration[] subDecorations;
-                    public VerticesHeader verticesHeader;
-                    public byte[] vertices;
+                    public VertexSectionsHeader vertexSectionsHeader;
+                    public VertexSectionHeader[] vertexSections;
+                    public byte[][] vertices;
                     public ushort[] indices;
 
                     [Serializable]
@@ -121,7 +123,7 @@ namespace SH.GameData.SH2
                     public struct SubDecoration
                     {
                         [Hex] public int materialIndex;
-                        [Hex] public int field_04; // often 0
+                        [Hex] public int sectionId;
                         [Hex] public int stripLength;
                         [Hex] public int stripCount;
                     }
@@ -130,14 +132,19 @@ namespace SH.GameData.SH2
 
             [Serializable]
             [StructLayout(LayoutKind.Sequential, Pack = 0)]
-            public struct VerticesHeader
+            public struct VertexSectionsHeader
             {
-                [Hex] public int verticesSize;
-                [Hex] public int field_04; // often 0x01
-                [Hex] public int field_08; // often 0
-                [Hex] public int vertexSize; //either 0x14, 0x20 (+ uv) or 0x24 (+ color)
+                [Hex] public int verticesLength;
+                [Hex] public int vertexSectionCount;
+            }
 
-                [Hex] public int verticesSize2; //Always the same as verticesSize?
+            [Serializable]
+            [StructLayout(LayoutKind.Sequential, Pack = 0)]
+            public struct VertexSectionHeader
+            {
+                [Hex] public int sectionStart;
+                [Hex] public int vertexSize; //either 0x14, 0x20 (+ uv) or 0x24 (+ color)
+                [Hex] public int sectionLength;
             }
 
             [Serializable]
@@ -247,11 +254,11 @@ namespace SH.GameData.SH2
         [StructLayout(LayoutKind.Sequential, Pack = 0)]
         public struct MeshMaterial
         {
-            [Hex] public short field_00; //saw 1 and 2, 2 often for transparency
+            [Hex] public short field_00; //saw 1 and 2
             [Hex] public short textureId; //maps to the id of the DXTTexture.Header
-            [Hex] public int field_04; //Only saw FFB2B2B2B2 
+            [Hex] public int field_04; //saw FFB2B2B2B2, FFFFFFFF
             [Hex] public int field_08; //specularity? only saw FF000000 for field_00 = 1 and FFFFFFFF for field_00 = 2
-            public float transparency;
+            public float field_0C;
         }
 
         public void ReadFile(BinaryReader reader)
@@ -269,8 +276,13 @@ namespace SH.GameData.SH2
 
                 geometry.mapMesh.mapSubMeshes = reader.ReadStruct<Geometry.MapMesh.MapSubMesh>(geometry.mapMesh.header.subMapMeshCount);
 
-                geometry.mapMesh.verticesHeader = reader.ReadStruct<Geometry.VerticesHeader>();
-                geometry.mapMesh.vertices = reader.ReadBytes(geometry.mapMesh.verticesHeader.verticesSize);
+                geometry.mapMesh.vertexSectionsHeader = reader.ReadStruct<Geometry.VertexSectionsHeader>();
+                geometry.mapMesh.vertexSections = reader.ReadStruct<Geometry.VertexSectionHeader>(geometry.mapMesh.vertexSectionsHeader.vertexSectionCount);
+                geometry.mapMesh.vertices = new byte[geometry.mapMesh.vertexSections.Length][];
+                for (int j = 0; j < geometry.mapMesh.vertexSections.Length; j++)
+                {
+                    geometry.mapMesh.vertices[j] = reader.ReadBytes(geometry.mapMesh.vertexSections[j].sectionLength);
+                }
                 geometry.mapMesh.indices = reader.ReadUInt16(geometry.mapMesh.header.indicesLength / sizeof(ushort));
             }
             
@@ -287,14 +299,13 @@ namespace SH.GameData.SH2
                     Geometry.MapDecorations.Decoration decoration = new Geometry.MapDecorations.Decoration();
                     decoration.header = reader.ReadStruct<Geometry.MapDecorations.Decoration.Header>();
                     decoration.subDecorations = reader.ReadStruct<Geometry.MapDecorations.Decoration.SubDecoration>(decoration.header.decorationCount);
-                    decoration.verticesHeader = reader.ReadStruct<Geometry.VerticesHeader>();
-                    if(decoration.verticesHeader.field_04 == 2)
+                    decoration.vertexSectionsHeader = reader.ReadStruct<Geometry.VertexSectionsHeader>();
+                    decoration.vertexSections = reader.ReadStruct<Geometry.VertexSectionHeader>(decoration.vertexSectionsHeader.vertexSectionCount);
+                    decoration.vertices = new byte[decoration.vertexSections.Length][];
+                    for (int j = 0; j < decoration.vertexSections.Length; j++)
                     {
-                        reader.SkipInt32();
-                        reader.SkipInt32();
-                        reader.SkipInt32();
+                        decoration.vertices[j] = reader.ReadBytes(decoration.vertexSections[j].sectionLength);
                     }
-                    decoration.vertices = reader.ReadBytes(decoration.verticesHeader.verticesSize);
                     decoration.indices = reader.ReadUInt16(decoration.header.indicesLength / sizeof(ushort));
                     geometry.mapDecorations.decorations[i] = decoration;
                 }
