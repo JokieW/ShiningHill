@@ -42,7 +42,7 @@ namespace SH.GameData.SH2
                 [Hex] public int field_00; //Next mesh group?
                 [Hex] public int meshGroupSize;
                 [Hex] public int field_08; //saw 0x14
-                [Hex] public int field_0C;
+                [Hex] public int field_0C; //saw 0
 
                 [Hex] public int offsetToDecorations;
                 [Hex] public int field_14; //saw 0x01
@@ -66,7 +66,7 @@ namespace SH.GameData.SH2
                     public Vector4 boundingBoxA;
                     public Vector4 boundingBoxB;
 
-                    [Hex] public int field_20;
+                    [Hex] public int field_20; //Looks like flags?
                     [Hex] public int offsetToIndices;
                     [Hex] public int indicesLength;
                     [Hex] public int field_2C; //looks like a length or offset but cant find from where
@@ -75,17 +75,30 @@ namespace SH.GameData.SH2
                 }
 
                 [Serializable]
-                [StructLayout(LayoutKind.Sequential, Pack = 0)]
-                public struct MapSubMesh
+                public class MapSubMesh
                 {
-                    [Hex] public int materialIndex;
-                    [Hex] public int sectionId;
-                    [Hex] public int field_08; // often 0x01
-                    [Hex] public short indexCount;
-                    [Hex] public short field_0E;
+                    public Header header;
+                    public MapSubSubMesh[] subSubMeshes;
 
-                    [Hex] public short firstIndex;
-                    [Hex] public short lastIndex;
+                    [Serializable]
+                    [StructLayout(LayoutKind.Sequential, Pack = 0)]
+                    public struct Header
+                    {
+                        [Hex] public int materialIndex;
+                        [Hex] public int sectionId;
+                        [Hex] public int subSubMeshCount;
+                    }
+
+                    [Serializable]
+                    [StructLayout(LayoutKind.Sequential, Pack = 0)]
+                    public struct MapSubSubMesh
+                    {
+                        [Hex] public short stripLength;
+                        [Hex] public byte field_02; //saw 0, 1
+                        [Hex] public byte stripCount;
+                        [Hex] public ushort firstVertex;
+                        [Hex] public ushort lastVertex;
+                    }
                 }
             }
 
@@ -173,6 +186,32 @@ namespace SH.GameData.SH2
 
             [Serializable]
             [StructLayout(LayoutKind.Sequential, Pack = 0)]
+            public struct Vertex18
+            {
+                public Vector3 position;
+                public Vector2 uv;
+                public Color32 color;
+
+                public unsafe static void ExtractToBuffers(byte[] source, List<Vector3> vertices, List<Vector2> uvs, List<Color32> colors)
+                {
+                    int v18Count = source.Length / Marshal.SizeOf<Vertex18>();
+
+                    fixed (void* sourcePtr = source)
+                    {
+                        Vertex18* v18Ptr = (Vertex18*)sourcePtr;
+                        for (int i = 0; i < v18Count; i++)
+                        {
+                            Vertex18 v18 = *v18Ptr++;
+                            vertices.Add(v18.position);
+                            uvs.Add(v18.uv);
+                            colors.Add(v18.color);
+                        }
+                    }
+                }
+            }
+
+            [Serializable]
+            [StructLayout(LayoutKind.Sequential, Pack = 0)]
             public struct Vertex20
             {
                 public Vector3 position;
@@ -235,6 +274,10 @@ namespace SH.GameData.SH2
                 {
                     Vertex14.ExtractToBuffers(rawVertices, vertices, uvs);
                 }
+                else if (vertexSize == 0x18)
+                {
+                    Vertex18.ExtractToBuffers(rawVertices, vertices, uvs, colors);
+                }
                 else if (vertexSize == 0x20)
                 {
                     Vertex20.ExtractToBuffers(rawVertices, vertices, normals, uvs);
@@ -278,7 +321,14 @@ namespace SH.GameData.SH2
                     geo.mapMesh = new Geometry.MapMesh();
                     geo.mapMesh.header = reader.ReadStruct<Geometry.MapMesh.Header>();
 
-                    geo.mapMesh.mapSubMeshes = reader.ReadStruct<Geometry.MapMesh.MapSubMesh>(geo.mapMesh.header.subMapMeshCount);
+                    geo.mapMesh.mapSubMeshes = new Geometry.MapMesh.MapSubMesh[geo.mapMesh.header.subMapMeshCount];
+                    for(int j = 0; j < geo.mapMesh.mapSubMeshes.Length; j++)
+                    {
+                        Geometry.MapMesh.MapSubMesh subMesh = new Geometry.MapMesh.MapSubMesh();
+                        subMesh.header = reader.ReadStruct<Geometry.MapMesh.MapSubMesh.Header>();
+                        subMesh.subSubMeshes = reader.ReadStruct<Geometry.MapMesh.MapSubMesh.MapSubSubMesh>(subMesh.header.subSubMeshCount);
+                        geo.mapMesh.mapSubMeshes[j] = subMesh;
+                    }
 
                     geo.mapMesh.vertexSectionsHeader = reader.ReadStruct<Geometry.VertexSectionsHeader>();
                     geo.mapMesh.vertexSections = reader.ReadStruct<Geometry.VertexSectionHeader>(geo.mapMesh.vertexSectionsHeader.vertexSectionCount);
@@ -288,13 +338,16 @@ namespace SH.GameData.SH2
                         geo.mapMesh.vertices[j] = reader.ReadBytes(geo.mapMesh.vertexSections[j].sectionLength);
                     }
                     geo.mapMesh.indices = reader.ReadUInt16(geo.mapMesh.header.indicesLength / sizeof(ushort));
+                    reader.AlignToLine();
                 }
 
                 //Get decorations
-                geo.mapDecorations = new Geometry.MapDecorations();
+                if (geo.header.offsetToDecorations != 0x00000000)
                 {
+                    geo.mapDecorations = new Geometry.MapDecorations();
                     reader.AlignToLine();
                     long decorationsBaseOffset = reader.BaseStream.Position;
+
                     geo.mapDecorations.offsetToDecorations = reader.ReadInt32(reader.ReadInt32() /* offsets count */);
                     geo.mapDecorations.decorations = new Geometry.MapDecorations.Decoration[geo.mapDecorations.offsetToDecorations.Length];
                     for (int k = 0; k < geo.mapDecorations.decorations.Length; k++)
@@ -311,6 +364,7 @@ namespace SH.GameData.SH2
                             decoration.vertices[j] = reader.ReadBytes(decoration.vertexSections[j].sectionLength);
                         }
                         decoration.indices = reader.ReadUInt16(decoration.header.indicesLength / sizeof(ushort));
+                        reader.AlignToLine();
                         geo.mapDecorations.decorations[k] = decoration;
                     }
                 }

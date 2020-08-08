@@ -151,7 +151,7 @@ namespace SH.GameData.Shared
             return mesh;
         }
 
-        public static int Unstrip(int from, int stripLength, int stripCount, IReadOnlyList<ushort> indices, List<int> triangles)
+        public static int Unstrip(int from, ushort indexAdjust, int stripLength, int stripCount, IReadOnlyList<ushort> indices, List<int> triangles)
         {
             int totalRead = 0;
             int i = from;
@@ -159,9 +159,9 @@ namespace SH.GameData.Shared
             {
                 unchecked
                 {
-                    int memory = indices[i++] << 0x10;
+                    int memory = (ushort)(indices[i++] - indexAdjust) << 0x10;
                     int mask = (int)0xFFFF0000;
-                    ushort currentIndex = indices[i++];
+                    ushort currentIndex = (ushort)(indices[i++] - indexAdjust);
                     int read = 2;
 
                     while (read < stripLength)
@@ -170,7 +170,7 @@ namespace SH.GameData.Shared
                         mask ^= (int)0xFFFFFFFF;
 
                         read++;
-                        currentIndex = indices[i++];
+                        currentIndex = (ushort)(indices[i++] - indexAdjust);
 
                         triangles.Add((ushort)(memory >> 0x10));
                         triangles.Add((ushort)memory);

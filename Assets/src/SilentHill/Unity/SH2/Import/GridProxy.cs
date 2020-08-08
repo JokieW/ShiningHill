@@ -66,8 +66,7 @@ namespace SH.Unity.SH2
 
         private static GameObject UnpackMap(FileMap mapFile, GridProxy grid)
         {
-            GameObject go = new GameObject("Geometry");
-            go.isStatic = true;
+            GameObject go = new GameObject("Geometry") { isStatic = true };
 
             UnpackPath meshAssetPath = UnpackPath.GetDirectory(grid).WithDirectoryAndName(UnpackDirectory.Unity, grid.fullName + "_mesh.asset", true);
             if (meshAssetPath.FileExists())
@@ -81,36 +80,49 @@ namespace SH.Unity.SH2
 
                 for (int i = 0; i < meshFile.geometries.Length; i++)
                 {
+                    GameObject meshGo = new GameObject("MapMesh") { isStatic = true };
+                    meshGo.transform.SetParent(go.transform);
+
                     FileGeometry.Geometry geo = meshFile.geometries[i];
                     FileGeometry.Geometry.MapMesh.MapSubMesh[] subMeshes = geo.mapMesh.mapSubMeshes;
                     for (int j = 0, indicesIndex = 0; j != subMeshes.Length; j++)
                     {
+                        GameObject subGo = new GameObject("MapSubMesh") { isStatic = true };
+                        subGo.transform.SetParent(meshGo.transform);
+
                         FileGeometry.Geometry.MapMesh.MapSubMesh subMesh = subMeshes[j];
-                        int vertexSize = geo.mapMesh.vertexSections[subMesh.sectionId].vertexSize;
-                        Mesh mesh = MakeSubMeshFromIndices(vertexSize, geo.mapMesh.vertices[subMesh.sectionId], grid.fullName + "_mapsubmesh_" + i + "_" + j + "_" + subMesh.materialIndex, subMesh.indexCount, 1, ref indicesIndex, geo.mapMesh.indices);
-                        Material material = GetMaterial(grid.localTextures, grid.level.levelMaterials, meshFile.materials[subMesh.materialIndex], MaterialRolodex.MaterialType.Diffuse);
-                        GameObject subGo = CreateMeshAssetAndSubGameObject("MapSubMesh", meshAssetPath, go, mesh, material);
-                        subGo.AddComponent<MapSubMeshComponent>().subMesh = subMesh;
-                    }
-                
-                    FileGeometry.Geometry.MapDecorations.Decoration[] decorations = geo.mapDecorations.decorations;
-                    for (int k = 0; k < decorations.Length; k++)
-                    {
-                        FileGeometry.Geometry.MapDecorations.Decoration decoration = decorations[k];
-
-                        GameObject decGo = new GameObject("Decoration");
-                        decGo.isStatic = true;
-                        decGo.transform.SetParent(go.transform);
-                        decGo.AddComponent<DecorationComponent>().decoration = decoration;
-
-                        for (int j = 0, indicesIndex = 0; j < decoration.subDecorations.Length; j++)
+                        int sectionId = subMesh.header.sectionId;
+                        int vertexSize = geo.mapMesh.vertexSections[sectionId].vertexSize;
+                        for (int k = 0; k < subMesh.subSubMeshes.Length; k++)
                         {
-                            FileGeometry.Geometry.MapDecorations.Decoration.SubDecoration subDecoration = decoration.subDecorations[j];
-                            int vertexSize = decoration.vertexSections[subDecoration.sectionId].vertexSize;
-                            Mesh mesh = MakeSubMeshFromIndices(vertexSize, decoration.vertices[subDecoration.sectionId], grid.fullName + "_decoration_" + k, subDecoration.stripLength, subDecoration.stripCount, ref indicesIndex, decoration.indices);
-                            Material material = GetMaterial(grid.localTextures, grid.level.levelMaterials, meshFile.materials[subDecoration.materialIndex]);
-                            GameObject subGo = CreateMeshAssetAndSubGameObject("SubDecoration", meshAssetPath, decGo, mesh, material);
-                            subGo.AddComponent<SubDecorationComponent>().subDecoration = subDecoration;
+                            FileGeometry.Geometry.MapMesh.MapSubMesh.MapSubSubMesh subSubMesh = subMesh.subSubMeshes[k];
+                            Mesh mesh = MakeSubMeshFromIndices(vertexSize, subSubMesh, geo.mapMesh.vertices[sectionId], grid.fullName + "_mapsubsubmesh_" + i + "_" + j + "_" + k + "_" + subMesh.header.materialIndex, ref indicesIndex, geo.mapMesh.indices);
+                            Material material = GetMaterial(grid.localTextures, grid.level.levelMaterials, meshFile.materials[subMesh.header.materialIndex], MaterialRolodex.MaterialType.Diffuse);
+                            GameObject subSubGo = CreateMeshAssetAndSubGameObject("MapSubSubMesh", meshAssetPath, subGo, mesh, material);
+                            subSubGo.AddComponent<MapSubMeshComponent>().subMesh = subMesh;
+                        }
+                    }
+
+                    if (geo.mapDecorations != null)
+                    {
+                        FileGeometry.Geometry.MapDecorations.Decoration[] decorations = geo.mapDecorations.decorations;
+                        for (int j = 0; j < decorations.Length; j++)
+                        {
+                            FileGeometry.Geometry.MapDecorations.Decoration decoration = decorations[j];
+
+                            GameObject decGo = new GameObject("Decoration") { isStatic = true };
+                            decGo.transform.SetParent(go.transform);
+                            decGo.AddComponent<DecorationComponent>().decoration = decoration;
+
+                            for (int k = 0, indicesIndex = 0; k < decoration.subDecorations.Length; k++)
+                            {
+                                FileGeometry.Geometry.MapDecorations.Decoration.SubDecoration subDecoration = decoration.subDecorations[k];
+                                int vertexSize = decoration.vertexSections[subDecoration.sectionId].vertexSize;
+                                Mesh mesh = MakeSubMeshFromIndices(vertexSize, decoration.vertices[subDecoration.sectionId], grid.fullName + "_subdecoration_" + j, subDecoration.stripLength, subDecoration.stripCount, ref indicesIndex, decoration.indices);
+                                Material material = GetMaterial(grid.localTextures, grid.level.levelMaterials, meshFile.materials[subDecoration.materialIndex]);
+                                GameObject subGo = CreateMeshAssetAndSubGameObject("SubDecoration", meshAssetPath, decGo, mesh, material);
+                                subGo.AddComponent<SubDecorationComponent>().subDecoration = subDecoration;
+                            }
                         }
                     }
                 }
@@ -157,7 +169,22 @@ namespace SH.Unity.SH2
             Mesh mesh = MakeMeshFromVertices(vertexSize, vertices);
 
             CollectionPool.Request(out List<int> triangles);
-            indicesIndex += MeshUtil.Unstrip(indicesIndex, stripLength, stripCount, indices, triangles);
+            indicesIndex += MeshUtil.Unstrip(indicesIndex, 0, stripLength, stripCount, indices, triangles);
+            mesh.SetTriangles(triangles, 0);
+            CollectionPool.Return(ref triangles);
+
+            mesh.name = meshName;
+            return mesh;
+        }
+
+        private static Mesh MakeSubMeshFromIndices(int vertexSize, FileGeometry.Geometry.MapMesh.MapSubMesh.MapSubSubMesh subSubMesh, byte[] vertices, string meshName, ref int indicesIndex, ushort[] indices)
+        {
+            byte[] usedVertices = new byte[vertexSize * (subSubMesh.lastVertex - subSubMesh.firstVertex + 1)];
+            UnsafeUtil.MemCopy(vertices, subSubMesh.firstVertex * vertexSize, usedVertices, 0, usedVertices.Length);
+            Mesh mesh = MakeMeshFromVertices(vertexSize, usedVertices);
+
+            CollectionPool.Request(out List<int> triangles);
+            indicesIndex += MeshUtil.Unstrip(indicesIndex, subSubMesh.firstVertex, subSubMesh.stripLength, subSubMesh.stripCount, indices, triangles);
             mesh.SetTriangles(triangles, 0);
             CollectionPool.Return(ref triangles);
 

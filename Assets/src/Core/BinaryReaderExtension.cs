@@ -8,25 +8,6 @@ namespace SH.Core
 {
     public static class BinaryReaderExtension
     {
-        private static unsafe void MemCopy(void* source, void* destination, long count)
-        {
-            long lenghtByte = count % 8;
-            byte* sourceByte = (byte*)source;
-            byte* destinationByte = (byte*)destination;
-            for (long i = 0; i < lenghtByte; i++)
-            {
-                *destinationByte++ = *sourceByte++;
-            }
-
-            long lengthLong = count - lenghtByte;
-            ulong* sourceLong = (ulong*)sourceByte;
-            ulong* destinationLong = (ulong*)destinationByte;
-            for (int i = 0; i < lengthLong; i += 8)
-            {
-                *destinationLong++ = *sourceLong++;
-            }
-        }
-
         [ThreadStatic]
         private static byte[] _readBuffer;
         private static byte[] GetReadBuffer(int neededCount)
@@ -85,7 +66,7 @@ namespace SH.Core
             reader.Read(bytes, 0, totalLength);
             fixed (void* bufferPtr = buffer, bytesPtr = bytes)
             {
-                MemCopy(bytesPtr, bufferPtr, totalLength);
+                UnsafeUtil.MemCopy(bytesPtr, bufferPtr, totalLength);
             }
         }
 
@@ -105,7 +86,7 @@ namespace SH.Core
             reader.Read(bytes, 0, totalLength);
             fixed (void* bufferPtr = buffer, bytesPtr = bytes)
             {
-                MemCopy(bytesPtr, bufferPtr, totalLength);
+                UnsafeUtil.MemCopy(bytesPtr, bufferPtr, totalLength);
             }
         }
 
@@ -125,7 +106,7 @@ namespace SH.Core
             reader.Read(bytes, 0, totalLength);
             fixed (void* bufferPtr = buffer, bytesPtr = bytes)
             {
-                MemCopy(bytesPtr, bufferPtr, totalLength);
+                UnsafeUtil.MemCopy(bytesPtr, bufferPtr, totalLength);
             }
         }
 
@@ -145,7 +126,7 @@ namespace SH.Core
             reader.Read(bytes, 0, totalLength);
             fixed (void* bufferPtr = buffer, bytesPtr = bytes)
             {
-                MemCopy(bytesPtr, bufferPtr, totalLength);
+                UnsafeUtil.MemCopy(bytesPtr, bufferPtr, totalLength);
             }
         }
 
@@ -165,7 +146,7 @@ namespace SH.Core
             reader.Read(bytes, 0, totalLength);
             fixed (void* bufferPtr = buffer, bytesPtr = bytes)
             {
-                MemCopy(bytesPtr, bufferPtr, totalLength);
+                UnsafeUtil.MemCopy(bytesPtr, bufferPtr, totalLength);
             }
         }
 
@@ -185,7 +166,7 @@ namespace SH.Core
             reader.Read(bytes, 0, totalLength);
             fixed (void* bufferPtr = buffer, bytesPtr = bytes)
             {
-                MemCopy(bytesPtr, bufferPtr, totalLength);
+                UnsafeUtil.MemCopy(bytesPtr, bufferPtr, totalLength);
             }
         }
 
@@ -205,7 +186,7 @@ namespace SH.Core
             reader.Read(bytes, 0, totalLength);
             fixed (void* bufferPtr = buffer, bytesPtr = bytes)
             {
-                MemCopy(bytesPtr, bufferPtr, totalLength);
+                UnsafeUtil.MemCopy(bytesPtr, bufferPtr, totalLength);
             }
         }
         #endregion
