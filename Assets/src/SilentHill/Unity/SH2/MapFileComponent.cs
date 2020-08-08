@@ -23,7 +23,7 @@ namespace SH.Unity.SH2
                 FileGeometry fg = t.mapFile.GetMainGeometryFile();
                 if (fg != null)
                 {
-                    HandlesUtil.DrawBoundingCube(fg.geometry.mapMesh.header.boundingBoxA, fg.geometry.mapMesh.header.boundingBoxB);
+                    //HandlesUtil.DrawBoundingCube(fg.geometries.mapMesh.header.boundingBoxA, fg.geometries.mapMesh.header.boundingBoxB);
                 }
             }
             Handles.matrix = prevMatrix;

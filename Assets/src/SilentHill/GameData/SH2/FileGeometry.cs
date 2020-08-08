@@ -15,7 +15,7 @@ namespace SH.GameData.SH2
     {
         public FileMap.SubFileHeader subFileHeader;
         public Header header;
-        public Geometry geometry;
+        public Geometry[] geometries;
         public MeshMaterial[] materials;
 
         [Serializable]
@@ -23,7 +23,7 @@ namespace SH.GameData.SH2
         public struct Header
         {
             [Hex] public uint magicBytes; //0x20010730
-            [Hex] public int fileCount; 
+            [Hex] public int geometryCount; 
             [Hex] public int meshSize;
             [Hex] public int materialCount;
         }
@@ -79,7 +79,7 @@ namespace SH.GameData.SH2
                 public struct MapSubMesh
                 {
                     [Hex] public int materialIndex;
-                    [Hex] public int field_04;
+                    [Hex] public int sectionId;
                     [Hex] public int field_08; // often 0x01
                     [Hex] public short indexCount;
                     [Hex] public short field_0E;
@@ -256,7 +256,7 @@ namespace SH.GameData.SH2
         {
             [Hex] public short field_00; //saw 1 and 2
             [Hex] public short textureId; //maps to the id of the DXTTexture.Header
-            [Hex] public int field_04; //saw FFB2B2B2B2, FFFFFFFF
+            [Hex] public int field_04; //saw FFB2B2B2B2, FFFFFFFF, FF000000
             [Hex] public int field_08; //specularity? only saw FF000000 for field_00 = 1 and FFFFFFFF for field_00 = 2
             public float field_0C;
         }
@@ -265,50 +265,57 @@ namespace SH.GameData.SH2
         {
             long fileBaseOffset = reader.BaseStream.Position;
             header = reader.ReadStruct<Header>();
-            
-            //Get map geometry
-            geometry = new Geometry();
+
+            geometries = new Geometry[header.geometryCount];
+            for (int i = 0; i < geometries.Length; i++)
             {
-                geometry.header = reader.ReadStruct<Geometry.Header>();
+                Geometry geo = new Geometry();
 
-                geometry.mapMesh = new Geometry.MapMesh();
-                geometry.mapMesh.header = reader.ReadStruct<Geometry.MapMesh.Header>();
-
-                geometry.mapMesh.mapSubMeshes = reader.ReadStruct<Geometry.MapMesh.MapSubMesh>(geometry.mapMesh.header.subMapMeshCount);
-
-                geometry.mapMesh.vertexSectionsHeader = reader.ReadStruct<Geometry.VertexSectionsHeader>();
-                geometry.mapMesh.vertexSections = reader.ReadStruct<Geometry.VertexSectionHeader>(geometry.mapMesh.vertexSectionsHeader.vertexSectionCount);
-                geometry.mapMesh.vertices = new byte[geometry.mapMesh.vertexSections.Length][];
-                for (int j = 0; j < geometry.mapMesh.vertexSections.Length; j++)
+                //Get map geometry
                 {
-                    geometry.mapMesh.vertices[j] = reader.ReadBytes(geometry.mapMesh.vertexSections[j].sectionLength);
-                }
-                geometry.mapMesh.indices = reader.ReadUInt16(geometry.mapMesh.header.indicesLength / sizeof(ushort));
-            }
-            
-            //Get decorations
-            geometry.mapDecorations = new Geometry.MapDecorations();
-            {
-                reader.AlignToLine();
-                long decorationsBaseOffset = reader.BaseStream.Position;
-                geometry.mapDecorations.offsetToDecorations = reader.ReadInt32(reader.ReadInt32() /* offsets count */);
-                geometry.mapDecorations.decorations = new Geometry.MapDecorations.Decoration[geometry.mapDecorations.offsetToDecorations.Length];
-                for (int i = 0; i < geometry.mapDecorations.decorations.Length; i++)
-                {
-                    reader.BaseStream.Position = decorationsBaseOffset + geometry.mapDecorations.offsetToDecorations[i];
-                    Geometry.MapDecorations.Decoration decoration = new Geometry.MapDecorations.Decoration();
-                    decoration.header = reader.ReadStruct<Geometry.MapDecorations.Decoration.Header>();
-                    decoration.subDecorations = reader.ReadStruct<Geometry.MapDecorations.Decoration.SubDecoration>(decoration.header.decorationCount);
-                    decoration.vertexSectionsHeader = reader.ReadStruct<Geometry.VertexSectionsHeader>();
-                    decoration.vertexSections = reader.ReadStruct<Geometry.VertexSectionHeader>(decoration.vertexSectionsHeader.vertexSectionCount);
-                    decoration.vertices = new byte[decoration.vertexSections.Length][];
-                    for (int j = 0; j < decoration.vertexSections.Length; j++)
+                    geo.header = reader.ReadStruct<Geometry.Header>();
+
+                    geo.mapMesh = new Geometry.MapMesh();
+                    geo.mapMesh.header = reader.ReadStruct<Geometry.MapMesh.Header>();
+
+                    geo.mapMesh.mapSubMeshes = reader.ReadStruct<Geometry.MapMesh.MapSubMesh>(geo.mapMesh.header.subMapMeshCount);
+
+                    geo.mapMesh.vertexSectionsHeader = reader.ReadStruct<Geometry.VertexSectionsHeader>();
+                    geo.mapMesh.vertexSections = reader.ReadStruct<Geometry.VertexSectionHeader>(geo.mapMesh.vertexSectionsHeader.vertexSectionCount);
+                    geo.mapMesh.vertices = new byte[geo.mapMesh.vertexSections.Length][];
+                    for (int j = 0; j < geo.mapMesh.vertexSections.Length; j++)
                     {
-                        decoration.vertices[j] = reader.ReadBytes(decoration.vertexSections[j].sectionLength);
+                        geo.mapMesh.vertices[j] = reader.ReadBytes(geo.mapMesh.vertexSections[j].sectionLength);
                     }
-                    decoration.indices = reader.ReadUInt16(decoration.header.indicesLength / sizeof(ushort));
-                    geometry.mapDecorations.decorations[i] = decoration;
+                    geo.mapMesh.indices = reader.ReadUInt16(geo.mapMesh.header.indicesLength / sizeof(ushort));
                 }
+
+                //Get decorations
+                geo.mapDecorations = new Geometry.MapDecorations();
+                {
+                    reader.AlignToLine();
+                    long decorationsBaseOffset = reader.BaseStream.Position;
+                    geo.mapDecorations.offsetToDecorations = reader.ReadInt32(reader.ReadInt32() /* offsets count */);
+                    geo.mapDecorations.decorations = new Geometry.MapDecorations.Decoration[geo.mapDecorations.offsetToDecorations.Length];
+                    for (int k = 0; k < geo.mapDecorations.decorations.Length; k++)
+                    {
+                        reader.BaseStream.Position = decorationsBaseOffset + geo.mapDecorations.offsetToDecorations[k];
+                        Geometry.MapDecorations.Decoration decoration = new Geometry.MapDecorations.Decoration();
+                        decoration.header = reader.ReadStruct<Geometry.MapDecorations.Decoration.Header>();
+                        decoration.subDecorations = reader.ReadStruct<Geometry.MapDecorations.Decoration.SubDecoration>(decoration.header.decorationCount);
+                        decoration.vertexSectionsHeader = reader.ReadStruct<Geometry.VertexSectionsHeader>();
+                        decoration.vertexSections = reader.ReadStruct<Geometry.VertexSectionHeader>(decoration.vertexSectionsHeader.vertexSectionCount);
+                        decoration.vertices = new byte[decoration.vertexSections.Length][];
+                        for (int j = 0; j < decoration.vertexSections.Length; j++)
+                        {
+                            decoration.vertices[j] = reader.ReadBytes(decoration.vertexSections[j].sectionLength);
+                        }
+                        decoration.indices = reader.ReadUInt16(decoration.header.indicesLength / sizeof(ushort));
+                        geo.mapDecorations.decorations[k] = decoration;
+                    }
+                }
+
+                geometries[i] = geo;
             }
 
             //Get materials
