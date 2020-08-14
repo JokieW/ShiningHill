@@ -3,12 +3,15 @@ using System.IO;
 using System.Linq;
 
 using UnityEngine;
+using Nvidia.TextureTools;
 
 using SH.Core;
 using SH.Unity.Shared;
 using SH.GameData.SH2;
 using System;
 using UnityEditor;
+using System.Runtime.InteropServices;
+using SH.GameData.Shared;
 
 namespace SH.Unity.SH2
 {
@@ -90,7 +93,7 @@ namespace SH.Unity.SH2
             }
         }
 
-        public static (FileTex.DXTTexture, Texture2D)[] ReadTexDXT1(string baseName, FileTex texFile)
+        public unsafe static (FileTex.DXTTexture, Texture2D)[] ReadTexDXT1(string baseName, FileTex texFile)
         {
             (FileTex.DXTTexture, Texture2D)[] textures = new (FileTex.DXTTexture, Texture2D)[texFile == null ? 0 : texFile.textures.Length];
 
@@ -99,9 +102,23 @@ namespace SH.Unity.SH2
                 FileTex.DXTTexture dxt = texFile.textures[i];
                 bool isTwo = (dxt.subgroups[0].field_1C & 0x02) != 0;
                 bool isFour = (dxt.subgroups[0].field_1C & 0x04) != 0;
-                Texture2D newTexture = new Texture2D(dxt.header.width, dxt.header.height, isTwo || isFour ? TextureFormat.DXT5 : TextureFormat.DXT1, false);
+                Texture2D newTexture = new Texture2D(dxt.header.width, dxt.header.height, isTwo || isFour ? TextureFormat.RGBA32 : TextureFormat.RGBA32, false);
                 newTexture.wrapMode = TextureWrapMode.Clamp;
-                newTexture.LoadRawTextureData(dxt.pixels);
+
+                if (isTwo || isFour)
+                {
+                    Color[] pixels = new Color[dxt.header.width * dxt.header.height];
+                    ColorBC2.BufferToColorRGBA8888(pixels, dxt.pixels, dxt.header.width, dxt.header.height);
+                    newTexture.SetPixels(pixels);
+                }
+                else
+                {
+                    Color[] pixels = new Color[dxt.header.width * dxt.header.height];
+                    ColorBC1.BufferToColorRGBA8888(pixels, dxt.pixels, dxt.header.width, dxt.header.height);
+                    newTexture.SetPixels(pixels);
+                    //newTexture.LoadRawTextureData(dxt.pixels);
+                }
+
                 newTexture.Apply();
 
                 newTexture.alphaIsTransparency = true;
