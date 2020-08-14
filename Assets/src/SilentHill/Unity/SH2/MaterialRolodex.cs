@@ -92,7 +92,7 @@ namespace SH.Unity.SH2
 
         public static (FileTex.DXTTexture, Texture2D)[] ReadTexDXT1(string baseName, FileTex texFile)
         {
-            (FileTex.DXTTexture, Texture2D)[] textures = new (FileTex.DXTTexture, Texture2D)[texFile.textures.Length];
+            (FileTex.DXTTexture, Texture2D)[] textures = new (FileTex.DXTTexture, Texture2D)[texFile == null ? 0 : texFile.textures.Length];
 
             for(int i = 0; i < textures.Length; i++)
             {

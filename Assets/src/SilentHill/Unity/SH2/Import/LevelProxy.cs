@@ -138,6 +138,8 @@ namespace SH.Unity.SH2
             else
             {
                 UnityEngine.SceneManagement.Scene sceneInstance = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
+                RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
+                RenderSettings.ambientLight = Color.white;
                 GameObject[] gos = sceneInstance.GetRootGameObjects();
                 GameObject root = null;
                 for (int i = 0; i < gos.Length; i++)

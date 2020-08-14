@@ -17,6 +17,7 @@ namespace SH.Unity.SH2
             Matrix4x4 prevMatrix2 = Handles.matrix;
 
             Gizmos.color = Color.white;
+            Handles.color = Color.red;
             if (subMesh != null)
             {
                 Gizmos.matrix = transform.localToWorldMatrix;
@@ -27,7 +28,7 @@ namespace SH.Unity.SH2
                 for (int i = 0; i < verts.Count; i++)
                 {
                     Gizmos.DrawSphere(verts[i], 10.0f);
-                    Handles.Label(verts[i], i.ToString("X"));
+                    //Handles.Label(verts[i] + (i * Vector3.up), i.ToString("X"));
                 }
                 CollectionPool.Return(ref verts);
             }

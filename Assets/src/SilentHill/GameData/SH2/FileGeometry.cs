@@ -41,9 +41,9 @@ namespace SH.GameData.SH2
             [StructLayout(LayoutKind.Sequential, Pack = 0)]
             public struct Header
             {
-                [Hex] public int field_00; //Next mesh group?
+                [Hex] public int field_00;
                 [Hex] public int meshGroupSize;
-                [Hex] public int offsetToFirstMeshGroup; //saw 0x14, offset to first mesh group?
+                [Hex] public int offsetToFirstMeshGroup;
                 [Hex] public int offsetToSecondMeshGroup;
 
                 [Hex] public int offsetToDecorations;
@@ -100,8 +100,8 @@ namespace SH.GameData.SH2
                         [StructLayout(LayoutKind.Sequential, Pack = 0)]
                         public struct MeshPart
                         {
-                            [Hex] public short stripLength;
-                            [Hex] public byte field_02; //saw 0, 1
+                            [Hex] public ushort stripLength;
+                            [Hex] public byte invertReading;
                             [Hex] public byte stripCount;
                             [Hex] public ushort firstVertex;
                             [Hex] public ushort lastVertex;
