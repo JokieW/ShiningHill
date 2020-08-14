@@ -127,27 +127,27 @@ namespace SH.Unity.SH2
                                     }
                                 }
                             }
+                        }
 
-                            if (geo.mapDecorations != null)
+                        if (geo.mapDecorations != null)
+                        {
+                            FileGeometry.Geometry.MapDecorations.Decoration[] decorations = geo.mapDecorations.decorations;
+                            for (int k = 0; k < decorations.Length; k++)
                             {
-                                FileGeometry.Geometry.MapDecorations.Decoration[] decorations = geo.mapDecorations.decorations;
-                                for (int k = 0; k < decorations.Length; k++)
+                                FileGeometry.Geometry.MapDecorations.Decoration decoration = decorations[k];
+
+                                GameObject decGo = new GameObject("Decoration") { isStatic = true };
+                                decGo.transform.SetParent(geometryGo.transform);
+                                decGo.AddComponent<DecorationComponent>().decoration = decoration;
+
+                                for (int l = 0, indicesIndex = 0; l < decoration.subDecorations.Length; l++)
                                 {
-                                    FileGeometry.Geometry.MapDecorations.Decoration decoration = decorations[k];
-
-                                    GameObject decGo = new GameObject("Decoration") { isStatic = true };
-                                    decGo.transform.SetParent(geometryGo.transform);
-                                    decGo.AddComponent<DecorationComponent>().decoration = decoration;
-
-                                    for (int l = 0, indicesIndex = 0; l < decoration.subDecorations.Length; l++)
-                                    {
-                                        FileGeometry.Geometry.MapDecorations.Decoration.SubDecoration subDecoration = decoration.subDecorations[l];
-                                        int vertexSize = decoration.vertexSections[subDecoration.sectionId].vertexSize;
-                                        Mesh mesh = MakeSubMeshFromIndices(vertexSize, decoration.vertices[subDecoration.sectionId], grid.fullName + "_subdecoration_" + k, subDecoration.stripLength, subDecoration.stripCount, ref indicesIndex, decoration.indices);
-                                        Material material = GetMaterial(grid.localTextures, grid.level.levelMaterials, meshFile.materials[subDecoration.materialIndex]);
-                                        GameObject subGo = CreateMeshAssetAndSubGameObject("SubDecoration", meshAssetPath, decGo, mesh, material);
-                                        subGo.AddComponent<SubDecorationComponent>().subDecoration = subDecoration;
-                                    }
+                                    FileGeometry.Geometry.MapDecorations.Decoration.SubDecoration subDecoration = decoration.subDecorations[l];
+                                    int vertexSize = decoration.vertexSections[subDecoration.sectionId].vertexSize;
+                                    Mesh mesh = MakeSubMeshFromIndices(vertexSize, decoration.vertices[subDecoration.sectionId], grid.fullName + "_subdecoration_" + k, subDecoration.stripLength, subDecoration.stripCount, ref indicesIndex, decoration.indices);
+                                    Material material = GetMaterial(grid.localTextures, grid.level.levelMaterials, meshFile.materials[subDecoration.materialIndex]);
+                                    GameObject subGo = CreateMeshAssetAndSubGameObject("SubDecoration", meshAssetPath, decGo, mesh, material);
+                                    subGo.AddComponent<SubDecorationComponent>().subDecoration = subDecoration;
                                 }
                             }
                         }
