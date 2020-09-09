@@ -2,6 +2,8 @@
 using UnityEditor;
 
 using SH.GameData.SH3;
+using SH.Core;
+using System.Collections.Generic;
 
 namespace SH.Unity.SH3
 {
@@ -41,6 +43,7 @@ namespace SH.Unity.SH3
                 Handles.matrix = transform.localToWorldMatrix;
                 if (regionData != null && regionData.events != null)
                 {
+                    CollectionPool.Request(out Dictionary<int, int> offsets);
                     for (int i = 0; i != regionData.events.Count; i++)
                     {
                         ExeData.EventInfo ev = regionData.events[i];
@@ -48,13 +51,25 @@ namespace SH.Unity.SH3
                         for (int j = 0; j != regionData.markers.Count; j++)
                         {
                             ExeData.EventMarker marker = regionData.markers[j];
-                            if (off == marker.offset && marker.type == 2)
+                            if (off == marker.offset)
                             {
-                                Handles.Label(marker.GetCenter() * 0.002f, ev.eventNumber.ToString("X2"));
+                                Vector3 location = marker.GetCenter();
+                                if (offsets.ContainsKey(off))
+                                {
+                                    location += offsets[off] * (Vector3.up * 500.0f);
+                                    offsets[off]++;
+                                }
+                                else
+                                {
+                                    offsets.Add(off, 1);
+                                }
+                                Handles.Label(location, ev.eventNumber.ToString("X2"));
+                                break;
                             }
                         }
 
                     }
+                    CollectionPool.Return(ref offsets);
                 }
                 Handles.matrix = oldmat;
             }

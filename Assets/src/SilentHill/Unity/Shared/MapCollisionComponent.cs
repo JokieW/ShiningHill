@@ -17,6 +17,7 @@ namespace SH.Unity.Shared
         private bool showGroup2 = true;
         private bool showGroup3 = true;
         private bool showGroup4 = true;
+        private bool showLabels = true;
 
         private static Vector3 GetFaceCenter(in CollisionFace face)
         {
@@ -63,18 +64,21 @@ namespace SH.Unity.Shared
                     }
                 }
 
-                for (int arrayIndex = 0; arrayIndex < 4; arrayIndex++)
+                if (showLabels)
                 {
-                    if (ShowGroupIndex(arrayIndex))
+                    for (int arrayIndex = 0; arrayIndex < 4; arrayIndex++)
                     {
-                        CollisionFace[] faces = t.collisions.IndexToFaceArray(arrayIndex);
-                        if (faces != null)
+                        if (ShowGroupIndex(arrayIndex))
                         {
-                            for (int i = 0; i < faces.Length; i++)
+                            CollisionFace[] faces = t.collisions.IndexToFaceArray(arrayIndex);
+                            if (faces != null)
                             {
-                                ref readonly CollisionFace face = ref faces[i];
-                                GUI.contentColor = Color.black;
-                                Handles.Label(GetFaceCenter(face), face.GetLabel());
+                                for (int i = 0; i < faces.Length; i++)
+                                {
+                                    ref readonly CollisionFace face = ref faces[i];
+                                    GUI.contentColor = Color.black;
+                                    Handles.Label(GetFaceCenter(face), face.GetLabel());
+                                }
                             }
                         }
                     }
@@ -90,7 +94,10 @@ namespace SH.Unity.Shared
                             ref readonly CollisionCylinder cylinder = ref cylinders[i];
                             GroupIndexToColors(4, out Color faceColor, out Color outlineColor);
                             DrawWireCapsule(cylinder.position, Quaternion.identity, cylinder.radius, cylinder.height.y, outlineColor);
-                            Handles.Label(cylinder.position, cylinder.GetLabel());
+                            if (showLabels)
+                            {
+                                Handles.Label(cylinder.position, cylinder.GetLabel());
+                            }
                         }
                     }
                 }
@@ -107,6 +114,7 @@ namespace SH.Unity.Shared
             showGroup2 = EditorGUILayout.Toggle("Show group 2", showGroup2);
             showGroup3 = EditorGUILayout.Toggle("Show group 3", showGroup3);
             showGroup4 = EditorGUILayout.Toggle("Show group 4", showGroup4);
+            showLabels = EditorGUILayout.Toggle("Show labels", showLabels);
 
         }
 

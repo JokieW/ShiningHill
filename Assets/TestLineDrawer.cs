@@ -19,7 +19,9 @@ public class TestLineDrawer : MonoBehaviour
             Handles.color = color;
             Gizmos.DrawLine(transform.position, otherPoint.transform.position);
             float distance = Vector3.Distance(otherPoint.transform.position, transform.position);
+            float angle = Vector3.SignedAngle(otherPoint.transform.position, transform.position, Vector3.up);
             Handles.Label(transform.position, distance.ToString());
+            //Handles.Label(transform.position + new Vector3(0.0f, 1.0f, 0.0f), angle.ToString());
 
             Gizmos.color = oldColor;
             Handles.color = oldhColor;

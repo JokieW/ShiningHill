@@ -13,7 +13,7 @@ namespace SH.GameData.SH3
     public struct VirtualAddress
     {
         [SerializeField]
-        long address;
+        [Hex] long address;
 
         public VirtualAddress(long virtualaddress)
         {
@@ -86,17 +86,17 @@ namespace SH.GameData.SH3
         public struct EventInfo
         {
             [SerializeField]
-            public int eventNumber;
+            [Hex] public int eventNumber;
             [SerializeField]
-            public int int0;
+            [Hex] public int int0;
             [SerializeField]
-            public int int1;
+            [Hex] public int int1;
             [SerializeField]
-            public int int2;
+            [Hex] public int int2;
             [SerializeField]
-            public int int3;
+            [Hex] public int int3;
             [SerializeField]
-            public int int4;
+            [Hex] public int int4;
 
 
             public EventInfo(BinaryReader reader, int number)
@@ -133,9 +133,9 @@ namespace SH.GameData.SH3
         public struct EventMarker
         {
             [SerializeField]
-            public short offset;
+            [Hex] public short offset;
             [SerializeField]
-            public byte type;
+            [Hex] public byte type;
             [SerializeField]
             public float x;
             [SerializeField]
@@ -339,9 +339,9 @@ namespace SH.GameData.SH3
         #region EventInfoGetters
         public struct EventInfoGetter
         {
-            public byte integerOffset;
-            public byte bitShift;
-            public short bitMask;
+            [Hex] public byte integerOffset;
+            [Hex] public byte bitShift;
+            [Hex] public short bitMask;
             public EventInfoGetter(byte off, byte shift, short mask)
             {
                 integerOffset = off;
@@ -399,9 +399,9 @@ namespace SH.GameData.SH3
         public struct EntityInfo
         {
             [SerializeField]
-            public short entityTypeID;
+            [Hex] public short entityTypeID;
             [SerializeField]
-            public short globalID;
+            [Hex] public short globalID;
             [SerializeField]
             public float x;
             [SerializeField]
@@ -411,13 +411,13 @@ namespace SH.GameData.SH3
             [SerializeField]
             public float rotY;
             [SerializeField]
-            public short a;
+            [Hex] public short a;
             [SerializeField]
-            public short b;
+            [Hex] public short b;
             [SerializeField]
-            public short c;
+            [Hex] public short c;
             [SerializeField]
-            public short d;
+            [Hex] public short d;
 
             public EntityInfo(BinaryReader reader)
             {
