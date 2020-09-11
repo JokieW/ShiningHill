@@ -22,7 +22,7 @@ namespace SH.Unity.SH2
         public BGFolderProxy parentBGFolder;
         public UnpackPath levelPath;
         public SceneAsset scene;
-        public MaterialRolodex levelMaterials;
+        public TextureRolodex levelTextures;
         public GridProxy[] grids;
         public UnityEngine.Object map;
         public UnityEngine.Object GBcam;
@@ -182,11 +182,11 @@ namespace SH.Unity.SH2
 
         private static void UnpackGlobalTextures(LevelProxy level, List<FileTex> globalTextures)
         {
-            level.levelMaterials = MaterialRolodex.CreateInstance<MaterialRolodex>();
-            AssetDatabase.CreateAsset(level.levelMaterials, UnpackPath.GetDirectory(level).WithDirectoryAndName(UnpackDirectory.Unity, level.levelName + "_mats.asset", true));
+            level.levelTextures = TextureRolodex.CreateInstance<TextureRolodex>();
+            AssetDatabase.CreateAsset(level.levelTextures, UnpackPath.GetDirectory(level).WithDirectoryAndName(UnpackDirectory.Unity, level.levelName + "_texs.asset", true));
             for (int i = 0; i < globalTextures.Count; i++)
             {
-                level.levelMaterials.ReadAndAddTexDXT1(level.levelName + "_tex_" + i, globalTextures[i]);
+                level.levelTextures.AddTextures(level.levelName + "_tex_" + i, globalTextures[i]);
             }
         }
 

@@ -5,6 +5,7 @@ using UnityEngine;
 
 namespace SH.GameData.Shared
 {
+    [Serializable]
     [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 16)]
     public struct ColorBC2
     {

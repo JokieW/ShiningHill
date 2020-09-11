@@ -44,6 +44,32 @@ namespace SH.GameData.SH2
             [Hex] public int field_0C;
         }
 
+        public int GetFileCount()
+        {
+            int count = 0;
+            if (subFiles != null)
+            {
+                count = subFiles.Length;
+            }
+            return count;
+        }
+
+        public int GetTextureFileCount()
+        {
+            int count = 0;
+            if (subFiles != null)
+            {
+                for (int i = 0; i < subFiles.Length; i++)
+                {
+                    if (subFiles[i].GetSubFileHeader().subFileType == 2)
+                    {
+                        count++;
+                    }
+                }
+            }
+            return count;
+        }
+
         public void GetTextureFiles(List<FileTex> files)
         {
             if (subFiles != null)
@@ -71,6 +97,22 @@ namespace SH.GameData.SH2
                 }
             }
             return null;
+        }
+
+        public int GetGeometryFileCount()
+        {
+            int count = 0;
+            if (subFiles != null)
+            {
+                for (int i = 0; i < subFiles.Length; i++)
+                {
+                    if (subFiles[i].GetSubFileHeader().subFileType == 1)
+                    {
+                        count++;
+                    }
+                }
+            }
+            return count;
         }
 
         public void GetGeometryFiles(List<FileGeometry> files)

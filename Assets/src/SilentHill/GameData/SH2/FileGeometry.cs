@@ -17,7 +17,7 @@ namespace SH.GameData.SH2
         public FileMap.SubFileHeader subFileHeader;
         public Header header;
         public Geometry[] geometries;
-        public MeshMaterial[] materials;
+        public MapMaterial[] mapMaterials;
 
         [Serializable]
         [StructLayout(LayoutKind.Sequential, Pack = 0)]
@@ -33,9 +33,9 @@ namespace SH.GameData.SH2
         public class Geometry
         {
             public Header header;
-            public MeshGroup meshGroup0;
-            public MeshGroup meshGroup1;
-            public MapDecorations mapDecorations;
+            public MeshGroup opaqueGroup;
+            public MeshGroup transparentGroup;
+            public MapDecals mapDecals;
 
             [Serializable]
             [StructLayout(LayoutKind.Sequential, Pack = 0)]
@@ -43,10 +43,10 @@ namespace SH.GameData.SH2
             {
                 [Hex] public int field_00;
                 [Hex] public int meshGroupSize;
-                [Hex] public int offsetToFirstMeshGroup;
-                [Hex] public int offsetToSecondMeshGroup;
+                [Hex] public int offsetToOpaqueGroup;
+                [Hex] public int offsetToTransparentGroup;
 
-                [Hex] public int offsetToDecorations;
+                [Hex] public int offsetToDecals;
             }
 
             [Serializable]
@@ -111,16 +111,16 @@ namespace SH.GameData.SH2
             }
 
             [Serializable]
-            public class MapDecorations
+            public class MapDecals
             {
-                public int[] offsetToDecorations;
-                public Decoration[] decorations;
+                public int[] offsetToDecals;
+                public Decal[] decals;
 
                 [Serializable]
-                public class Decoration
+                public class Decal
                 {
                     public Header header;
-                    public SubDecoration[] subDecorations;
+                    public SubDecal[] subDecals;
                     public VertexSectionsHeader vertexSectionsHeader;
                     public VertexSectionHeader[] vertexSections;
                     public byte[][] vertices;
@@ -136,12 +136,12 @@ namespace SH.GameData.SH2
                         [Hex] public int field_20;
                         [Hex] public int offsetToIndices;
                         [Hex] public int indicesLength;
-                        [Hex] public int decorationCount;
+                        [Hex] public int decalCount;
                     }
 
                     [Serializable]
                     [StructLayout(LayoutKind.Sequential, Pack = 0)]
-                    public struct SubDecoration
+                    public struct SubDecal
                     {
                         [Hex] public int materialIndex;
                         [Hex] public int sectionId;
@@ -303,13 +303,13 @@ namespace SH.GameData.SH2
 
         [Serializable]
         [StructLayout(LayoutKind.Sequential, Pack = 0)]
-        public struct MeshMaterial
+        public struct MapMaterial
         {
-            [Hex] public short field_00; //saw 1 and 2
+            [Hex] public short mode; //0 = emissive, 1 = cutout, 2 = specular, 4 = diffuse (use opaque or transparent varieties depedngind on mesh group
             [Hex] public short textureId; //maps to the id of the DXTTexture.Header
-            [Hex] public int field_04; //saw FFB2B2B2B2, FFFFFFFF, FF000000
-            [Hex] public int field_08; //specularity? only saw FF000000 for field_00 = 1 and FFFFFFFF for field_00 = 2
-            public float field_0C;
+            public ColorBGRA materialColor; //not sure
+            public ColorBGRA overlayColor;
+            public float specularity; // 0.0 to 100.0
         }
 
         public void ReadFile(BinaryReader reader)
@@ -327,7 +327,7 @@ namespace SH.GameData.SH2
                 for (int j = 0; j < 2; j++)
                 {
                     long positiontest2 = reader.BaseStream.Position;
-                    long meshGroupOffset = j == 0 ? geo.header.offsetToFirstMeshGroup : geo.header.offsetToSecondMeshGroup;
+                    long meshGroupOffset = j == 0 ? geo.header.offsetToOpaqueGroup : geo.header.offsetToTransparentGroup;
                     if (meshGroupOffset != 0x00000000)
                     {
                         Geometry.MeshGroup meshGroup = new Geometry.MeshGroup();
@@ -364,40 +364,40 @@ namespace SH.GameData.SH2
 
                         if(j == 0)
                         {
-                            geo.meshGroup0 = meshGroup;
+                            geo.opaqueGroup = meshGroup;
                         }
                         else
                         {
-                            geo.meshGroup1 = meshGroup;
+                            geo.transparentGroup = meshGroup;
                         }
                     }
                 }
 
-                //Get decorations
-                if (geo.header.offsetToDecorations != 0x00000000)
+                //Get decalss
+                if (geo.header.offsetToDecals != 0x00000000)
                 {
                     long positiontest5 = reader.BaseStream.Position;
-                    geo.mapDecorations = new Geometry.MapDecorations();
-                    long decorationsBaseOffset = reader.BaseStream.Position;
+                    geo.mapDecals = new Geometry.MapDecals();
+                    long decalsBaseOffset = reader.BaseStream.Position;
 
-                    geo.mapDecorations.offsetToDecorations = reader.ReadInt32(reader.ReadInt32() /* offsets count */);
-                    geo.mapDecorations.decorations = new Geometry.MapDecorations.Decoration[geo.mapDecorations.offsetToDecorations.Length];
-                    for (int k = 0; k < geo.mapDecorations.decorations.Length; k++)
+                    geo.mapDecals.offsetToDecals = reader.ReadInt32(reader.ReadInt32() /* offsets count */);
+                    geo.mapDecals.decals = new Geometry.MapDecals.Decal[geo.mapDecals.offsetToDecals.Length];
+                    for (int k = 0; k < geo.mapDecals.decals.Length; k++)
                     {
-                        reader.BaseStream.Position = decorationsBaseOffset + geo.mapDecorations.offsetToDecorations[k];
-                        Geometry.MapDecorations.Decoration decoration = new Geometry.MapDecorations.Decoration();
-                        decoration.header = reader.ReadStruct<Geometry.MapDecorations.Decoration.Header>();
-                        decoration.subDecorations = reader.ReadStruct<Geometry.MapDecorations.Decoration.SubDecoration>(decoration.header.decorationCount);
-                        decoration.vertexSectionsHeader = reader.ReadStruct<Geometry.VertexSectionsHeader>();
-                        decoration.vertexSections = reader.ReadStruct<Geometry.VertexSectionHeader>(decoration.vertexSectionsHeader.vertexSectionCount);
-                        decoration.vertices = new byte[decoration.vertexSections.Length][];
-                        for (int j = 0; j < decoration.vertexSections.Length; j++)
+                        reader.BaseStream.Position = decalsBaseOffset + geo.mapDecals.offsetToDecals[k];
+                        Geometry.MapDecals.Decal decal = new Geometry.MapDecals.Decal();
+                        decal.header = reader.ReadStruct<Geometry.MapDecals.Decal.Header>();
+                        decal.subDecals = reader.ReadStruct<Geometry.MapDecals.Decal.SubDecal>(decal.header.decalCount);
+                        decal.vertexSectionsHeader = reader.ReadStruct<Geometry.VertexSectionsHeader>();
+                        decal.vertexSections = reader.ReadStruct<Geometry.VertexSectionHeader>(decal.vertexSectionsHeader.vertexSectionCount);
+                        decal.vertices = new byte[decal.vertexSections.Length][];
+                        for (int j = 0; j < decal.vertexSections.Length; j++)
                         {
-                            decoration.vertices[j] = reader.ReadBytes(decoration.vertexSections[j].sectionLength);
+                            decal.vertices[j] = reader.ReadBytes(decal.vertexSections[j].sectionLength);
                         }
-                        decoration.indices = reader.ReadUInt16(decoration.header.indicesLength / sizeof(ushort));
+                        decal.indices = reader.ReadUInt16(decal.header.indicesLength / sizeof(ushort));
                         reader.AlignToLine();
-                        geo.mapDecorations.decorations[k] = decoration;
+                        geo.mapDecals.decals[k] = decal;
                     }
                 }
 
@@ -406,7 +406,7 @@ namespace SH.GameData.SH2
 
             //Get materials
             reader.BaseStream.Position = fileBaseOffset + header.meshSize;
-            materials = reader.ReadStruct<MeshMaterial>(header.materialCount);
+            mapMaterials = reader.ReadStruct<MapMaterial>(header.materialCount);
         }
 
         public override FileMap.SubFileHeader GetSubFileHeader()

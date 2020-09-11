@@ -7,6 +7,7 @@ using SH.Unity.Shared;
 using SH.GameData.SH2;
 using SH.GameData.Shared;
 using SH.Core;
+using System;
 
 namespace SH.Unity.SH2
 {
@@ -24,7 +25,7 @@ namespace SH.Unity.SH2
         public UnityEngine.Object dmm;
 
         public GameObject prefab;
-        public MaterialRolodex localTextures;
+        public MaterialRolodex mapMaterials;
 
         public string fullName
         {
@@ -47,7 +48,7 @@ namespace SH.Unity.SH2
             if (map != null)
             {
                 FileMap mapFile = FileMap.ReadMapFile(UnpackPath.GetPath(map));
-                UnpackLocalTextures(this, mapFile.GetMainTextureFile());
+                UnpackLocalTextures(this, mapFile);
                 GameObject go = UnpackMap(mapFile, this);
                 go.AddComponent<MapFileComponent>().SetMapFile(mapFile);
                 gameObjects.Add(go);
@@ -88,10 +89,10 @@ namespace SH.Unity.SH2
                         FileGeometry.Geometry geo = meshFile.geometries[i];
                         for (int j = 0; j < 2; j++)
                         {
-                            GameObject meshGroupGo = new GameObject("MeshGroup " + j.ToString("X")) { isStatic = true };
+                            GameObject meshGroupGo = new GameObject(j == 0 ? "Opaque Group" : "Transparent Group") { isStatic = true };
                             meshGroupGo.transform.SetParent(geometryGo.transform);
 
-                            FileGeometry.Geometry.MeshGroup meshGroup = j == 0 ? geo.meshGroup0 : geo.meshGroup1;
+                            FileGeometry.Geometry.MeshGroup meshGroup = j == 0 ? geo.opaqueGroup : geo.transparentGroup;
                             if (meshGroup != null)
                             {
                                 for (int k = 0; k < meshGroup.subMeshGroups.Length; k++)
@@ -119,8 +120,7 @@ namespace SH.Unity.SH2
                                                 grid.fullName + "_meshpart_" + i + "_" + j + "_" + k + "_" + l + "_" + m + "_" + subSubMeshGroup.header.materialIndex,
                                                 ref indicesIndex,
                                                 subMeshGroup.indices);
-                                            Material material = GetMaterial(grid.localTextures, grid.level.levelMaterials, meshFile.materials[subSubMeshGroup.header.materialIndex], MaterialRolodex.MaterialType.Diffuse);
-
+                                            Material material = grid.mapMaterials.GetMaterial(subSubMeshGroup.header.materialIndex);
                                             GameObject meshPartGo = CreateMeshAssetAndSubGameObject("MeshPart " + m.ToString("X"), meshAssetPath, subSubMeshGroupGo, mesh, material);
                                             meshPartGo.AddComponent<MapSubMeshComponent>().subMesh = subSubMeshGroup;
                                         }
@@ -129,25 +129,25 @@ namespace SH.Unity.SH2
                             }
                         }
 
-                        if (geo.mapDecorations != null)
+                        if (geo.mapDecals != null)
                         {
-                            FileGeometry.Geometry.MapDecorations.Decoration[] decorations = geo.mapDecorations.decorations;
-                            for (int k = 0; k < decorations.Length; k++)
+                            FileGeometry.Geometry.MapDecals.Decal[] decals = geo.mapDecals.decals;
+                            for (int k = 0; k < decals.Length; k++)
                             {
-                                FileGeometry.Geometry.MapDecorations.Decoration decoration = decorations[k];
+                                FileGeometry.Geometry.MapDecals.Decal decal = decals[k];
 
-                                GameObject decGo = new GameObject("Decoration") { isStatic = true };
+                                GameObject decGo = new GameObject("Decal " + k.ToString("X")) { isStatic = true };
                                 decGo.transform.SetParent(geometryGo.transform);
-                                decGo.AddComponent<DecorationComponent>().decoration = decoration;
+                                decGo.AddComponent<DecalComponent>().decal = decal;
 
-                                for (int l = 0, indicesIndex = 0; l < decoration.subDecorations.Length; l++)
+                                for (int l = 0, indicesIndex = 0; l < decal.subDecals.Length; l++)
                                 {
-                                    FileGeometry.Geometry.MapDecorations.Decoration.SubDecoration subDecoration = decoration.subDecorations[l];
-                                    int vertexSize = decoration.vertexSections[subDecoration.sectionId].vertexSize;
-                                    Mesh mesh = MakeSubMeshFromIndices(vertexSize, decoration.vertices[subDecoration.sectionId], grid.fullName + "_subdecoration_" + k, subDecoration.stripLength, subDecoration.stripCount, ref indicesIndex, decoration.indices);
-                                    Material material = GetMaterial(grid.localTextures, grid.level.levelMaterials, meshFile.materials[subDecoration.materialIndex]);
-                                    GameObject subGo = CreateMeshAssetAndSubGameObject("SubDecoration", meshAssetPath, decGo, mesh, material);
-                                    subGo.AddComponent<SubDecorationComponent>().subDecoration = subDecoration;
+                                    FileGeometry.Geometry.MapDecals.Decal.SubDecal subDecal = decal.subDecals[l];
+                                    int vertexSize = decal.vertexSections[subDecal.sectionId].vertexSize;
+                                    Mesh mesh = MakeSubMeshFromIndices(vertexSize, decal.vertices[subDecal.sectionId], grid.fullName + "_subdecal_" + k, subDecal.stripLength, subDecal.stripCount, ref indicesIndex, decal.indices);
+                                    Material material = grid.mapMaterials.GetMaterial(subDecal.materialIndex);
+                                    GameObject subGo = CreateMeshAssetAndSubGameObject("SubDecal " + l.ToString("X"), meshAssetPath, decGo, mesh, material);
+                                    subGo.AddComponent<SubDecalComponent>().subDecal = subDecal;
                                 }
                             }
                         }
@@ -161,34 +161,6 @@ namespace SH.Unity.SH2
             }
 
             return topGo;
-        }
-
-        private static Material GetMaterial(MaterialRolodex local, MaterialRolodex level, FileGeometry.MeshMaterial meshMaterial)
-        {
-            Material material = null;
-            if(local != null)
-            {
-                material = local.GetOrCreateMaterial(meshMaterial.textureId);
-            }
-            if (level != null && material == null)
-            {
-                material = level.GetOrCreateMaterial(meshMaterial.textureId);
-            }
-            return material;
-        }
-
-        private static Material GetMaterial(MaterialRolodex local, MaterialRolodex level, FileGeometry.MeshMaterial meshMaterial, MaterialRolodex.MaterialType materialType)
-        {
-            Material material = null;
-            if (local != null)
-            {
-                material = local.GetOrCreateMaterial(meshMaterial.textureId, materialType);
-            }
-            if (level != null && material == null)
-            {
-                material = level.GetOrCreateMaterial(meshMaterial.textureId, materialType);
-            }
-            return material;
         }
 
         private static Mesh MakeSubMeshFromIndices(int vertexSize, byte[] vertices, string meshName, int stripLength, int stripCount, ref int indicesIndex, ushort[] indices)
@@ -277,11 +249,37 @@ namespace SH.Unity.SH2
             return subGo;
         }
 
-        private static void UnpackLocalTextures(GridProxy grid, in FileTex localTextures)
+        private static void UnpackLocalTextures(GridProxy grid, FileMap mapFile)
         {
-            grid.localTextures = MaterialRolodex.CreateInstance<MaterialRolodex>();
-            AssetDatabase.CreateAsset(grid.localTextures, UnpackPath.GetDirectory(grid).WithDirectoryAndName(UnpackDirectory.Unity, grid.fullName + "_mats.asset", true));
-            grid.localTextures.ReadAndAddTexDXT1(grid.fullName + "_tex_", localTextures);
+            grid.mapMaterials = MaterialRolodex.CreateInstance<MaterialRolodex>();
+            grid.mapMaterials.texturesRolodex = grid.level.levelTextures;
+            AssetDatabase.CreateAsset(grid.mapMaterials, UnpackPath.GetDirectory(grid).WithDirectoryAndName(UnpackDirectory.Unity, grid.fullName + "_mats.asset", true));
+
+            if (mapFile.GetTextureFileCount() == 0)
+            {
+                Debug.LogError("Map " + grid.name + " has no texture file");
+            }
+            else
+            {
+                grid.level.levelTextures.AddTextures(grid.fullName + "_tex_", mapFile.GetMainTextureFile());
+            }
+            if(mapFile.GetTextureFileCount() > 1)
+            {
+                Debug.LogError("Map " + grid.name + " has more than one texture file");
+            }
+
+            if (mapFile.GetGeometryFileCount() == 0)
+            {
+                Debug.LogError("Map " + grid.name + " has no geometry file");
+            }
+            else
+            {
+                grid.mapMaterials.AddMaterials(mapFile.GetMainGeometryFile());
+            }
+            if (mapFile.GetGeometryFileCount() > 1)
+            {
+                Debug.LogError("Map " + grid.name + " has more than one geometry file");
+            }
         }
 
         private static GameObject UnpackCollisions(FileCollisions collisionFile)
