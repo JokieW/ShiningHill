@@ -72,7 +72,7 @@ namespace SH.Unity.SH2
                 string pathToInstall = unpackFromCleanInstall ? cleanInstallPath : installPath;
                 UnpackPath workDirectory = UnpackPath.GetWorkspaceDirectory(importName, true);
                 UnpackPath proxyDirectory = UnpackPath.GetProxyDirectory(importName, true);
-                /*
+                
                 //Copy exe
                 {
                     string from = pathToInstall + "sh2pc.exe";
@@ -89,7 +89,7 @@ namespace SH.Unity.SH2
                     if (AssetUtil.DirectoryCopy(from, to, true, (s, f) => EditorUtility.DisplayCancelableProgressBar("Importing data/ files...", s, f))) return;
                 }
 
-                AssetDatabase.Refresh();*/
+                AssetDatabase.Refresh();
 
                 //Make root folder proxies
                 {
