@@ -62,6 +62,7 @@ namespace SH.Unity.SH2
         public string installPath;
         public bool unpackFromCleanInstall = true;
         public bool unpackRecursive = true;
+        public bool reimportProxiesOnly = false;
 
         public RootFolderProxy[] rootFolders;
 
@@ -72,21 +73,24 @@ namespace SH.Unity.SH2
                 string pathToInstall = unpackFromCleanInstall ? cleanInstallPath : installPath;
                 UnpackPath workDirectory = UnpackPath.GetWorkspaceDirectory(importName, true);
                 UnpackPath proxyDirectory = UnpackPath.GetProxyDirectory(importName, true);
-                
-                //Copy exe
-                {
-                    string from = pathToInstall + "sh2pc.exe";
-                    UnpackPath to = workDirectory.WithName("sh2pc.exe");
-                    if (EditorUtility.DisplayCancelableProgressBar("Importing exe...", from, 0.5f)) return;
-                    File.Copy(from, to);
-                }
 
-                //Copy data
+                if (!reimportProxiesOnly)
                 {
-                    string from = pathToInstall + "data/";
-                    UnpackPath to = workDirectory.WithPath("data/");
-                    if (EditorUtility.DisplayCancelableProgressBar("Importing data/...", from, 0.5f)) return;
-                    if (AssetUtil.DirectoryCopy(from, to, true, (s, f) => EditorUtility.DisplayCancelableProgressBar("Importing data/ files...", s, f))) return;
+                    //Copy exe
+                    {
+                        string from = pathToInstall + "sh2pc.exe";
+                        UnpackPath to = workDirectory.WithName("sh2pc.exe");
+                        if (EditorUtility.DisplayCancelableProgressBar("Importing exe...", from, 0.5f)) return;
+                        File.Copy(from, to);
+                    }
+
+                    //Copy data
+                    {
+                        string from = pathToInstall + "data/";
+                        UnpackPath to = workDirectory.WithPath("data/");
+                        if (EditorUtility.DisplayCancelableProgressBar("Importing data/...", from, 0.5f)) return;
+                        if (AssetUtil.DirectoryCopy(from, to, true, (s, f) => EditorUtility.DisplayCancelableProgressBar("Importing data/ files...", s, f))) return;
+                    }
                 }
 
                 AssetDatabase.Refresh();
