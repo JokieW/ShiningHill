@@ -46,11 +46,11 @@ namespace SH.Unity.SH2
                 bool replacedOldTex = false;
                 for (int j = 0; j < textures.Count; j++)
                 {
-                    TextureStruct oldTexStruct = textures[i];
+                    TextureStruct oldTexStruct = textures[j];
                     if (oldTexStruct.textureId == newTexStruct.textureId)
                     {
                         AssetDatabase.RemoveObjectFromAsset(oldTexStruct.texture);
-                        textures[i] = newTexStruct;
+                        textures[j] = newTexStruct;
                         replacedOldTex = true;
                         break;
                     }
