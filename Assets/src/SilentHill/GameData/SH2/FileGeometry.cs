@@ -41,7 +41,7 @@ namespace SH.GameData.SH2
             [StructLayout(LayoutKind.Sequential, Pack = 0)]
             public struct Header
             {
-                [Hex] public int field_00;
+                [Hex] public int geometryId;
                 [Hex] public int meshGroupSize;
                 [Hex] public int offsetToOpaqueGroup;
                 [Hex] public int offsetToTransparentGroup;
@@ -73,10 +73,10 @@ namespace SH.GameData.SH2
                         public Vector4 boundingBoxA;
                         public Vector4 boundingBoxB;
 
-                        [Hex] public int field_20; //Looks like flags?
+                        [Hex] public int offsetToVertexSectionHeader;
                         [Hex] public int offsetToIndices;
                         [Hex] public int indicesLength;
-                        [Hex] public int field_2C; //looks like a length or offset but cant find from where
+                        [Hex] public int unused; //looks like a length or offset, setting to garbage does nothing
 
                         [Hex] public int subSubMeshGroupCount;
                     }
@@ -197,8 +197,8 @@ namespace SH.GameData.SH2
             public struct Vertex18
             {
                 public Vector3 position;
-                public Vector2 uv;
                 public Color32 color;
+                public Vector2 uv;
 
                 public unsafe static void ExtractToBuffers(byte[] source, List<Vector3> vertices, List<Vector2> uvs, List<Color32> colors)
                 {

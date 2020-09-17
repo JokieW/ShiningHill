@@ -36,8 +36,7 @@ namespace SH.GameData.SH2
             [StructLayout(LayoutKind.Sequential, Pack = 0)]
             public struct Header
             {
-                [Hex] public short textureId;
-                [Hex] public short field_02;
+                [Hex] public int textureId;
                 public short width;
                 public short height;
                 [Hex] public short field_08;
