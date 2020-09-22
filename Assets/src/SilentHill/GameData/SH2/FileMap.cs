@@ -61,7 +61,8 @@ namespace SH.GameData.SH2
             {
                 for (int i = 0; i < subFiles.Length; i++)
                 {
-                    if (subFiles[i].GetSubFileHeader().subFileType == 2)
+                    FileMapSubFile subFile = subFiles[i];
+                    if (subFile != null && subFile.GetSubFileHeader().subFileType == 2)
                     {
                         count++;
                     }
@@ -70,29 +71,31 @@ namespace SH.GameData.SH2
             return count;
         }
 
-        public void GetTextureFiles(List<FileTex> files)
+        public void GetTextureFiles(List<SubFileTex> files)
         {
             if (subFiles != null)
             {
                 for (int i = 0; i < subFiles.Length; i++)
                 {
-                    if (subFiles[i].GetSubFileHeader().subFileType == 2)
+                    FileMapSubFile subFile = subFiles[i];
+                    if (subFile != null && subFile.GetSubFileHeader().subFileType == 2)
                     {
-                        files.Add((FileTex)subFiles[i]);
+                        files.Add((SubFileTex)subFiles[i]);
                     }
                 }
             }
         }
 
-        public FileTex GetMainTextureFile()
+        public SubFileTex GetMainTextureFile()
         {
             if (subFiles != null)
             {
                 for (int i = 0; i < subFiles.Length; i++)
                 {
-                    if (subFiles[i].GetSubFileHeader().subFileType == 2)
+                    FileMapSubFile subFile = subFiles[i];
+                    if (subFile != null && subFile.GetSubFileHeader().subFileType == 2)
                     {
-                        return (FileTex)subFiles[i];
+                        return (SubFileTex)subFiles[i];
                     }
                 }
             }
@@ -106,7 +109,8 @@ namespace SH.GameData.SH2
             {
                 for (int i = 0; i < subFiles.Length; i++)
                 {
-                    if (subFiles[i].GetSubFileHeader().subFileType == 1)
+                    FileMapSubFile subFile = subFiles[i];
+                    if (subFile != null && subFile.GetSubFileHeader().subFileType == 1)
                     {
                         count++;
                     }
@@ -115,47 +119,49 @@ namespace SH.GameData.SH2
             return count;
         }
 
-        public void GetGeometryFiles(List<FileGeometry> files)
+        public void GetGeometryFiles(List<SubFileGeometry> files)
         {
             if (subFiles != null)
             {
                 for (int i = 0; i < subFiles.Length; i++)
                 {
-                    if (subFiles[i].GetSubFileHeader().subFileType == 1)
+                    FileMapSubFile subFile = subFiles[i];
+                    if (subFile != null && subFile.GetSubFileHeader().subFileType == 1)
                     {
-                        files.Add((FileGeometry)subFiles[i]);
+                        files.Add((SubFileGeometry)subFiles[i]);
                     }
                 }
             }
         }
 
-        public FileGeometry GetMainGeometryFile()
+        public SubFileGeometry GetMainGeometryFile()
         {
             if (subFiles != null)
             {
                 for (int i = 0; i < subFiles.Length; i++)
                 {
-                    if (subFiles[i].GetSubFileHeader().subFileType == 1)
+                    FileMapSubFile subFile = subFiles[i];
+                    if (subFile != null && subFile.GetSubFileHeader().subFileType == 1)
                     {
-                        return (FileGeometry)subFiles[i];
+                        return (SubFileGeometry)subFiles[i];
                     }
                 }
             }
             return null;
         }
 
-        public static FileMap ReadMapFile(string path)
+        public static FileMap ReadMapFile(string path, bool readTextureFiles = true, bool readGeometryFiles = true)
         {
             FileMap mapFile = new FileMap();
             using (FileStream file = new FileStream(path, FileMode.Open, FileAccess.ReadWrite))
             using (BinaryReader reader = new BinaryReader(file))
             {
-                mapFile.ReadFile(reader);
+                mapFile.ReadFile(reader, readTextureFiles, readGeometryFiles);
             }
             return mapFile;
         }
 
-        public void ReadFile(BinaryReader reader)
+        public void ReadFile(BinaryReader reader, bool readTextureFiles = true, bool readGeometryFiles = true)
         {
             header = reader.ReadStruct<Header>();
 
@@ -163,16 +169,16 @@ namespace SH.GameData.SH2
             for (int i = 0; i < header.fileCount; i++)
             {
                 SubFileHeader subFileHeader = reader.ReadStruct<SubFileHeader>();
-                if(subFileHeader.subFileType == 2)
+                if(subFileHeader.subFileType == 2 && readTextureFiles)
                 {
-                    FileTex file = new FileTex();
+                    SubFileTex file = new SubFileTex();
                     file.subFileHeader = subFileHeader;
                     file.ReadFile(reader);
                     subFiles[i] = file;
                 }
-                else if (subFileHeader.subFileType == 1)
+                else if (subFileHeader.subFileType == 1 && readGeometryFiles)
                 {
-                    FileGeometry file = new FileGeometry();
+                    SubFileGeometry file = new SubFileGeometry();
                     file.subFileHeader = subFileHeader;
                     file.ReadFile(reader);
                     subFiles[i] = file;

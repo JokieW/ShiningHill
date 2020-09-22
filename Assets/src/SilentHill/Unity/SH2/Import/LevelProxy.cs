@@ -94,7 +94,7 @@ namespace SH.Unity.SH2
             if(map != null)
             {
                 FileMap mapFile = FileMap.ReadMapFile(UnpackPath.GetPath(map));
-                CollectionPool.Request(out List<FileTex> textures);
+                CollectionPool.Request(out List<SubFileTex> textures);
                 mapFile.GetTextureFiles(textures);
                 UnpackGlobalTextures(this, textures);
                 CollectionPool.Return(ref textures);
@@ -180,7 +180,7 @@ namespace SH.Unity.SH2
             UnityEngine.Profiling.Profiler.EndSample();
         }
 
-        private static void UnpackGlobalTextures(LevelProxy level, List<FileTex> globalTextures)
+        private static void UnpackGlobalTextures(LevelProxy level, List<SubFileTex> globalTextures)
         {
             level.levelTextures = TextureRolodex.CreateInstance<TextureRolodex>();
             AssetDatabase.CreateAsset(level.levelTextures, UnpackPath.GetDirectory(level).WithDirectoryAndName(UnpackDirectory.Unity, level.levelName + "_texs.asset", true));

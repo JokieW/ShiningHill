@@ -17,9 +17,8 @@ namespace SH.Unity.SH2
         [Serializable]
         public struct TextureStruct
         {
-            public FileTex.DXTTexture.Header texinfoheader;
-            public FileTex.DXTTexture.Subgroup[] texinfosubgroups;
-            public FileTex.DXTTexture.PixelHeader texinfopixelHeader;
+            public SubFileTex.DXTTexture.Header texinfoheader;
+            public SubFileTex.DXTTexture.Sprite[] texinfosubgroups;
 
             [Hex] public int textureId;
             public Texture2D texture;
@@ -28,17 +27,16 @@ namespace SH.Unity.SH2
         [SerializeField]
         public List<TextureStruct> textures = new List<TextureStruct>();
 
-        public void AddTextures(string baseName, FileTex texFile)
+        public void AddTextures(string baseName, SubFileTex texFile)
         {
-            (FileTex.DXTTexture, Texture2D)[] loadedTextures = ReadTexDXT1(baseName, texFile);
+            (SubFileTex.DXTTexture, Texture2D)[] loadedTextures = ReadTexDXT1(baseName, texFile);
             for(int i = 0; i < loadedTextures.Length; i++)
             {
-                (FileTex.DXTTexture, Texture2D) t = loadedTextures[i];
+                (SubFileTex.DXTTexture, Texture2D) t = loadedTextures[i];
                 TextureStruct newTexStruct = new TextureStruct()
                 {
                     texinfoheader = t.Item1.header,
-                    texinfosubgroups = t.Item1.subgroups,
-                    texinfopixelHeader = t.Item1.pixelHeader,
+                    texinfosubgroups = t.Item1.sprites,
                     textureId = t.Item1.header.textureId,
                     texture = t.Item2
                 };
@@ -97,28 +95,28 @@ namespace SH.Unity.SH2
             return tex;
         }
 
-        public unsafe static (FileTex.DXTTexture, Texture2D)[] ReadTexDXT1(string baseName, FileTex texFile)
+        public unsafe static (SubFileTex.DXTTexture, Texture2D)[] ReadTexDXT1(string baseName, SubFileTex texFile)
         {
-            (FileTex.DXTTexture, Texture2D)[] textures = new (FileTex.DXTTexture, Texture2D)[texFile == null ? 0 : texFile.textures.Length];
+            (SubFileTex.DXTTexture, Texture2D)[] textures = new (SubFileTex.DXTTexture, Texture2D)[texFile == null ? 0 : texFile.textures.Length];
 
             for(int i = 0; i < textures.Length; i++)
             {
-                FileTex.DXTTexture dxt = texFile.textures[i];
-                bool isTwo = (dxt.subgroups[0].field_1C & 0x02) != 0;
-                bool isFour = (dxt.subgroups[0].field_1C & 0x04) != 0;
+                SubFileTex.DXTTexture dxt = texFile.textures[i];
+                bool isTwo = dxt.sprites[0].header.format == 0x102;
+                bool isFour = dxt.sprites[0].header.format == 0x104;
                 Texture2D newTexture = new Texture2D(dxt.header.width, dxt.header.height, isTwo || isFour ? TextureFormat.RGBA32 : TextureFormat.RGBA32, false);
                 newTexture.wrapMode = TextureWrapMode.Clamp;
 
                 if (isTwo || isFour)
                 {
                     Color[] pixels = new Color[dxt.header.width * dxt.header.height];
-                    ColorBC2.BufferToColorRGBA8888(pixels, dxt.pixels, dxt.header.width, dxt.header.height);
+                    ColorBC2.BufferToColorRGBA8888(pixels, dxt.sprites.Last().pixels, dxt.header.width, dxt.header.height);
                     newTexture.SetPixels(pixels);
                 }
                 else
                 {
                     Color[] pixels = new Color[dxt.header.width * dxt.header.height];
-                    ColorBC1.BufferToColorRGBA8888(pixels, dxt.pixels, dxt.header.width, dxt.header.height);
+                    ColorBC1.BufferToColorRGBA8888(pixels, dxt.sprites.Last().pixels, dxt.header.width, dxt.header.height);
                     newTexture.SetPixels(pixels);
                     //newTexture.LoadRawTextureData(dxt.pixels);
                 }

@@ -7,12 +7,11 @@ using UnityEngine;
 
 using SH.Core;
 using SH.GameData.Shared;
-using System.Linq.Expressions;
 
 namespace SH.GameData.SH2
 {
     [Serializable]
-    public class FileGeometry : FileMapSubFile
+    public class SubFileGeometry : FileMapSubFile
     {
         public FileMap.SubFileHeader subFileHeader;
         public Header header;
@@ -52,15 +51,15 @@ namespace SH.GameData.SH2
             [Serializable]
             public class MeshGroup
             {
-                [Hex] public int subMeshGroupCount;
-                public int[] subMeshGroupOffsets;
-                public SubMeshGroup[] subMeshGroups;
+                [Hex] public int mapMeshCount;
+                public int[] mapMeshOffsets;
+                public MapMesh[] mapMeshs;
 
                 [Serializable]
-                public class SubMeshGroup
+                public class MapMesh
                 {
                     public Header header;
-                    public SubSubMeshGroup[] subSubMeshGroups;
+                    public MeshPartGroup[] meshPartGroups;
                     public VertexSectionsHeader vertexSectionsHeader;
                     public VertexSectionHeader[] vertexSections;
                     public byte[][] vertices;
@@ -78,11 +77,11 @@ namespace SH.GameData.SH2
                         [Hex] public int indicesLength;
                         [Hex] public int unused; //looks like a length or offset, setting to garbage does nothing
 
-                        [Hex] public int subSubMeshGroupCount;
+                        [Hex] public int meshPartGroupCount;
                     }
 
                     [Serializable]
-                    public class SubSubMeshGroup
+                    public class MeshPartGroup
                     {
                         public Header header;
                         public MeshPart[] meshParts;
@@ -309,7 +308,7 @@ namespace SH.GameData.SH2
             [Hex] public short textureId; //maps to the id of the DXTTexture.Header
             public ColorBGRA materialColor; //not sure
             public ColorBGRA overlayColor;
-            public float specularity; // 0.0 to 100.0
+            public float specularity; // 0.0 to 100.0 I think
         }
 
         public void ReadFile(BinaryReader reader)
@@ -331,35 +330,35 @@ namespace SH.GameData.SH2
                     if (meshGroupOffset != 0x00000000)
                     {
                         Geometry.MeshGroup meshGroup = new Geometry.MeshGroup();
-                        meshGroup.subMeshGroupCount = reader.ReadInt32();
-                        meshGroup.subMeshGroupOffsets = reader.ReadInt32(meshGroup.subMeshGroupCount);
-                        meshGroup.subMeshGroups = new Geometry.MeshGroup.SubMeshGroup[meshGroup.subMeshGroupCount];
-                        for (int k = 0; k < meshGroup.subMeshGroupCount; k++)
+                        meshGroup.mapMeshCount = reader.ReadInt32();
+                        meshGroup.mapMeshOffsets = reader.ReadInt32(meshGroup.mapMeshCount);
+                        meshGroup.mapMeshs = new Geometry.MeshGroup.MapMesh[meshGroup.mapMeshCount];
+                        for (int k = 0; k < meshGroup.mapMeshCount; k++)
                         {
                             long positiontest3 = reader.BaseStream.Position;
-                            Geometry.MeshGroup.SubMeshGroup subMeshGroup = new Geometry.MeshGroup.SubMeshGroup();
-                            subMeshGroup.header = reader.ReadStruct<Geometry.MeshGroup.SubMeshGroup.Header>();
-                            subMeshGroup.subSubMeshGroups = new Geometry.MeshGroup.SubMeshGroup.SubSubMeshGroup[subMeshGroup.header.subSubMeshGroupCount];
-                            for (int l = 0; l < subMeshGroup.subSubMeshGroups.Length; l++)
+                            Geometry.MeshGroup.MapMesh mapMesh = new Geometry.MeshGroup.MapMesh();
+                            mapMesh.header = reader.ReadStruct<Geometry.MeshGroup.MapMesh.Header>();
+                            mapMesh.meshPartGroups = new Geometry.MeshGroup.MapMesh.MeshPartGroup[mapMesh.header.meshPartGroupCount];
+                            for (int l = 0; l < mapMesh.meshPartGroups.Length; l++)
                             {
                                 long positiontest4 = reader.BaseStream.Position;
-                                Geometry.MeshGroup.SubMeshGroup.SubSubMeshGroup subSubMeshGroup = new Geometry.MeshGroup.SubMeshGroup.SubSubMeshGroup();
-                                subSubMeshGroup.header = reader.ReadStruct<Geometry.MeshGroup.SubMeshGroup.SubSubMeshGroup.Header>();
-                                subSubMeshGroup.meshParts = reader.ReadStruct<Geometry.MeshGroup.SubMeshGroup.SubSubMeshGroup.MeshPart>(subSubMeshGroup.header.meshPartCount);
+                                Geometry.MeshGroup.MapMesh.MeshPartGroup meshPartGroup = new Geometry.MeshGroup.MapMesh.MeshPartGroup();
+                                meshPartGroup.header = reader.ReadStruct<Geometry.MeshGroup.MapMesh.MeshPartGroup.Header>();
+                                meshPartGroup.meshParts = reader.ReadStruct<Geometry.MeshGroup.MapMesh.MeshPartGroup.MeshPart>(meshPartGroup.header.meshPartCount);
 
-                                subMeshGroup.subSubMeshGroups[l] = subSubMeshGroup;
+                                mapMesh.meshPartGroups[l] = meshPartGroup;
                             }
 
-                            subMeshGroup.vertexSectionsHeader = reader.ReadStruct<Geometry.VertexSectionsHeader>();
-                            subMeshGroup.vertexSections = reader.ReadStruct<Geometry.VertexSectionHeader>(subMeshGroup.vertexSectionsHeader.vertexSectionCount);
-                            subMeshGroup.vertices = new byte[subMeshGroup.vertexSections.Length][];
-                            for (int l = 0; l < subMeshGroup.vertexSections.Length; l++)
+                            mapMesh.vertexSectionsHeader = reader.ReadStruct<Geometry.VertexSectionsHeader>();
+                            mapMesh.vertexSections = reader.ReadStruct<Geometry.VertexSectionHeader>(mapMesh.vertexSectionsHeader.vertexSectionCount);
+                            mapMesh.vertices = new byte[mapMesh.vertexSections.Length][];
+                            for (int l = 0; l < mapMesh.vertexSections.Length; l++)
                             {
-                                subMeshGroup.vertices[l] = reader.ReadBytes(subMeshGroup.vertexSections[l].sectionLength);
+                                mapMesh.vertices[l] = reader.ReadBytes(mapMesh.vertexSections[l].sectionLength);
                             }
-                            subMeshGroup.indices = reader.ReadUInt16(subMeshGroup.header.indicesLength / sizeof(ushort));
+                            mapMesh.indices = reader.ReadUInt16(mapMesh.header.indicesLength / sizeof(ushort));
                             reader.AlignToLine();
-                            meshGroup.subMeshGroups[k] = subMeshGroup;
+                            meshGroup.mapMeshs[k] = mapMesh;
                         }
 
                         if(j == 0)

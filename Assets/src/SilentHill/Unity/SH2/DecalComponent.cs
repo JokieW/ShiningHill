@@ -25,6 +25,6 @@ namespace SH.Unity.SH2
 
     public class DecalComponent : MonoBehaviour
     {
-        public FileGeometry.Geometry.MapDecals.Decal decal;
+        public SubFileGeometry.Geometry.MapDecals.Decal decal;
     }
 }

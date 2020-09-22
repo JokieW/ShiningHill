@@ -9,7 +9,7 @@ namespace SH.Unity.SH2
 {
     public class MapSubMeshComponent : MonoBehaviour
     {
-        public FileGeometry.Geometry.MeshGroup.SubMeshGroup.SubSubMeshGroup subMesh;
+        public SubFileGeometry.Geometry.MeshGroup.MapMesh.MeshPartGroup subMesh;
 
         /*void OnDrawGizmosSelected()
         {

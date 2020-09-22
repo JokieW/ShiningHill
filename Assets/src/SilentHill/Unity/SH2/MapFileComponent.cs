@@ -20,7 +20,7 @@ namespace SH.Unity.SH2
             if (t.mapFile != null)
             {
                 Handles.matrix = t.transform.localToWorldMatrix;
-                FileGeometry fg = t.mapFile.GetMainGeometryFile();
+                SubFileGeometry fg = t.mapFile.GetMainGeometryFile();
                 if (fg != null)
                 {
                     //HandlesUtil.DrawBoundingCube(fg.geometries.mapMesh.header.boundingBoxA, fg.geometries.mapMesh.header.boundingBoxB);
@@ -33,15 +33,15 @@ namespace SH.Unity.SH2
     public class MapFileComponent : MonoBehaviour
     {
         public FileMap mapFile;
-        public List<FileTex> textures;
-        public List<FileGeometry> geometries;
+        public List<SubFileTex> textures;
+        public List<SubFileGeometry> geometries;
 
         public void SetMapFile(FileMap mapFile)
         {
             this.mapFile = mapFile;
-            textures = new List<FileTex>();
+            textures = new List<SubFileTex>();
             mapFile.GetTextureFiles(textures);
-            geometries = new List<FileGeometry>();
+            geometries = new List<SubFileGeometry>();
             mapFile.GetGeometryFiles(geometries);
         }
     }

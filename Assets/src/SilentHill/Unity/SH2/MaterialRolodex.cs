@@ -17,7 +17,7 @@ namespace SH.Unity.SH2
         [Serializable]
         public struct MaterialStruct
         {
-            public FileGeometry.MapMaterial matinfo;
+            public SubFileGeometry.MapMaterial matinfo;
 
             [Hex] public int materialId;
             [Hex] public int textureId;
@@ -28,11 +28,11 @@ namespace SH.Unity.SH2
         [SerializeField]
         public List<MaterialStruct> materials = new List<MaterialStruct>();
 
-        public void AddMaterials(FileGeometry fileGeo)
+        public void AddMaterials(SubFileGeometry fileGeo)
         {
             for(int i = 0; i < fileGeo.mapMaterials.Length; i++)
             {
-                FileGeometry.MapMaterial mapMaterial = fileGeo.mapMaterials[i];
+                SubFileGeometry.MapMaterial mapMaterial = fileGeo.mapMaterials[i];
 
                 CheckVersionsNeededForMapMaterial(fileGeo, i, out bool needsOpaque, out bool needsTransparent);
 
@@ -122,25 +122,25 @@ namespace SH.Unity.SH2
             return mat;
         }
 
-        private static void CheckVersionsNeededForMapMaterial(FileGeometry fileGeo, int materialId, out bool needsOpaque, out bool needsTransparent)
+        private static void CheckVersionsNeededForMapMaterial(SubFileGeometry fileGeo, int materialId, out bool needsOpaque, out bool needsTransparent)
         {
             needsOpaque = false;
             needsTransparent = false;
             for (int i = 0; i < fileGeo.geometries.Length; i++)
             {
-                FileGeometry.Geometry geo = fileGeo.geometries[i];
+                SubFileGeometry.Geometry geo = fileGeo.geometries[i];
                 for (int j = 0; j < 2; j++)
                 {
-                    FileGeometry.Geometry.MeshGroup meshGroup = (j == 0 ? geo.opaqueGroup : geo.transparentGroup);
+                    SubFileGeometry.Geometry.MeshGroup meshGroup = (j == 0 ? geo.opaqueGroup : geo.transparentGroup);
                     if (meshGroup != null)
                     {
-                        for (int k = 0; k < meshGroup.subMeshGroups.Length; k++)
+                        for (int k = 0; k < meshGroup.mapMeshs.Length; k++)
                         {
-                            FileGeometry.Geometry.MeshGroup.SubMeshGroup subMeshGroup = meshGroup.subMeshGroups[k];
-                            for (int l = 0; l < subMeshGroup.subSubMeshGroups.Length; l++)
+                            SubFileGeometry.Geometry.MeshGroup.MapMesh mapMesh = meshGroup.mapMeshs[k];
+                            for (int l = 0; l < mapMesh.meshPartGroups.Length; l++)
                             {
-                                FileGeometry.Geometry.MeshGroup.SubMeshGroup.SubSubMeshGroup subSubMeshGroup = subMeshGroup.subSubMeshGroups[l];
-                                if (subSubMeshGroup.header.materialIndex == materialId)
+                                SubFileGeometry.Geometry.MeshGroup.MapMesh.MeshPartGroup meshPartGroup = mapMesh.meshPartGroups[l];
+                                if (meshPartGroup.header.materialIndex == materialId)
                                 {
                                     if (j == 0)
                                     {
@@ -150,8 +150,8 @@ namespace SH.Unity.SH2
                                     {
                                         needsTransparent = true;
                                     }
-                                    l = subMeshGroup.subSubMeshGroups.Length;
-                                    k = meshGroup.subMeshGroups.Length;
+                                    l = mapMesh.meshPartGroups.Length;
+                                    k = meshGroup.mapMeshs.Length;
                                 }
                             }
                         }
@@ -161,10 +161,10 @@ namespace SH.Unity.SH2
                 {
                     for (int j = 0; j < geo.mapDecals.decals.Length; j++)
                     {
-                        FileGeometry.Geometry.MapDecals.Decal decal = geo.mapDecals.decals[j];
+                        SubFileGeometry.Geometry.MapDecals.Decal decal = geo.mapDecals.decals[j];
                         for (int k = 0; k < decal.subDecals.Length; k++)
                         {
-                            FileGeometry.Geometry.MapDecals.Decal.SubDecal subDecal = decal.subDecals[k];
+                            SubFileGeometry.Geometry.MapDecals.Decal.SubDecal subDecal = decal.subDecals[k];
                             if (subDecal.materialIndex == materialId)
                             {
                                 needsTransparent = true;
