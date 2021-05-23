@@ -39,3 +39,7 @@ Assets/Resources/sh2pc.meta
 Assets/Resources/sh3pc.meta
 Assets/Resources/sh3pc_demo.meta
 Assets/Resources/sh4pc.meta
+
+Logs/*
+UserSettings/*
+Packages/packages-lock.json

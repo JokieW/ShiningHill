@@ -59,6 +59,11 @@ namespace SH.Unity.Shared
                                 rectBuffer[3] = face.isQuad ? face.vertex3 : face.vertex2;
                                 GroupIndexToColors(arrayIndex, out Color faceColor, out Color outlineColor);
                                 Handles.DrawSolidRectangleWithOutline(rectBuffer, faceColor, outlineColor);
+
+                                Plane p = new Plane(face.vertex0, face.vertex1, face.vertex2);
+                                Vector3 center = GetFaceCenter(face);
+                                Handles.DrawLine(center, center - (p.normal * 250));
+
                             }
                         }
                     }
