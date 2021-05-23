@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if UNITY_EDITOR_WIN
+using System;
 using System.Reflection;
 
 using UnityEngine;
@@ -352,3 +353,4 @@ namespace SH.Editor
         }
     }
 }
+#endif

@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
+using UnityEngine;
 
 using SH.Runtime.Shared;
 
@@ -31,3 +32,4 @@ namespace SH.Runtime.SH3
         }
     }
 }
+#endif

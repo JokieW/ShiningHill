@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
+using System;
 using System.Collections.Generic;
 
 using UnityEngine;
@@ -108,3 +109,4 @@ namespace SH.Runtime.SH3
         }
     }
 }
+#endif

@@ -62,17 +62,18 @@ public class tess : MonoBehaviour
 
             try
             {
+                
+                List<Vector3> pr = new List<Vector3>();
+                List<Vector3> normals = new List<Vector3>();
+                List<Vector2> uvs = new List<Vector2>();
+                List<Color32> colors = new List<Color32>();
+                Vector3[] prs = input.vertices;
+                Vector3[] normalss = input.normals;
+                Vector2[] uvss = input.uv;
+                //Color32[] colorss = input.colors32;
                 for (int i = 0; i != count; i++)
                 {
                     NvTriStrip.PrimitiveGroup currentPrim = *(prims + i);
-                    List<Vector3> pr = new List<Vector3>();
-                    List<Vector3> normals = new List<Vector3>();
-                    List<Vector2> uvs = new List<Vector2>();
-                    List<Color32> colors = new List<Color32>();
-                    Vector3[] prs = input.vertices;
-                    Vector3[] normalss = input.normals;
-                    Vector2[] uvss = input.uv;
-                    //Color32[] colorss = input.colors32;
                     for (int j = 0; j != currentPrim.numIndices; j++)
                     {
                         int index = (int)*(currentPrim.indices + j);
@@ -81,15 +82,14 @@ public class tess : MonoBehaviour
                         uvs.Add(uvss[index]);
                         //colors.Add(colorss[index]);
                     }
-                    return MeshUtil.MakeStripped(pr, normals, uvs, colors);
                 }
+                return MeshUtil.MakeStripped(pr, normals, uvs, colors);
             }
             finally
             {
                 NvTriStrip.DeletePrimitives(prims);
             }
         }
-        return null;
     }
 
     public Mesh mesh;

@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
+using System;
 using System.Runtime.InteropServices;
 using System.Security;
 
@@ -61,3 +62,4 @@ namespace SH.Native
         }
     }
 }
+#endif

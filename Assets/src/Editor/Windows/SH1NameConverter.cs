@@ -18,7 +18,7 @@ namespace SH.Editor
 
         string hexbField = "00000000";
         string hexcField = "00000000";
-        string nameField = "";
+        //string nameField = "";
         void OnGUI()
         {
             EditorGUILayout.LabelField("SH1 Hex to name");
