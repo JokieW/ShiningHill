@@ -16,15 +16,15 @@ namespace SH.Unity.SH3
 	public class MapShadows : MonoBehaviour 
 	{
 
-        public static MapShadows ReadShadowCasters(/*MapShadowsAssetPaths paths*/)
+        public static MapShadows ReadShadowCasters(string path)
         {
-            GameObject subGO = null;//Scene.BeginEditingPrefab(paths.GetPrefabPath(), "Shadows");
+            GameObject subGO = new GameObject("Shadows "+ path);
 
             try
             {
                 MapShadows casters = subGO.AddComponent<MapShadows>();
 
-                BinaryReader reader = null;//new BinaryReader(new FileStream(paths.GetHardAssetPath(), FileMode.Open, FileAccess.Read, FileShare.Read));
+                BinaryReader reader = new BinaryReader(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read));
 
                 if (reader.BaseStream.Length != 0)
                 {

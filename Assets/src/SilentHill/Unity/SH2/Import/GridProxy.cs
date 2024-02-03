@@ -7,6 +7,7 @@ using SH.Unity.Shared;
 using SH.GameData.SH2;
 using SH.GameData.Shared;
 using SH.Core;
+using SH.Unity.SH3;
 using System;
 
 namespace SH.Unity.SH2
@@ -58,6 +59,12 @@ namespace SH.Unity.SH2
             {
                 FileCollisions collisionFile = FileCollisions.ReadCollisionFile(UnpackPath.GetPath(cld));
                 gameObjects.Add(UnpackCollisions(collisionFile));
+            }
+
+            Debug.Log("sdfsdf");
+            if (kg2 != null)
+            {
+                GameObject gg = MapShadows.ReadShadowCasters(UnpackPath.GetPath(kg2));
             }
 
             PrefabUtil.MakePrefab(ref prefab, prefabPath, gameObjects, true);
@@ -283,6 +290,24 @@ namespace SH.Unity.SH2
         }
 
         private static GameObject UnpackCollisions(FileCollisions collisionFile)
+        {
+            GameObject go = new GameObject("Collisions");
+            go.isStatic = true;
+            try
+            {
+                MapCollisionComponent collisionComponent = go.AddComponent<MapCollisionComponent>();
+                collisionComponent.collisions = collisionFile;
+            }
+            catch
+            {
+                GameObject.DestroyImmediate(go);
+                throw;
+            }
+
+            return go;
+        }
+
+        private static GameObject UnpackShadows(FileCollisions collisionFile)
         {
             GameObject go = new GameObject("Collisions");
             go.isStatic = true;
